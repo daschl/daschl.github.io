@@ -3007,7 +3007,416 @@ SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further detail
 
     </article>
   
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/Couchbase-Java-SDK-Internals">Couchbase Java SDK Internals</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-04-17T14:49:48+02:00" pubdate data-updated="true">Apr 17<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>Motivation</h2>
+
+<p>This blog post is intended to be a very detailed and informative article for those who already have used the Couchbase Java SDK and want to know how the internals work. This is not a introduction on how to use the Java SDK and we&rsquo;ll cover some fairly advanced topics on the way.</p>
+
+<p>Normally, when talking about the SDK we mean everything that is needed to get you going (Client library, documentation, release notes,&hellip;). In this article though, the SDK refers to the Client library (code) unless stated otherwise.</p>
+
+<p>As always, if you have feedback please let me/us know!</p>
+
+<h2>Introduction</h2>
+
+<p>First and foremost, it is important to understand that the SDK wraps and extends the functionality of the <a href="https://github.com/couchbase/spymemcached">spymemcached</a> (called &ldquo;spy&rdquo;) memcached library. One of the protocols used internally is the memcached protocol, and a lot of functionality can be reused. On the other hand, once you start to peel off the first layers of the SDK you will notice that some components are somewhat more complex because of the fact that spy provides more features than the SDK needs in the first place. The other part is to remember that a lot of the components are interwoven, so you always need to get the dependency right. Most of the time, we release a new spy version at the same date with a new SDK, because new stuff has been added or fixed.</p>
+
+<p>So, aside from reusing the functionality provided by spy, the SDK mainly adds two blocks of functionality: automatic cluster topology management and since 1.1 (and 2.0 server) support for Views. Aside from that it also provides administrative facilities like bucket and design document management.</p>
+
+<p>To understand how the client operates, we&rsquo;ll dissect the whole process in different life cycle phases of the client. After we go through all three phases (bootstrap, operation and shutdown) you should have a clear picture of whats going on under the hood. Note that there is a separate blog post in the making about error handling, so we won&rsquo;t cover that here in greater detail (which will be published a few weeks later on the same blog here).</p>
+
+<h2>Phase 1: Bootstrap</h2>
+
+<p>Before we can actually start serving operations like <code>get()</code> and <code>set()</code>, we need to bootstrap the <code>CouchbaseClient</code> object. The important part that we need to accomplish here is to initially get a cluster configuration (which contains the nodes and vBucket map), but also to establish a streaming connection to receive cluster updates in (near) real-time.</p>
+
+<p>We take the list of nodes passing during bootstrap and iterate over it. The first node in the list that can be contacted on port 8091 is used to walk the RESTful interface on the server. If it is not available, the next one will be tried. This means that going from the provided <code>http://host:port/pools</code> URI we eventually follow the links to the bucket entity. All this happens inside a <code>ConfigurationProvider</code>, which is in this case the <code>com.couchbase.client.vbucket.ConfigurationProviderHTTP</code>. If you want to poke around on the internals, look for <code>getBucketConfiguration</code> and <code>readPools</code> methods.</p>
+
+<p>A (successful) walk can be illustrated like this:</p>
+
+<ul>
+<li>GET /pools</li>
+<li>look for the &ldquo;default&rdquo; pools</li>
+<li>GET /pools/default</li>
+<li>look for the &ldquo;buckets&rdquo; hash which contains the bucket list</li>
+<li>GET /pools/default/buckets</li>
+<li>parse the list of buckets and extract the one provided by the application</li>
+<li>GET /pools/default/buckets/<bucketname></li>
+</ul>
+
+
+<p>Now we are at the REST endpoint we need. Inside this JSON response, you&rsquo;ll find all useful details that gets also be used by SDK internally (for example <code>stre  amingUri</code>, <code>nodes</code> and <code>vBucketServerMap</code>). The config gets parsed and stored. Before we move on, let&rsquo;s quickly discuss the strange <code>pools</code> part inside our REST walk:</p>
+
+<p>The concept of a resource pool to group buckets was designed for Couchbase Server, but is currently not implemented. Still, the REST API is implemented that way and therefore all SDKs support it. That said, while we could theoretically just go directly to <code>/pools/default/buckets</code> and skip the first few queries, the current behaviour is future proof so you won&rsquo;t have to change the bootstrap code once the server implements it.</p>
+
+<p>Back to our bootstrap phase. Now that we have a valid cluster config which contains all the nodes (and their hostnames or ip addresses), we can establish connections to them. Aside from establishing the data connections, we also need to instantiate a streaming connection to one of them. For simplicity reasons, we just establish the streaming connection to the node from the list where we got our initial configuration.</p>
+
+<p>This gets us to an important point to keep in mind: if you have lots of CouchbaseClient objects running on many nodes and they all get bootstrapped with the same list, they may end up connecting to the same node for the streaming connection and create a possible bottleneck. Therefore, to distribute the load a little better I recommend shuffling the array before it gets passed in to the CouchbaseClient object. When you only have a few CouchbaseClient objects connected to your cluster, that won&rsquo;t be a problem at all.</p>
+
+<p>The streaming connection URI is taken from the config we got previously, and normally looks like this:</p>
+
+<pre><code>streamingUri: "/pools/default/bucketsStreaming/default?bucket_uuid=88cae4a609eea500d8ad072fe71a7290"
+</code></pre>
+
+<p>If you point your browser to this address, you will also get the cluster topology updates streamed in real-time. Since the streaming connection needs to be established all the time and potentially blocks a thread, this is done in the background handled by different threads. We are using the NIO framework <a href="http://netty.io">Netty</a> for this task, which provides a very handy way of dealing with asynchronous operations. If you want to start digging into this part, keep in mind that all read operations are completely separate from write operations, so you need to deal with handlers that take care of what comes back from the server. Aside from some wiring needed for Netty, the business logic can be found in <code>com.couchbase.client.vbucket.BucketMonitor</code> and <code>com.couchbase.client.vbucket.BucketUpdateResponseHandler</code>. We also try to reestablish this streaming connection if the socket gets closed (for example if this node gets rebalanced out of the cluster).</p>
+
+<p>To actually shuffle data to the cluster nodes, we need to open various sockets to them. Note that there is absolutely no connection pooling needed inside the client, because we manage all sockets proactively. Aside from the special streaming connection to one of the severs (which is opened against port 8091), we need to open the following connections:</p>
+
+<ul>
+<li>Memcached Socket: Port 11210</li>
+<li>View Socket: Port 8092</li>
+</ul>
+
+
+<p>Note that port 11211 is not used inside the client SDKs, but used to connect generic memcached clients that are not cluster aware. This means that these generic clients do not get updated cluster topologies.</p>
+
+<p>So as a rule of thumb, if you have a 10 node cluster running, one CouchbaseClient object open about 21 (2*10 + 1) client sockets. These are directly managed, so if a node gets removed or added the numbers will change accordingly.</p>
+
+<p>Now that all sockets have been opened, we are ready to perform regular cluster operations. As you can see, there is a lot of overhead involved when the CouchbaseClient object gets bootstrapped. Because of this fact, we strongly discourage you from either creating a new object on every request or running a lot of CouchbaseClient objects in one application server. This only adds unnecessary overhead and load on the application server and adds on the total sockets opened against the cluster (resulting in a possible performance problem).</p>
+
+<p>As a point of reference, with regular INFO level logging enabled this is how connecting and disconnecting to a 1-node cluster (Couchbase bucket) should look like:</p>
+
+<pre><code>Apr 17, 2013 3:14:49 PM com.couchbase.client.CouchbaseProperties setPropertyFile
+INFO: Could not load properties file "cbclient.properties" because: File not found with system classloader.
+2013-04-17 15:14:49.656 INFO com.couchbase.client.CouchbaseConnection:  Added {QA sa=/127.0.0.1:11210, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
+2013-04-17 15:14:49.673 INFO com.couchbase.client.CouchbaseConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@2adb1d4
+2013-04-17 15:14:49.718 INFO com.couchbase.client.ViewConnection:  Added localhost to connect queue
+2013-04-17 15:14:49.720 INFO com.couchbase.client.CouchbaseClient:  viewmode property isn't defined. Setting viewmode to production mode
+2013-04-17 15:14:49.856 INFO com.couchbase.client.CouchbaseConnection:  Shut down Couchbase client
+2013-04-17 15:14:49.861 INFO com.couchbase.client.ViewConnection:  Node localhost has no ops in the queue
+2013-04-17 15:14:49.861 INFO com.couchbase.client.ViewNode:  I/O reactor terminated for localhost
+</code></pre>
+
+<p>If you are connecting to a Couchbase Server 1.8 or against a Memcache-Bucket you won&rsquo;t see View connections getting established:</p>
+
+<pre><code>INFO: Could not load properties file "cbclient.properties" because: File not found with system classloader.
+2013-04-17 15:16:44.295 INFO com.couchbase.client.CouchbaseConnection:  Added {QA sa=/192.168.56.101:11210, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
+2013-04-17 15:16:44.297 INFO com.couchbase.client.CouchbaseConnection:  Added {QA sa=/192.168.56.102:11210, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
+2013-04-17 15:16:44.298 INFO com.couchbase.client.CouchbaseConnection:  Added {QA sa=/192.168.56.103:11210, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
+2013-04-17 15:16:44.298 INFO com.couchbase.client.CouchbaseConnection:  Added {QA sa=/192.168.56.104:11210, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
+2013-04-17 15:16:44.306 INFO com.couchbase.client.CouchbaseConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@38b5dac4
+2013-04-17 15:16:44.313 INFO com.couchbase.client.CouchbaseClient:  viewmode property isn't defined. Setting viewmode to production mode
+2013-04-17 15:16:44.332 INFO com.couchbase.client.CouchbaseConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@69945ce
+2013-04-17 15:16:44.333 INFO com.couchbase.client.CouchbaseConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@6766afb3
+2013-04-17 15:16:44.334 INFO com.couchbase.client.CouchbaseConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@2b2d96f2
+2013-04-17 15:16:44.368 INFO net.spy.memcached.auth.AuthThread:  Authenticated to 192.168.56.103/192.168.56.103:11210
+2013-04-17 15:16:44.368 INFO net.spy.memcached.auth.AuthThread:  Authenticated to 192.168.56.102/192.168.56.102:11210
+2013-04-17 15:16:44.369 INFO net.spy.memcached.auth.AuthThread:  Authenticated to 192.168.56.101/192.168.56.101:11210
+2013-04-17 15:16:44.369 INFO net.spy.memcached.auth.AuthThread:  Authenticated to 192.168.56.104/192.168.56.104:11210
+2013-04-17 15:16:44.490 INFO com.couchbase.client.CouchbaseConnection:  Shut down Couchbase client
+</code></pre>
+
+<h2>Phase 2: Operations</h2>
+
+<p>When the SDK is bootstrapped, it enables your application to run operations against the attached cluster. For the purpose of this blog post, we need to distinguish between operations that get executed against a stable cluster and operations on a cluster that is currently experiencing some form of topology change (be it planned because of adding nodes or unplanned because of a node failure). Let&rsquo;s tackle the regular operations first.</p>
+
+<h3>Operations against a stable cluster</h3>
+
+<p>While not directly visible in the first place, inside the SDK we need to distinguish between memcached operations and View operations. All operations that have a unique key in their method signature can be treaded as memcached operations. All of them eventually end up getting funneled through spy. View operations on the other hand are implemented completely inside the SDK itself.</p>
+
+<p>Both View and memcached operations are asynchronous. Inside spy, there is one thread (call the I/O thread) dedicated to deal with IO operations. Note that in high-traffic environments, its not unusual that this thread is always active. It uses the non-blocking Java NIO mechanisms to deal with traffic, and loops around &ldquo;selectors&rdquo; that get notified when data can either be written or read. If you profile your application you&rsquo;ll see that this thread spends most of its time waiting on a <code>select</code> method, it means that it is idling there waiting to be notified for new traffic. The concepts used inside spy to deal with this are common Java NIO knowledge, so you may want to look into the <a href="https://www.ibm.com/developerworks/java/tutorials/j-nio/">NIO internals</a> first before digging into that code path. Good starting points are the <code>net.spy.memcached.MemcachedConnection</code> and <code>net.spy.memcached.protocol.TCPMemcachedNodeImpl</code> classes. Note that inside the SDK, we override the <code>MemcachedConnection</code> to hook in our own reconfiguration logic. This class can be found inside the SDK at <code>com.couchbase.client.CouchbaseConnection</code> and for memcached-type buckets in <code>com.couchbase.client.CouchbaseMemcachedConnection</code>.</p>
+
+<p>So if a memcached operations (like <code>get()</code>) gets issued, it gets passed down until it reaches the IO thread. The IO thread will then put it on a write queue towards its target node. It gets written eventually and then the IO thread adds information to a read queue so the responses can be mapped accordingly. This approach is based on futures, so when the result actually arrives, the Future is marked as completed, the result gets parsed and attached as Object.</p>
+
+<p>The SDK only uses the memcached binary protocol, although spy would also support ASCII. The binary format is much more efficient and some of the advanced operations are only implemented there.</p>
+
+<p>You may wonder how the SDK knows where to send the operation? Since we already have the up-to-date cluster map, we can hash the key and then based on the node list and vBucketMap determine which node to access. The vBucketMap not only contains the information for the master node of the array, but also the information for zero to three replica nodes. Look at this (shortened) example:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">vBucketServerMap</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'><span class="nx">hashAlgorithm</span><span class="o">:</span> <span class="s2">&quot;CRC&quot;</span><span class="p">,</span>
+</span><span class='line'><span class="nx">numReplicas</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+</span><span class='line'><span class="nx">serverList</span><span class="o">:</span> <span class="p">[</span>
+</span><span class='line'>  <span class="s2">&quot;192.168.56.101:11210&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s2">&quot;192.168.56.102:11210&quot;</span>
+</span><span class='line'><span class="p">],</span>
+</span><span class='line'><span class="nx">vBucketMap</span><span class="o">:</span> <span class="p">[</span>
+</span><span class='line'><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
+</span><span class='line'><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
+</span><span class='line'><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
+</span><span class='line'><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+</span><span class='line'><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+</span><span class='line'><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+</span><span class='line'><span class="c1">//.....</span>
+</span><span class='line'><span class="p">},</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The <code>serverList</code> contains our nodes, and the <code>vBucketMap</code> has pointers to the <code>serverList</code> array. We have 1024 vBuckets, so only some of them are shown here. You can see from looking at it that all keys that has into the first vBucket have its master node at index 0 (so the <code>.101</code> node) and its replica at index 1 (so the <code>.102</code> node). Once the cluster map changes and the vBuckets move around, we just need to update our config and know all the time where to point our operations towards.</p>
+
+<p>View operations are handled differently. Since views can&rsquo;t be sent to a specific node (because we don&rsquo;t have a way to hash a key or something), we round-robin between the connected nodes. The operation gets assigned to a <a href="http://www.couchbase.com/autodocs/couchbase-java-client-1.1.5/com/couchbase/client/ViewNode.html">com.couchbase.client.ViewNode</a> once it has free connections and then executed. The result is also handled through futures. To implement this functionality, the SDK uses the third party Apache HTTP Commons (NIO) library.</p>
+
+<p>The whole View API hides behind port 8092 on every node and is very similar to <a href="http://couchdb.apache.org/">CouchDB</a>. It also contains a RESTful API, but the structure is a little bit different. For example, you can reach a design document at <code>/&lt;bucketname&gt;/_design/&lt;designname&gt;</code>. It contains the View definitions in JSON:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="nx">language</span><span class="o">:</span> <span class="s2">&quot;javascript&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">views</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">all</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>          <span class="nx">map</span><span class="o">:</span> <span class="s2">&quot;function (doc) { if(doc.type == &quot;</span><span class="nx">city</span><span class="s2">&quot;) {emit([doc.continent, doc.country, doc.name], 1)}}&quot;</span><span class="p">,</span>
+</span><span class='line'>          <span class="nx">reduce</span><span class="o">:</span> <span class="s2">&quot;_sum&quot;</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You can then reach down one level further like <code>/&lt;bucketname&gt;/_design/&lt;designname&gt;/_view/&lt;viewname&gt;</code> to actually query it:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="p">{</span><span class="s2">&quot;total_rows&quot;</span><span class="o">:</span><span class="mi">9</span><span class="p">,</span><span class="s2">&quot;rows&quot;</span><span class="o">:</span><span class="p">[</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:shanghai&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;asia&quot;</span><span class="p">,</span><span class="s2">&quot;china&quot;</span><span class="p">,</span><span class="s2">&quot;shanghai&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:tokyo&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;asia&quot;</span><span class="p">,</span><span class="s2">&quot;japan&quot;</span><span class="p">,</span><span class="s2">&quot;tokyo&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:moscow&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;asia&quot;</span><span class="p">,</span><span class="s2">&quot;russia&quot;</span><span class="p">,</span><span class="s2">&quot;moscow&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:vienna&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;europe&quot;</span><span class="p">,</span><span class="s2">&quot;austria&quot;</span><span class="p">,</span><span class="s2">&quot;vienna&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:paris&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;europe&quot;</span><span class="p">,</span><span class="s2">&quot;france&quot;</span><span class="p">,</span><span class="s2">&quot;paris&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:rome&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;europe&quot;</span><span class="p">,</span><span class="s2">&quot;italy&quot;</span><span class="p">,</span><span class="s2">&quot;rome&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:amsterdam&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;europe&quot;</span><span class="p">,</span><span class="s2">&quot;netherlands&quot;</span><span class="p">,</span><span class="s2">&quot;amsterdam&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:new_york&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;north_america&quot;</span><span class="p">,</span><span class="s2">&quot;usa&quot;</span><span class="p">,</span><span class="s2">&quot;new_york&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:san_francisco&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;north_america&quot;</span><span class="p">,</span><span class="s2">&quot;usa&quot;</span><span class="p">,</span><span class="s2">&quot;san_francisco&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">}</span>
+</span><span class='line'><span class="p">]</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Once the request is sent and a response gets back, it depends on the type of View request to determine on how the response gets parsed. It makes a difference, because reduced View queries look different than non-reduced. The SDK also includes support for spatial Views and they need to be handled differently as well.</p>
+
+<p>The whole View response parsing implementation can be found inside the <a href="http://www.couchbase.com/autodocs/couchbase-java-client-1.1.5/com/couchbase/client/protocol/views/package-frame.html">com.couchbase.client.protocol.views</a> namespace. You&rsquo;ll find abstract classes and interfaces like <code>ViewResponse</code> in there, and then their special implementations like <code>ViewResponseNoDocs</code>, <code>ViewResponseWithDocs</code> or <code>ViewResponseReduced</code>. It also makes a different if <code>setIncludeDocs()</code> is used on the Query object, because the SDK also needs to load the full documents using the memcached protocol behind the scenes. This is also done while parsing the Views.</p>
+
+<p>Now that you have a basic understanding on how the SDK distributes its operations under stable conditions, we need to cover an important topic: how the SDK deals with cluster topology changes.</p>
+
+<h3>Operations against a rebalancing cluster</h3>
+
+<p>Note that there is a separate blog post upcoming dealing with all the scenarios that may come up when something goes wrong on the SDK. Since rebalancing and failover are crucial parts of the SDK, this post deals more with the general process on how this is handled.</p>
+
+<p>As mentioned earlier, the SDK receives topology updates through the streaming connection. Leaving the special case aside where this node actually gets removed or fails, all updates will stream in near real-time (in a eventually consistent architecture, it may take some time until the cluster updates get populated to that node). The chunks that come in over the stream look exactly like the ones we&rsquo;ve seen when reading the initial configuration. After those chunks have been parsed, we need to check if the changes really affect the SDK (since there are many more parameters than the SDK needs, it won&rsquo;t make sense to listen to all of them). All changes that affect the topology and/or vBucket map are considered as important. If nodes get added or removed (be it either through failure or planned), we need to open or close the sockets. This process is called &ldquo;reconfiguration&rdquo;.</p>
+
+<p>Once such a reconfiguration is triggered, lots of actions need to happen in various places. Spymemcached needs to handle its sockets, View nodes need to be managed and new configuration needs to be updated. The SDK makes sure that only one reconfiguration can happen at the same time through locks so we don&rsquo;t have any race conditions going on.</p>
+
+<p>The Netty-based <code>BucketUpdateResponseHandler</code> triggers the <code>CouchbaseClient#reconfigure</code> method, which then starts to dispatch everything. Depending on the bucket type used (i.e. memcached type buckets don&rsquo;t have Views and therefore no ViewNodes), configs are updated and sockets closed. Once the reconfiguration is done, it can receive new ones. During planned changes, everything should be pretty much controlled and no operations should fail. If a node is actually down and cannot be reached, those operations will be cancelled. Reconfiguration is tricky because the topology changes while operations are flowing through the system.</p>
+
+<p>Finally, let&rsquo;s cover some differences between Couchbase and Memcache type buckets. All the information hat you&rsquo;ve been reading previously only applies to Couchbase buckets. Memcache buckets are pretty basic and do not have the concept of vBuckets. Since you don&rsquo;t have vBuckets, all that the Client has to do is to manage the nodes and their corresponding sockets. Also, a different hashing algorithm is used (mostly Ketama) to determine the target node for each key. Also, memcache buckets don&rsquo;t have views, so you can&rsquo;t use the View API and it doesn&rsquo;t make much sense to keep View sockets around. So to clarify the previous statement, if you are running against a memcache bucket, for a 10 node cluster you&rsquo;ll only have 11 open connections.</p>
+
+<h2>Phase 3: Shutdown</h2>
+
+<p>Once the <code>CouchbaseClient#shutdown()</code> method is called, no more operations are allowed to be added onto the <code>CouchbaseConnection</code>. Until the timeout is reached, the client wants to make sure that all operations went through accordingly. All sockets for both memcached and View connections are shut down once there are no more operations in the queue (or they get dropped). Note that that the <code>shutdown</code> methods on those sockets are also used when a node gets removed from the cluster during normal operations, so it&rsquo;s basically the same, but just for all attached nodes at the same time.</p>
+
+<h2>Summary</h2>
+
+<p>After reading this blog post, you should have a much more clear picture on how the client SDK works and why it is designed the way it is. We have lots of enhancements planned for future releases, mostly enhancing the direct API experience. Note that this blog post didn&rsquo;t cover how errors are handled inside the SDK; this will be published in a separate blog post because there is also lots of information to cover.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/Never-await-Uninterruptibly-on-Netty-Channels">Never awaitUninterruptibly() on Netty Channels</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-05T13:49:48+01:00" pubdate data-updated="true">Mar 5<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>TL:DR; When acquiring <a href="http://netty.io/3.6/api/org/jboss/netty/channel/Channel.html">Channels</a> in <a href="http://netty.io">Netty</a>, always use a <a href="http://netty.io/3.6/api/org/jboss/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> and never <a href="http://docs.jboss.org/netty/3.2/api/org/jboss/netty/channel/ChannelFuture.html#awaitUninterruptibly(">awaitUninterruptibly()</a>). Curious why? Read on.</p>
+
+<p>In the <a href="http://www.couchbase.com/develop/java/current">Java SDK</a> for <a href="http://www.couchbase.com/">Couchbase</a>, we use Netty to establish and maintain a streaming connection to one of the cluster nodes in order to get notified when topology changes happen. This streaming connection needs to be established during the bootstrap process of the client and we need to block until the connection is established (actually we don&rsquo;t need to, but the current implementation works that way). The old implementation to acquire the Channel looked like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ClientBootstrap</span> <span class="n">bootstrap</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ClientBootstrap</span><span class="o">(</span><span class="n">factory</span><span class="o">);</span>
+</span><span class='line'><span class="n">bootstrap</span><span class="o">.</span><span class="na">setPipelineFactory</span><span class="o">(</span><span class="k">new</span> <span class="n">BucketMonitorPipelineFactory</span><span class="o">());</span>
+</span><span class='line'><span class="n">ChannelFuture</span> <span class="n">future</span> <span class="o">=</span> <span class="n">bootstrap</span><span class="o">.</span><span class="na">connect</span><span class="o">(</span><span class="k">new</span> <span class="n">InetSocketAddress</span><span class="o">(</span><span class="n">host</span><span class="o">,</span> <span class="n">port</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">channel</span> <span class="o">=</span> <span class="n">future</span><span class="o">.</span><span class="na">awaitUninterruptibly</span><span class="o">().</span><span class="na">getChannel</span><span class="o">();</span>
+</span><span class='line'><span class="k">if</span> <span class="o">(!</span><span class="n">future</span><span class="o">.</span><span class="na">isSuccess</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">bootstrap</span><span class="o">.</span><span class="na">releaseExternalResources</span><span class="o">();</span>
+</span><span class='line'>  <span class="k">throw</span> <span class="k">new</span> <span class="nf">ConnectionException</span><span class="o">(</span><span class="s">&quot;Something bad happened...&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This works great, but there is a problem associated that is not obvious in the first place. As long as you use this code only in a client side context, Netty will not complain and happily work with your code. When people started to use our client library inside a Netty based server framework (for example <a href="http://www.playframework.com/">Play</a>), Netty complained like this:</p>
+
+<pre><code>Unexpected exception[IllegalStateException: await*() in I/O thread causes a dead lock or sudden performance drop. Use addListener() instead or call await*() from a different thread.]
+</code></pre>
+
+<p>The environment where this happens is clearly defined: we are bootstrapping a Netty client inside the I/O thread of a Netty server, so we basically have two Netty environments running and one is complaining about the other. Once you are aware of this situation, it is more or less easy to fix:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">bootstrap</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ClientBootstrap</span><span class="o">(</span><span class="n">factory</span><span class="o">);</span>
+</span><span class='line'><span class="n">bootstrap</span><span class="o">.</span><span class="na">setPipelineFactory</span><span class="o">(</span><span class="k">new</span> <span class="n">BucketMonitorPipelineFactory</span><span class="o">());</span>
+</span><span class='line'><span class="n">ChannelFuture</span> <span class="n">future</span> <span class="o">=</span>  <span class="n">bootstrap</span><span class="o">.</span><span class="na">connect</span><span class="o">(</span><span class="k">new</span> <span class="n">InetSocketAddress</span><span class="o">(</span><span class="n">host</span><span class="o">,</span> <span class="n">port</span><span class="o">));</span>
+</span><span class='line'><span class="n">channelFuture</span><span class="o">.</span><span class="na">addListener</span><span class="o">(</span><span class="k">new</span> <span class="n">ChannelFutureListener</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">operationComplete</span><span class="o">(</span><span class="n">ChannelFuture</span> <span class="n">cf</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span><span class="o">(</span><span class="n">cf</span><span class="o">.</span><span class="na">isSuccess</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">channel</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="na">getChannel</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">bootstrap</span><span class="o">.</span><span class="na">releaseExternalResources</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">throw</span> <span class="k">new</span> <span class="nf">ConnectionException</span><span class="o">(</span><span class="s">&quot;Something bad happened...&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now, instead of waiting on the caller thread, we move the waiting part to a separate thread managed by the Netty execution context. There&rsquo;s only one problem left: we still need to block, because the code down the stack depends on a established Channel to work with. To solve this issue, we can use a <a href="http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/CountDownLatch.html">CountDownLatch</a> like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">final</span> <span class="n">CountDownLatch</span> <span class="n">channelLatch</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CountDownLatch</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'><span class="n">channelFuture</span><span class="o">.</span><span class="na">addListener</span><span class="o">(</span><span class="k">new</span> <span class="n">ChannelFutureListener</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">operationComplete</span><span class="o">(</span><span class="n">ChannelFuture</span> <span class="n">cf</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span><span class="o">(</span><span class="n">cf</span><span class="o">.</span><span class="na">isSuccess</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">channel</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="na">getChannel</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">channelLatch</span><span class="o">.</span><span class="na">countDown</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">bootstrap</span><span class="o">.</span><span class="na">releaseExternalResources</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">throw</span> <span class="k">new</span> <span class="nf">ConnectionException</span><span class="o">(</span><span class="s">&quot;Something bad happened...&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">channelLatch</span><span class="o">.</span><span class="na">await</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span> <span class="k">catch</span><span class="o">(</span><span class="n">InterruptedException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">throw</span> <span class="k">new</span> <span class="nf">ConnectionException</span><span class="o">(</span><span class="s">&quot;Interrupted while waiting for streaming &quot;</span>
+</span><span class='line'>    <span class="o">+</span> <span class="s">&quot;connection to arrive.&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In the end we still block on the caller thread, but we are compliant with Netty. The main takeaway for me is that you should never block on acquiring Channels in Netty, just because of the fact that your client side code may be used in a server side context as well. This is especially true for library developers like me.</p>
+</div>
+  
+  
+
+
+    </article>
+  
   <div class="pagination">
+    
+      <a class="prev" href="/blog/page/2/">&larr; Older</a>
     
     <a href="/blog/archives">Blog Archives</a>
     

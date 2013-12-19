@@ -4,7 +4,7 @@
   <title><![CDATA[Nitschinger.at]]></title>
   <link href="http://nitschinger.at/atom.xml" rel="self"/>
   <link href="http://nitschinger.at/"/>
-  <updated>2013-12-19T09:38:37+01:00</updated>
+  <updated>2013-12-19T10:22:50+01:00</updated>
   <id>http://nitschinger.at/</id>
   <author>
     <name><![CDATA[Michael Nitschinger]]></name>
@@ -2737,6 +2737,1613 @@ SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further detail
 <p>Once you know the abstraction in spymemcached and how it works, switching logging implementations is easy and straightforward. If you work with one of the Couchbase people to report errors, please try to include output with DEBUG turned on, because this includes lots of useful information that can be used to determine the failure sources.</p>
 
 <p>With the SLF4J facade added in the next spy release (2.9), you will be able to plug every large logging framework out there into the SDK. Let us know if you see a use case not covered with these mechanisms or if you have other comments on this.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Couchbase Java SDK Internals]]></title>
+    <link href="http://nitschinger.at/Couchbase-Java-SDK-Internals"/>
+    <updated>2013-04-17T14:49:48+02:00</updated>
+    <id>http://nitschinger.at/Couchbase-Java-SDK-Internals</id>
+    <content type="html"><![CDATA[<h2>Motivation</h2>
+
+<p>This blog post is intended to be a very detailed and informative article for those who already have used the Couchbase Java SDK and want to know how the internals work. This is not a introduction on how to use the Java SDK and we&rsquo;ll cover some fairly advanced topics on the way.</p>
+
+<p>Normally, when talking about the SDK we mean everything that is needed to get you going (Client library, documentation, release notes,&hellip;). In this article though, the SDK refers to the Client library (code) unless stated otherwise.</p>
+
+<p>As always, if you have feedback please let me/us know!</p>
+
+<h2>Introduction</h2>
+
+<p>First and foremost, it is important to understand that the SDK wraps and extends the functionality of the <a href="https://github.com/couchbase/spymemcached">spymemcached</a> (called &ldquo;spy&rdquo;) memcached library. One of the protocols used internally is the memcached protocol, and a lot of functionality can be reused. On the other hand, once you start to peel off the first layers of the SDK you will notice that some components are somewhat more complex because of the fact that spy provides more features than the SDK needs in the first place. The other part is to remember that a lot of the components are interwoven, so you always need to get the dependency right. Most of the time, we release a new spy version at the same date with a new SDK, because new stuff has been added or fixed.</p>
+
+<p>So, aside from reusing the functionality provided by spy, the SDK mainly adds two blocks of functionality: automatic cluster topology management and since 1.1 (and 2.0 server) support for Views. Aside from that it also provides administrative facilities like bucket and design document management.</p>
+
+<p>To understand how the client operates, we&rsquo;ll dissect the whole process in different life cycle phases of the client. After we go through all three phases (bootstrap, operation and shutdown) you should have a clear picture of whats going on under the hood. Note that there is a separate blog post in the making about error handling, so we won&rsquo;t cover that here in greater detail (which will be published a few weeks later on the same blog here).</p>
+
+<h2>Phase 1: Bootstrap</h2>
+
+<p>Before we can actually start serving operations like <code>get()</code> and <code>set()</code>, we need to bootstrap the <code>CouchbaseClient</code> object. The important part that we need to accomplish here is to initially get a cluster configuration (which contains the nodes and vBucket map), but also to establish a streaming connection to receive cluster updates in (near) real-time.</p>
+
+<p>We take the list of nodes passing during bootstrap and iterate over it. The first node in the list that can be contacted on port 8091 is used to walk the RESTful interface on the server. If it is not available, the next one will be tried. This means that going from the provided <code>http://host:port/pools</code> URI we eventually follow the links to the bucket entity. All this happens inside a <code>ConfigurationProvider</code>, which is in this case the <code>com.couchbase.client.vbucket.ConfigurationProviderHTTP</code>. If you want to poke around on the internals, look for <code>getBucketConfiguration</code> and <code>readPools</code> methods.</p>
+
+<p>A (successful) walk can be illustrated like this:</p>
+
+<ul>
+<li>GET /pools</li>
+<li>look for the &ldquo;default&rdquo; pools</li>
+<li>GET /pools/default</li>
+<li>look for the &ldquo;buckets&rdquo; hash which contains the bucket list</li>
+<li>GET /pools/default/buckets</li>
+<li>parse the list of buckets and extract the one provided by the application</li>
+<li>GET /pools/default/buckets/<bucketname></li>
+</ul>
+
+
+<p>Now we are at the REST endpoint we need. Inside this JSON response, you&rsquo;ll find all useful details that gets also be used by SDK internally (for example <code>stre  amingUri</code>, <code>nodes</code> and <code>vBucketServerMap</code>). The config gets parsed and stored. Before we move on, let&rsquo;s quickly discuss the strange <code>pools</code> part inside our REST walk:</p>
+
+<p>The concept of a resource pool to group buckets was designed for Couchbase Server, but is currently not implemented. Still, the REST API is implemented that way and therefore all SDKs support it. That said, while we could theoretically just go directly to <code>/pools/default/buckets</code> and skip the first few queries, the current behaviour is future proof so you won&rsquo;t have to change the bootstrap code once the server implements it.</p>
+
+<p>Back to our bootstrap phase. Now that we have a valid cluster config which contains all the nodes (and their hostnames or ip addresses), we can establish connections to them. Aside from establishing the data connections, we also need to instantiate a streaming connection to one of them. For simplicity reasons, we just establish the streaming connection to the node from the list where we got our initial configuration.</p>
+
+<p>This gets us to an important point to keep in mind: if you have lots of CouchbaseClient objects running on many nodes and they all get bootstrapped with the same list, they may end up connecting to the same node for the streaming connection and create a possible bottleneck. Therefore, to distribute the load a little better I recommend shuffling the array before it gets passed in to the CouchbaseClient object. When you only have a few CouchbaseClient objects connected to your cluster, that won&rsquo;t be a problem at all.</p>
+
+<p>The streaming connection URI is taken from the config we got previously, and normally looks like this:</p>
+
+<pre><code>streamingUri: "/pools/default/bucketsStreaming/default?bucket_uuid=88cae4a609eea500d8ad072fe71a7290"
+</code></pre>
+
+<p>If you point your browser to this address, you will also get the cluster topology updates streamed in real-time. Since the streaming connection needs to be established all the time and potentially blocks a thread, this is done in the background handled by different threads. We are using the NIO framework <a href="http://netty.io">Netty</a> for this task, which provides a very handy way of dealing with asynchronous operations. If you want to start digging into this part, keep in mind that all read operations are completely separate from write operations, so you need to deal with handlers that take care of what comes back from the server. Aside from some wiring needed for Netty, the business logic can be found in <code>com.couchbase.client.vbucket.BucketMonitor</code> and <code>com.couchbase.client.vbucket.BucketUpdateResponseHandler</code>. We also try to reestablish this streaming connection if the socket gets closed (for example if this node gets rebalanced out of the cluster).</p>
+
+<p>To actually shuffle data to the cluster nodes, we need to open various sockets to them. Note that there is absolutely no connection pooling needed inside the client, because we manage all sockets proactively. Aside from the special streaming connection to one of the severs (which is opened against port 8091), we need to open the following connections:</p>
+
+<ul>
+<li>Memcached Socket: Port 11210</li>
+<li>View Socket: Port 8092</li>
+</ul>
+
+
+<p>Note that port 11211 is not used inside the client SDKs, but used to connect generic memcached clients that are not cluster aware. This means that these generic clients do not get updated cluster topologies.</p>
+
+<p>So as a rule of thumb, if you have a 10 node cluster running, one CouchbaseClient object open about 21 (2*10 + 1) client sockets. These are directly managed, so if a node gets removed or added the numbers will change accordingly.</p>
+
+<p>Now that all sockets have been opened, we are ready to perform regular cluster operations. As you can see, there is a lot of overhead involved when the CouchbaseClient object gets bootstrapped. Because of this fact, we strongly discourage you from either creating a new object on every request or running a lot of CouchbaseClient objects in one application server. This only adds unnecessary overhead and load on the application server and adds on the total sockets opened against the cluster (resulting in a possible performance problem).</p>
+
+<p>As a point of reference, with regular INFO level logging enabled this is how connecting and disconnecting to a 1-node cluster (Couchbase bucket) should look like:</p>
+
+<pre><code>Apr 17, 2013 3:14:49 PM com.couchbase.client.CouchbaseProperties setPropertyFile
+INFO: Could not load properties file "cbclient.properties" because: File not found with system classloader.
+2013-04-17 15:14:49.656 INFO com.couchbase.client.CouchbaseConnection:  Added {QA sa=/127.0.0.1:11210, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
+2013-04-17 15:14:49.673 INFO com.couchbase.client.CouchbaseConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@2adb1d4
+2013-04-17 15:14:49.718 INFO com.couchbase.client.ViewConnection:  Added localhost to connect queue
+2013-04-17 15:14:49.720 INFO com.couchbase.client.CouchbaseClient:  viewmode property isn't defined. Setting viewmode to production mode
+2013-04-17 15:14:49.856 INFO com.couchbase.client.CouchbaseConnection:  Shut down Couchbase client
+2013-04-17 15:14:49.861 INFO com.couchbase.client.ViewConnection:  Node localhost has no ops in the queue
+2013-04-17 15:14:49.861 INFO com.couchbase.client.ViewNode:  I/O reactor terminated for localhost
+</code></pre>
+
+<p>If you are connecting to a Couchbase Server 1.8 or against a Memcache-Bucket you won&rsquo;t see View connections getting established:</p>
+
+<pre><code>INFO: Could not load properties file "cbclient.properties" because: File not found with system classloader.
+2013-04-17 15:16:44.295 INFO com.couchbase.client.CouchbaseConnection:  Added {QA sa=/192.168.56.101:11210, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
+2013-04-17 15:16:44.297 INFO com.couchbase.client.CouchbaseConnection:  Added {QA sa=/192.168.56.102:11210, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
+2013-04-17 15:16:44.298 INFO com.couchbase.client.CouchbaseConnection:  Added {QA sa=/192.168.56.103:11210, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
+2013-04-17 15:16:44.298 INFO com.couchbase.client.CouchbaseConnection:  Added {QA sa=/192.168.56.104:11210, #Rops=0, #Wops=0, #iq=0, topRop=null, topWop=null, toWrite=0, interested=0} to connect queue
+2013-04-17 15:16:44.306 INFO com.couchbase.client.CouchbaseConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@38b5dac4
+2013-04-17 15:16:44.313 INFO com.couchbase.client.CouchbaseClient:  viewmode property isn't defined. Setting viewmode to production mode
+2013-04-17 15:16:44.332 INFO com.couchbase.client.CouchbaseConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@69945ce
+2013-04-17 15:16:44.333 INFO com.couchbase.client.CouchbaseConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@6766afb3
+2013-04-17 15:16:44.334 INFO com.couchbase.client.CouchbaseConnection:  Connection state changed for sun.nio.ch.SelectionKeyImpl@2b2d96f2
+2013-04-17 15:16:44.368 INFO net.spy.memcached.auth.AuthThread:  Authenticated to 192.168.56.103/192.168.56.103:11210
+2013-04-17 15:16:44.368 INFO net.spy.memcached.auth.AuthThread:  Authenticated to 192.168.56.102/192.168.56.102:11210
+2013-04-17 15:16:44.369 INFO net.spy.memcached.auth.AuthThread:  Authenticated to 192.168.56.101/192.168.56.101:11210
+2013-04-17 15:16:44.369 INFO net.spy.memcached.auth.AuthThread:  Authenticated to 192.168.56.104/192.168.56.104:11210
+2013-04-17 15:16:44.490 INFO com.couchbase.client.CouchbaseConnection:  Shut down Couchbase client
+</code></pre>
+
+<h2>Phase 2: Operations</h2>
+
+<p>When the SDK is bootstrapped, it enables your application to run operations against the attached cluster. For the purpose of this blog post, we need to distinguish between operations that get executed against a stable cluster and operations on a cluster that is currently experiencing some form of topology change (be it planned because of adding nodes or unplanned because of a node failure). Let&rsquo;s tackle the regular operations first.</p>
+
+<h3>Operations against a stable cluster</h3>
+
+<p>While not directly visible in the first place, inside the SDK we need to distinguish between memcached operations and View operations. All operations that have a unique key in their method signature can be treaded as memcached operations. All of them eventually end up getting funneled through spy. View operations on the other hand are implemented completely inside the SDK itself.</p>
+
+<p>Both View and memcached operations are asynchronous. Inside spy, there is one thread (call the I/O thread) dedicated to deal with IO operations. Note that in high-traffic environments, its not unusual that this thread is always active. It uses the non-blocking Java NIO mechanisms to deal with traffic, and loops around &ldquo;selectors&rdquo; that get notified when data can either be written or read. If you profile your application you&rsquo;ll see that this thread spends most of its time waiting on a <code>select</code> method, it means that it is idling there waiting to be notified for new traffic. The concepts used inside spy to deal with this are common Java NIO knowledge, so you may want to look into the <a href="https://www.ibm.com/developerworks/java/tutorials/j-nio/">NIO internals</a> first before digging into that code path. Good starting points are the <code>net.spy.memcached.MemcachedConnection</code> and <code>net.spy.memcached.protocol.TCPMemcachedNodeImpl</code> classes. Note that inside the SDK, we override the <code>MemcachedConnection</code> to hook in our own reconfiguration logic. This class can be found inside the SDK at <code>com.couchbase.client.CouchbaseConnection</code> and for memcached-type buckets in <code>com.couchbase.client.CouchbaseMemcachedConnection</code>.</p>
+
+<p>So if a memcached operations (like <code>get()</code>) gets issued, it gets passed down until it reaches the IO thread. The IO thread will then put it on a write queue towards its target node. It gets written eventually and then the IO thread adds information to a read queue so the responses can be mapped accordingly. This approach is based on futures, so when the result actually arrives, the Future is marked as completed, the result gets parsed and attached as Object.</p>
+
+<p>The SDK only uses the memcached binary protocol, although spy would also support ASCII. The binary format is much more efficient and some of the advanced operations are only implemented there.</p>
+
+<p>You may wonder how the SDK knows where to send the operation? Since we already have the up-to-date cluster map, we can hash the key and then based on the node list and vBucketMap determine which node to access. The vBucketMap not only contains the information for the master node of the array, but also the information for zero to three replica nodes. Look at this (shortened) example:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="nx">vBucketServerMap</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'><span class="nx">hashAlgorithm</span><span class="o">:</span> <span class="s2">&quot;CRC&quot;</span><span class="p">,</span>
+</span><span class='line'><span class="nx">numReplicas</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+</span><span class='line'><span class="nx">serverList</span><span class="o">:</span> <span class="p">[</span>
+</span><span class='line'>  <span class="s2">&quot;192.168.56.101:11210&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s2">&quot;192.168.56.102:11210&quot;</span>
+</span><span class='line'><span class="p">],</span>
+</span><span class='line'><span class="nx">vBucketMap</span><span class="o">:</span> <span class="p">[</span>
+</span><span class='line'><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
+</span><span class='line'><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
+</span><span class='line'><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
+</span><span class='line'><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+</span><span class='line'><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+</span><span class='line'><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+</span><span class='line'><span class="c1">//.....</span>
+</span><span class='line'><span class="p">},</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The <code>serverList</code> contains our nodes, and the <code>vBucketMap</code> has pointers to the <code>serverList</code> array. We have 1024 vBuckets, so only some of them are shown here. You can see from looking at it that all keys that has into the first vBucket have its master node at index 0 (so the <code>.101</code> node) and its replica at index 1 (so the <code>.102</code> node). Once the cluster map changes and the vBuckets move around, we just need to update our config and know all the time where to point our operations towards.</p>
+
+<p>View operations are handled differently. Since views can&rsquo;t be sent to a specific node (because we don&rsquo;t have a way to hash a key or something), we round-robin between the connected nodes. The operation gets assigned to a <a href="http://www.couchbase.com/autodocs/couchbase-java-client-1.1.5/com/couchbase/client/ViewNode.html">com.couchbase.client.ViewNode</a> once it has free connections and then executed. The result is also handled through futures. To implement this functionality, the SDK uses the third party Apache HTTP Commons (NIO) library.</p>
+
+<p>The whole View API hides behind port 8092 on every node and is very similar to <a href="http://couchdb.apache.org/">CouchDB</a>. It also contains a RESTful API, but the structure is a little bit different. For example, you can reach a design document at <code>/&lt;bucketname&gt;/_design/&lt;designname&gt;</code>. It contains the View definitions in JSON:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="nx">language</span><span class="o">:</span> <span class="s2">&quot;javascript&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nx">views</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nx">all</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>          <span class="nx">map</span><span class="o">:</span> <span class="s2">&quot;function (doc) { if(doc.type == &quot;</span><span class="nx">city</span><span class="s2">&quot;) {emit([doc.continent, doc.country, doc.name], 1)}}&quot;</span><span class="p">,</span>
+</span><span class='line'>          <span class="nx">reduce</span><span class="o">:</span> <span class="s2">&quot;_sum&quot;</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You can then reach down one level further like <code>/&lt;bucketname&gt;/_design/&lt;designname&gt;/_view/&lt;viewname&gt;</code> to actually query it:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="p">{</span><span class="s2">&quot;total_rows&quot;</span><span class="o">:</span><span class="mi">9</span><span class="p">,</span><span class="s2">&quot;rows&quot;</span><span class="o">:</span><span class="p">[</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:shanghai&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;asia&quot;</span><span class="p">,</span><span class="s2">&quot;china&quot;</span><span class="p">,</span><span class="s2">&quot;shanghai&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:tokyo&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;asia&quot;</span><span class="p">,</span><span class="s2">&quot;japan&quot;</span><span class="p">,</span><span class="s2">&quot;tokyo&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:moscow&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;asia&quot;</span><span class="p">,</span><span class="s2">&quot;russia&quot;</span><span class="p">,</span><span class="s2">&quot;moscow&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:vienna&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;europe&quot;</span><span class="p">,</span><span class="s2">&quot;austria&quot;</span><span class="p">,</span><span class="s2">&quot;vienna&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:paris&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;europe&quot;</span><span class="p">,</span><span class="s2">&quot;france&quot;</span><span class="p">,</span><span class="s2">&quot;paris&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:rome&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;europe&quot;</span><span class="p">,</span><span class="s2">&quot;italy&quot;</span><span class="p">,</span><span class="s2">&quot;rome&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:amsterdam&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;europe&quot;</span><span class="p">,</span><span class="s2">&quot;netherlands&quot;</span><span class="p">,</span><span class="s2">&quot;amsterdam&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:new_york&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;north_america&quot;</span><span class="p">,</span><span class="s2">&quot;usa&quot;</span><span class="p">,</span><span class="s2">&quot;new_york&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="s2">&quot;city:san_francisco&quot;</span><span class="p">,</span><span class="s2">&quot;key&quot;</span><span class="o">:</span><span class="p">[</span><span class="s2">&quot;north_america&quot;</span><span class="p">,</span><span class="s2">&quot;usa&quot;</span><span class="p">,</span><span class="s2">&quot;san_francisco&quot;</span><span class="p">],</span><span class="s2">&quot;value&quot;</span><span class="o">:</span><span class="mi">1</span><span class="p">}</span>
+</span><span class='line'><span class="p">]</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Once the request is sent and a response gets back, it depends on the type of View request to determine on how the response gets parsed. It makes a difference, because reduced View queries look different than non-reduced. The SDK also includes support for spatial Views and they need to be handled differently as well.</p>
+
+<p>The whole View response parsing implementation can be found inside the <a href="http://www.couchbase.com/autodocs/couchbase-java-client-1.1.5/com/couchbase/client/protocol/views/package-frame.html">com.couchbase.client.protocol.views</a> namespace. You&rsquo;ll find abstract classes and interfaces like <code>ViewResponse</code> in there, and then their special implementations like <code>ViewResponseNoDocs</code>, <code>ViewResponseWithDocs</code> or <code>ViewResponseReduced</code>. It also makes a different if <code>setIncludeDocs()</code> is used on the Query object, because the SDK also needs to load the full documents using the memcached protocol behind the scenes. This is also done while parsing the Views.</p>
+
+<p>Now that you have a basic understanding on how the SDK distributes its operations under stable conditions, we need to cover an important topic: how the SDK deals with cluster topology changes.</p>
+
+<h3>Operations against a rebalancing cluster</h3>
+
+<p>Note that there is a separate blog post upcoming dealing with all the scenarios that may come up when something goes wrong on the SDK. Since rebalancing and failover are crucial parts of the SDK, this post deals more with the general process on how this is handled.</p>
+
+<p>As mentioned earlier, the SDK receives topology updates through the streaming connection. Leaving the special case aside where this node actually gets removed or fails, all updates will stream in near real-time (in a eventually consistent architecture, it may take some time until the cluster updates get populated to that node). The chunks that come in over the stream look exactly like the ones we&rsquo;ve seen when reading the initial configuration. After those chunks have been parsed, we need to check if the changes really affect the SDK (since there are many more parameters than the SDK needs, it won&rsquo;t make sense to listen to all of them). All changes that affect the topology and/or vBucket map are considered as important. If nodes get added or removed (be it either through failure or planned), we need to open or close the sockets. This process is called &ldquo;reconfiguration&rdquo;.</p>
+
+<p>Once such a reconfiguration is triggered, lots of actions need to happen in various places. Spymemcached needs to handle its sockets, View nodes need to be managed and new configuration needs to be updated. The SDK makes sure that only one reconfiguration can happen at the same time through locks so we don&rsquo;t have any race conditions going on.</p>
+
+<p>The Netty-based <code>BucketUpdateResponseHandler</code> triggers the <code>CouchbaseClient#reconfigure</code> method, which then starts to dispatch everything. Depending on the bucket type used (i.e. memcached type buckets don&rsquo;t have Views and therefore no ViewNodes), configs are updated and sockets closed. Once the reconfiguration is done, it can receive new ones. During planned changes, everything should be pretty much controlled and no operations should fail. If a node is actually down and cannot be reached, those operations will be cancelled. Reconfiguration is tricky because the topology changes while operations are flowing through the system.</p>
+
+<p>Finally, let&rsquo;s cover some differences between Couchbase and Memcache type buckets. All the information hat you&rsquo;ve been reading previously only applies to Couchbase buckets. Memcache buckets are pretty basic and do not have the concept of vBuckets. Since you don&rsquo;t have vBuckets, all that the Client has to do is to manage the nodes and their corresponding sockets. Also, a different hashing algorithm is used (mostly Ketama) to determine the target node for each key. Also, memcache buckets don&rsquo;t have views, so you can&rsquo;t use the View API and it doesn&rsquo;t make much sense to keep View sockets around. So to clarify the previous statement, if you are running against a memcache bucket, for a 10 node cluster you&rsquo;ll only have 11 open connections.</p>
+
+<h2>Phase 3: Shutdown</h2>
+
+<p>Once the <code>CouchbaseClient#shutdown()</code> method is called, no more operations are allowed to be added onto the <code>CouchbaseConnection</code>. Until the timeout is reached, the client wants to make sure that all operations went through accordingly. All sockets for both memcached and View connections are shut down once there are no more operations in the queue (or they get dropped). Note that that the <code>shutdown</code> methods on those sockets are also used when a node gets removed from the cluster during normal operations, so it&rsquo;s basically the same, but just for all attached nodes at the same time.</p>
+
+<h2>Summary</h2>
+
+<p>After reading this blog post, you should have a much more clear picture on how the client SDK works and why it is designed the way it is. We have lots of enhancements planned for future releases, mostly enhancing the direct API experience. Note that this blog post didn&rsquo;t cover how errors are handled inside the SDK; this will be published in a separate blog post because there is also lots of information to cover.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Never awaitUninterruptibly() on Netty Channels]]></title>
+    <link href="http://nitschinger.at/Never-await-Uninterruptibly-on-Netty-Channels"/>
+    <updated>2013-03-05T13:49:48+01:00</updated>
+    <id>http://nitschinger.at/Never-await-Uninterruptibly-on-Netty-Channels</id>
+    <content type="html"><![CDATA[<p>TL:DR; When acquiring <a href="http://netty.io/3.6/api/org/jboss/netty/channel/Channel.html">Channels</a> in <a href="http://netty.io">Netty</a>, always use a <a href="http://netty.io/3.6/api/org/jboss/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> and never <a href="http://docs.jboss.org/netty/3.2/api/org/jboss/netty/channel/ChannelFuture.html#awaitUninterruptibly(">awaitUninterruptibly()</a>). Curious why? Read on.</p>
+
+<p>In the <a href="http://www.couchbase.com/develop/java/current">Java SDK</a> for <a href="http://www.couchbase.com/">Couchbase</a>, we use Netty to establish and maintain a streaming connection to one of the cluster nodes in order to get notified when topology changes happen. This streaming connection needs to be established during the bootstrap process of the client and we need to block until the connection is established (actually we don&rsquo;t need to, but the current implementation works that way). The old implementation to acquire the Channel looked like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ClientBootstrap</span> <span class="n">bootstrap</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ClientBootstrap</span><span class="o">(</span><span class="n">factory</span><span class="o">);</span>
+</span><span class='line'><span class="n">bootstrap</span><span class="o">.</span><span class="na">setPipelineFactory</span><span class="o">(</span><span class="k">new</span> <span class="n">BucketMonitorPipelineFactory</span><span class="o">());</span>
+</span><span class='line'><span class="n">ChannelFuture</span> <span class="n">future</span> <span class="o">=</span> <span class="n">bootstrap</span><span class="o">.</span><span class="na">connect</span><span class="o">(</span><span class="k">new</span> <span class="n">InetSocketAddress</span><span class="o">(</span><span class="n">host</span><span class="o">,</span> <span class="n">port</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">channel</span> <span class="o">=</span> <span class="n">future</span><span class="o">.</span><span class="na">awaitUninterruptibly</span><span class="o">().</span><span class="na">getChannel</span><span class="o">();</span>
+</span><span class='line'><span class="k">if</span> <span class="o">(!</span><span class="n">future</span><span class="o">.</span><span class="na">isSuccess</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">bootstrap</span><span class="o">.</span><span class="na">releaseExternalResources</span><span class="o">();</span>
+</span><span class='line'>  <span class="k">throw</span> <span class="k">new</span> <span class="nf">ConnectionException</span><span class="o">(</span><span class="s">&quot;Something bad happened...&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This works great, but there is a problem associated that is not obvious in the first place. As long as you use this code only in a client side context, Netty will not complain and happily work with your code. When people started to use our client library inside a Netty based server framework (for example <a href="http://www.playframework.com/">Play</a>), Netty complained like this:</p>
+
+<pre><code>Unexpected exception[IllegalStateException: await*() in I/O thread causes a dead lock or sudden performance drop. Use addListener() instead or call await*() from a different thread.]
+</code></pre>
+
+<p>The environment where this happens is clearly defined: we are bootstrapping a Netty client inside the I/O thread of a Netty server, so we basically have two Netty environments running and one is complaining about the other. Once you are aware of this situation, it is more or less easy to fix:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">bootstrap</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ClientBootstrap</span><span class="o">(</span><span class="n">factory</span><span class="o">);</span>
+</span><span class='line'><span class="n">bootstrap</span><span class="o">.</span><span class="na">setPipelineFactory</span><span class="o">(</span><span class="k">new</span> <span class="n">BucketMonitorPipelineFactory</span><span class="o">());</span>
+</span><span class='line'><span class="n">ChannelFuture</span> <span class="n">future</span> <span class="o">=</span>  <span class="n">bootstrap</span><span class="o">.</span><span class="na">connect</span><span class="o">(</span><span class="k">new</span> <span class="n">InetSocketAddress</span><span class="o">(</span><span class="n">host</span><span class="o">,</span> <span class="n">port</span><span class="o">));</span>
+</span><span class='line'><span class="n">channelFuture</span><span class="o">.</span><span class="na">addListener</span><span class="o">(</span><span class="k">new</span> <span class="n">ChannelFutureListener</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">operationComplete</span><span class="o">(</span><span class="n">ChannelFuture</span> <span class="n">cf</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span><span class="o">(</span><span class="n">cf</span><span class="o">.</span><span class="na">isSuccess</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">channel</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="na">getChannel</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">bootstrap</span><span class="o">.</span><span class="na">releaseExternalResources</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">throw</span> <span class="k">new</span> <span class="nf">ConnectionException</span><span class="o">(</span><span class="s">&quot;Something bad happened...&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now, instead of waiting on the caller thread, we move the waiting part to a separate thread managed by the Netty execution context. There&rsquo;s only one problem left: we still need to block, because the code down the stack depends on a established Channel to work with. To solve this issue, we can use a <a href="http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/CountDownLatch.html">CountDownLatch</a> like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">final</span> <span class="n">CountDownLatch</span> <span class="n">channelLatch</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CountDownLatch</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'><span class="n">channelFuture</span><span class="o">.</span><span class="na">addListener</span><span class="o">(</span><span class="k">new</span> <span class="n">ChannelFutureListener</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">operationComplete</span><span class="o">(</span><span class="n">ChannelFuture</span> <span class="n">cf</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span><span class="o">(</span><span class="n">cf</span><span class="o">.</span><span class="na">isSuccess</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">channel</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="na">getChannel</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">channelLatch</span><span class="o">.</span><span class="na">countDown</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">bootstrap</span><span class="o">.</span><span class="na">releaseExternalResources</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">throw</span> <span class="k">new</span> <span class="nf">ConnectionException</span><span class="o">(</span><span class="s">&quot;Something bad happened...&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">channelLatch</span><span class="o">.</span><span class="na">await</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span> <span class="k">catch</span><span class="o">(</span><span class="n">InterruptedException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">throw</span> <span class="k">new</span> <span class="nf">ConnectionException</span><span class="o">(</span><span class="s">&quot;Interrupted while waiting for streaming &quot;</span>
+</span><span class='line'>    <span class="o">+</span> <span class="s">&quot;connection to arrive.&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In the end we still block on the caller thread, but we are compliant with Netty. The main takeaway for me is that you should never block on acquiring Channels in Netty, just because of the fact that your client side code may be used in a server side context as well. This is especially true for library developers like me.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[A Journey on Avoiding Nulls in PHP]]></title>
+    <link href="http://nitschinger.at/A-Journey-on-Avoiding-Nulls-in-PHP"/>
+    <updated>2013-02-19T13:49:48+01:00</updated>
+    <id>http://nitschinger.at/A-Journey-on-Avoiding-Nulls-in-PHP</id>
+    <content type="html"><![CDATA[<p>Let&rsquo;s face it: nulls are a hassle and lead to exceptions and inconsistent application state. <a href="http://en.wikipedia.org/wiki/Tony_Hoare">Tony Hoare</a>, the inventor of QuickSort, even calls it his <a href="http://qconlondon.com/london-2009/presentation/Null+References:+The+Billion+Dollar+Mistake">billion dollar mistake</a>.</p>
+
+<p>While every developer has kind of accepted their existence, they are suddenly there when we&rsquo;d desperately need them to not show up. How often did you write<code>if($obj === null)</code> in your PHP code? Can&rsquo;t there be a better, more elegant and fault-tolerant solution to the problem?</p>
+
+<p>It turns out that for example in <a href="http://www.scala-lang.org/">Scala</a>, you can avoid nulls by using the <a href="http://www.scala-lang.org/api/current/index.html#scala.Option">Option</a> class. It allows you to express in a clear way that the result of a &ndash; lets say &ndash; method can either be good (a reference to a valid object) or bad. In PHP, bad often means null. Scala then consequently provides method to access this object safely. You as the developer can choose at which point you want to get the value out, either by accessing it directly (and catching exceptions) or provide a sensible default value.</p>
+
+<p>In Scala, you write code like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="cm">/* An option with a value */</span>
+</span><span class='line'><span class="k">val</span> <span class="n">a</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(</span><span class="mi">5</span><span class="o">)</span>
+</span><span class='line'><span class="cm">/* An option with no value */</span>
+</span><span class='line'><span class="k">val</span> <span class="n">b</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">None</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/* Returns 5 */</span>
+</span><span class='line'><span class="n">a</span><span class="o">.</span><span class="n">getOrElse</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span>
+</span><span class='line'><span class="cm">/* Returns 10 */</span>
+</span><span class='line'><span class="n">b</span><span class="o">.</span><span class="n">getOrElse</span><span class="o">(</span><span class="mi">10</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You can also use helpful methods like <code>isDefined()</code> to peek into the object and see whats going on at runtime. All this is much more expressive than juggling around with a possible <code>null</code> value.</p>
+
+<p>Java has the same issues as PHP, and it hurt Google so much that they integrated the concept of an <a href="http://code.google.com/p/guava-libraries/wiki/UsingAndAvoidingNullExplained">Optional</a> directly into the core of their <a href="http://code.google.com/p/guava-libraries/">Google Guava</a> Java library collection. I really like their code and use it in my Java projects, so I decided it would be an interesting project to port this to PHP. Since PHP isn&rsquo;t a statically typed language like Java, concepts like generics have been removed and some methods renamed (they look more like Scala&rsquo;s now), but in essence its the same.</p>
+
+<h2>Usage</h2>
+
+<p>Before digging into how it works, let&rsquo;s look at how we can use it. We only need to work with three classes called <code>Optional</code>, <code>Present</code> and <code>Absent</code>. <code>Optional</code> is the base class, <code>Present</code> and <code>Absent</code> inherit from it and provide the method bodies for their appropriate behavior.</p>
+
+<p>The main idea is to fail fast when null is discovered and afterwards have a safe way of working with our value. Creating a <code>Optional</code> works through the static <code>of</code> method. We then have a range of methods available to inspect and fetch the output:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="nv">$possible</span> <span class="o">=</span> <span class="nx">Optional</span><span class="o">::</span><span class="na">of</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nv">$possible</span><span class="o">-&gt;</span><span class="na">isPresent</span><span class="p">());</span> <span class="c1">// bool(true)</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nv">$possible</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">());</span> <span class="c1">// int(5)</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nv">$possible</span><span class="o">-&gt;</span><span class="na">getOrElse</span><span class="p">(</span><span class="mi">99</span><span class="p">));</span> <span class="c1">// int(5)</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nv">$possible</span><span class="o">-&gt;</span><span class="na">getOrNull</span><span class="p">());</span> <span class="c1">// int(5)</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If we&rsquo;re trying to call <code>of</code> with <code>null</code>, a <code>NullPointerException</code> is raised immediately. We can use the <code>fromNullable</code> method to handle this case safely:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="nv">$possible</span> <span class="o">=</span> <span class="nx">Optional</span><span class="o">::</span><span class="na">of</span><span class="p">(</span><span class="k">null</span><span class="p">);</span> <span class="c1">// Throws &#39;NullPointerException&#39; with message &#39;Unallowed null in reference found.&#39;</span>
+</span><span class='line'><span class="nv">$possible</span> <span class="o">=</span> <span class="nx">Optional</span><span class="o">::</span><span class="na">fromNullable</span><span class="p">(</span><span class="k">null</span><span class="p">);</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nv">$possible</span><span class="o">-&gt;</span><span class="na">isPresent</span><span class="p">());</span> <span class="c1">// bool(false)</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nv">$possible</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">());</span> <span class="c1">// Throws IllegalStateException</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nv">$possible</span><span class="o">-&gt;</span><span class="na">getOrElse</span><span class="p">(</span><span class="mi">99</span><span class="p">));</span> <span class="c1">// int(99)</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nv">$possible</span><span class="o">-&gt;</span><span class="na">getOrNull</span><span class="p">());</span> <span class="c1">// NULL</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We can even check the equality of the contained Optionals:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="nv">$val1</span> <span class="o">=</span> <span class="nx">Optional</span><span class="o">::</span><span class="na">fromNullable</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$val2</span> <span class="o">=</span> <span class="nx">Optional</span><span class="o">::</span><span class="na">fromNullable</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$val3</span> <span class="o">=</span> <span class="nx">Optional</span><span class="o">::</span><span class="na">fromNullable</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nv">$val1</span><span class="o">-&gt;</span><span class="na">equals</span><span class="p">(</span><span class="nv">$val2</span><span class="p">));</span> <span class="c1">// bool(false)</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nv">$val2</span><span class="o">-&gt;</span><span class="na">equals</span><span class="p">(</span><span class="nv">$val3</span><span class="p">));</span> <span class="c1">// bool(true)</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now this simple examples are easy to grasp and this is a good thing. It&rsquo;s not about complexity here, it&rsquo;s about making it obvious that a value may or may not be null and handling it appropriately.</p>
+
+<p>If you&rsquo;re accessing a method of a library, you need to check the return value every time if it&rsquo;s null to make sure you&rsquo;re not in an invalid state. If it&rsquo;s clear that the library is returning an instance of <code>Optional</code>, you know what to expect and how to deal with it appropriately.</p>
+
+<h2>Implementation</h2>
+
+<p>Let&rsquo;s look at how this implemented.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="k">abstract</span> <span class="k">class</span> <span class="nc">Optional</span> <span class="p">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">private</span> <span class="k">function</span> <span class="nf">__construct</span><span class="p">()</span> <span class="p">{}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="sd">/**</span>
+</span><span class='line'><span class="sd">  * Returns an instance with no contained reference.</span>
+</span><span class='line'><span class="sd">  */</span>
+</span><span class='line'>  <span class="k">public</span> <span class="k">static</span> <span class="k">function</span> <span class="nf">absent</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nx">Absent</span><span class="o">::</span><span class="na">instance</span><span class="p">();</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="sd">/**</span>
+</span><span class='line'><span class="sd">     * Returns an Optional instance containing the given non-null reference.</span>
+</span><span class='line'><span class="sd">     */</span>
+</span><span class='line'>  <span class="k">public</span> <span class="k">static</span> <span class="k">function</span> <span class="nf">of</span><span class="p">(</span><span class="nv">$reference</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="k">new</span> <span class="nx">Present</span><span class="p">(</span><span class="k">static</span><span class="o">::</span><span class="na">checkNotNull</span><span class="p">(</span><span class="nv">$reference</span><span class="p">));</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="sd">/**</span>
+</span><span class='line'><span class="sd">  * If reference is non-null, returns an Optional instance containing</span>
+</span><span class='line'><span class="sd">  * that reference; otherwise returns Absent.</span>
+</span><span class='line'><span class="sd">  */</span>
+</span><span class='line'>  <span class="k">public</span> <span class="k">static</span> <span class="k">function</span> <span class="nf">fromNullable</span><span class="p">(</span><span class="nv">$reference</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nv">$reference</span> <span class="o">===</span> <span class="k">null</span> <span class="o">?</span> <span class="k">static</span><span class="o">::</span><span class="na">absent</span><span class="p">()</span> <span class="o">:</span> <span class="k">new</span> <span class="nx">Present</span><span class="p">(</span><span class="nv">$reference</span><span class="p">);</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">abstract</span> <span class="k">function</span> <span class="nf">isPresent</span><span class="p">();</span>
+</span><span class='line'>  <span class="k">public</span> <span class="k">abstract</span> <span class="k">function</span> <span class="nf">get</span><span class="p">();</span>
+</span><span class='line'>  <span class="k">public</span> <span class="k">abstract</span> <span class="k">function</span> <span class="nf">getOrElse</span><span class="p">(</span><span class="nv">$defaultValue</span><span class="p">);</span>
+</span><span class='line'>  <span class="k">public</span> <span class="k">abstract</span> <span class="k">function</span> <span class="nf">getOrNull</span><span class="p">();</span>
+</span><span class='line'>  <span class="k">public</span> <span class="k">abstract</span> <span class="k">function</span> <span class="nf">equals</span><span class="p">(</span><span class="nv">$object</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="sd">/**</span>
+</span><span class='line'><span class="sd">  * Make sure the passed reference is not null.</span>
+</span><span class='line'><span class="sd">  */</span>
+</span><span class='line'>  <span class="k">protected</span> <span class="k">static</span> <span class="k">function</span> <span class="nf">checkNotNull</span><span class="p">(</span><span class="nv">$reference</span><span class="p">,</span> <span class="nv">$message</span> <span class="o">=</span> <span class="k">null</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">if</span><span class="p">(</span><span class="nv">$message</span> <span class="o">===</span> <span class="k">null</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>          <span class="nv">$message</span> <span class="o">=</span> <span class="s2">&quot;Unallowed null in reference found.&quot;</span><span class="p">;</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">if</span><span class="p">(</span><span class="nv">$reference</span> <span class="o">===</span> <span class="k">null</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>          <span class="k">throw</span> <span class="k">new</span> <span class="nx">NullPointerException</span><span class="p">(</span><span class="nv">$message</span><span class="p">);</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nv">$reference</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This abstract class defines all of the methods we&rsquo;ll implement in <code>Present</code> and <code>Absent</code>, as well as all the static methods that you can call directly (especially the <code>of</code> and <code>fromNullable</code> methods). Note that in the appropriate places, <code>checkNotNull</code> is called which will throw a <code>NullPointerException</code> if a null is found. This adheres to the fail fast principle.</p>
+
+<p>Now let&rsquo;s implement the <code>Absent</code> class, which represents the state where no reference is present (for example a null was passed in through <code>fromNullable</code>).</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="o">&lt;?</span><span class="n">php</span>
+</span><span class='line'><span class="kd">class</span> <span class="nc">Absent</span> <span class="kd">extends</span> <span class="n">Optional</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">private</span> <span class="kd">static</span> <span class="n">$instance</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">function</span> <span class="nf">__construct</span><span class="o">()</span> <span class="o">{}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">function</span> <span class="nf">isPresent</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">function</span> <span class="nf">get</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">&quot;Optional-&gt;get() cannot be called on an absent value&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">function</span> <span class="nf">getOrElse</span><span class="o">(</span><span class="n">$defaultValue</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">$message</span> <span class="o">=</span> <span class="s">&quot;use Optional-&gt;orNull() instead of Optional-&gt;or(null)&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kd">static</span><span class="o">::</span><span class="n">checkNotNull</span><span class="o">(</span><span class="n">$defaultValue</span><span class="o">,</span> <span class="n">$message</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">function</span> <span class="nf">getOrNull</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">function</span> <span class="nf">equals</span><span class="o">(</span><span class="n">$object</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">$object</span> <span class="o">===</span> <span class="n">$this</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">protected</span> <span class="kd">static</span> <span class="n">function</span> <span class="nf">instance</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">if</span><span class="o">(</span><span class="kd">static</span><span class="o">::</span><span class="n">$instance</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="kd">static</span><span class="o">::</span><span class="n">$instance</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Absent</span><span class="o">();</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kd">static</span><span class="o">::</span><span class="n">$instance</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">?&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The <code>$instance</code> variable is managed here through the singleton pattern. We only need one instance of <code>Absent</code>, this saves memory and CPU time. The other methods just implement the expected behaviour of something that is not available.</p>
+
+<p>Finally, we can implement the <code>Present</code> class, which actually stores our instance if available.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">Present</span> <span class="k">extends</span> <span class="nx">Optional</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">private</span> <span class="nv">$reference</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">protected</span> <span class="k">function</span> <span class="nf">__construct</span><span class="p">(</span><span class="nv">$reference</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">reference</span> <span class="o">=</span> <span class="nv">$reference</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">isPresent</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="k">true</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">get</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">reference</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">getOrElse</span><span class="p">(</span><span class="nv">$defaultValue</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nv">$message</span> <span class="o">=</span> <span class="s2">&quot;use Optional-&gt;orNull() instead of Optional-&gt;or(null)&quot;</span><span class="p">;</span>
+</span><span class='line'>      <span class="k">static</span><span class="o">::</span><span class="na">checkNotNull</span><span class="p">(</span><span class="nv">$defaultValue</span><span class="p">,</span> <span class="nv">$message</span><span class="p">);</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">reference</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">getOrNull</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">reference</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">equals</span><span class="p">(</span><span class="nv">$object</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">if</span><span class="p">(</span><span class="nv">$object</span> <span class="nx">instanceof</span> <span class="nx">Present</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">reference</span> <span class="o">===</span> <span class="nv">$object</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">();</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>      <span class="k">return</span> <span class="k">false</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>It looks the same as the <code>Absent</code> class, but manages to return our instance if necessary and implements the <code>equals</code> method to actually check with the given object.</p>
+
+<p>Edit: Rasmus Schultz pointed out that he uses the ternary operator for lightweight null checks, you may want to <a href="http://blog.mindplay.dk/2013/02/the-or-else-operator-in-php-53.html">check out</a> his post too!</p>
+
+<h2>Summary</h2>
+
+<p>As you can see, the adoption of the <code>Optional</code> pattern can greatly increase the expressiveness of your code, by consequently avoiding null and its associated pitfalls. It also makes your code less error-prone, because you can&rsquo;t stumble upon nulls when using this pattern consequently.</p>
+
+<p>This is kind of an experimental implementation, but I think putting this together in a utility library could drive the adoption in the PHP community. I&rsquo;m curious what you think about the concept and if it makes sense for you and your applications!</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Benchmarking Cache Transcoders in PHP]]></title>
+    <link href="http://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP"/>
+    <updated>2013-01-30T13:49:48+01:00</updated>
+    <id>http://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP</id>
+    <content type="html"><![CDATA[<h2>Motivation</h2>
+
+<p>Storing PHP objects (or simpler data types like arrays) in caches always requires some kind of transformation. You need a way of encoding/decoding data so that it can be stored and loaded properly. In most languages, this process is known as object <a href="http://en.wikipedia.org/wiki/Serialization">serialization</a>. PHP provides a mechanism for this out of the box, but in this article we&rsquo;ll also look at <a href="http://pecl.php.net/package/igbinary">igbinary</a> as a drop-in replacement for the default serializer. We also compare the results to object transcoding based on <a href="http://json.org/">JSON</a>, which is not really an object serialization mechanism but commonly used as a data chache structure which has its own benefits and drawbacks.</p>
+
+<p>As always, please take this benchmarks with a grain of salt. Don&rsquo;t take the absolute numbers as a reference, look at the differences and run the benchmarks in your environment to get accurate results that apply to your scenarios. If you spot any flaws in what is shown here, please point it out in the comments. This blog post is not some kind of &ldquo;advertising&rdquo; for a special mechanism and all different transcoders are discussed with their benefits and drawbacks.</p>
+
+<p>If you want to compare your results to mine, I&rsquo;m using a MacBook Pro on Mac OS X 10.8.2 with the 2.3 GHz i7 and 16GB RAM. I&rsquo;m using PHP 5.4.11 (through <a href="https://github.com/josegonzalez/homebrew-php">homebrew-php</a>) instead of the shipped 5.3.</p>
+
+<h2>The PHP Serializer</h2>
+
+<p>Out of the box, PHP provides a serialization mechanism on top of the <a href="http://php.net/manual/de/function.serialize.php">serialize</a> and <a href="http://www.php.net/manual/de/function.unserialize.php">unserialize</a> methods. By applying this method on a variable, it gets encoded to a byte stream and neither the type nor the structure gets lost (you can&rsquo;t store <a href="http://www.php.net/manual/en/language.types.resource.php">resources</a>).</p>
+
+<p>So, let&rsquo;s look at a simple and a more complex example on how the transformation looks like:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">Person</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">private</span> <span class="nv">$name</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">__construct</span><span class="p">(</span><span class="nv">$name</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">name</span> <span class="o">=</span> <span class="nv">$name</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">getName</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">name</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$simple</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">&quot;key&quot;</span> <span class="o">=&gt;</span> <span class="s2">&quot;value&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$complex</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Person</span><span class="p">(</span><span class="s2">&quot;Michael&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If we&rsquo;re calling <code>serialize()</code> on both variables, the output (as a string representation) looks like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="nv">$simpleSerialized</span> <span class="o">=</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$simple</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$complexSerialized</span> <span class="o">=</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$complex</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// string(28) &quot;a:1:{s:3:&quot;key&quot;;s:5:&quot;value&quot;;}&quot;</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nb">serialize</span><span class="p">(</span><span class="nv">$simple</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// string(51) &quot;O:6:&quot;Person&quot;:1:{s:12:&quot;\000Person\000name&quot;;s:7:&quot;Michael&quot;;}&quot;</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nb">serialize</span><span class="p">(</span><span class="nv">$complex</span><span class="p">));</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>While the resulting string is not designed for readability, you can clearly see that some metadata is added in order to make the unserialization possible. For example, the <code>key</code> string is serialized to <code>s:3:"key"</code> where the <code>s</code> means <code>string</code> and <code>3</code> is the string length. Also, <code>a</code> points to an <code>array</code> and <code>O</code> to an <code>object</code>.</p>
+
+<p>We can now <code>unserialize()</code> the values and work with them as if they&rsquo;ve never been stored somewhere else:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="nv">$simpleUnserialized</span> <span class="o">=</span> <span class="nb">unserialize</span><span class="p">(</span><span class="nv">$simpleSerialized</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$complexUnserialized</span> <span class="o">=</span> <span class="nb">unserialize</span><span class="p">(</span><span class="nv">$complexSerialized</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// array(1) {&#39;key&#39; =&gt; string(5) &quot;value&quot;}</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nv">$simpleUnserialized</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// string(7) &quot;Michael&quot;</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nv">$complexUnserialized</span><span class="o">-&gt;</span><span class="na">getName</span><span class="p">());</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In practice, two characteristics are important: size of the serialized value and performance. While from a developer perspective performance is fun to explore, the size of the serialized object is what matters most. Performance differences are only measurable when running it in a loop with lots of iterations, while in practice you may only work with a few objects at a time per request.</p>
+
+<p>Let&rsquo;s use a common caching scenario: imagine we&rsquo;re caching entity responses from an ORM framework like <a href="http://www.doctrine-project.org/">Doctrine</a>. Here is a blog post class that will be filled with life:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">BlogPost</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">private</span> <span class="nv">$title</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">private</span> <span class="nv">$teaser</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">private</span> <span class="nv">$author</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">private</span> <span class="nv">$body</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">__construct</span><span class="p">(</span><span class="nv">$title</span><span class="p">,</span> <span class="nv">$teaser</span><span class="p">,</span> <span class="nv">$author</span><span class="p">,</span> <span class="nv">$body</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">title</span> <span class="o">=</span> <span class="nv">$title</span><span class="p">;</span>
+</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">teaser</span> <span class="o">=</span> <span class="nv">$teaser</span><span class="p">;</span>
+</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">author</span> <span class="o">=</span> <span class="nv">$author</span><span class="p">;</span>
+</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">body</span> <span class="o">=</span> <span class="nv">$body</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">getTitle</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">title</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">getTeaser</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">teaser</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">getAuthor</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">author</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">getBody</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">body</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Please take this with a grain of salt, because since JSON transcoding is not able to store a 1:1 representation like <code>serialize</code>, we need to work around that a bit. More details and discussion will be provided in the JSON section.</p>
+
+<p>Assume that a blog post with content has around 10k characters and about 10kb in size, lets create a crafted blog post:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="nv">$randomString</span> <span class="o">=</span> <span class="k">function</span> <span class="p">(</span><span class="nv">$length</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nv">$chars</span> <span class="o">=</span> <span class="s2">&quot;abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .&quot;</span><span class="p">;</span>    
+</span><span class='line'>  <span class="nv">$str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">for</span><span class="p">(</span> <span class="nv">$i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nv">$i</span> <span class="o">&lt;</span> <span class="nv">$length</span><span class="p">;</span> <span class="nv">$i</span><span class="o">++</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nv">$str</span> <span class="o">.=</span> <span class="nv">$chars</span><span class="p">[</span><span class="nx">rand</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">strlen</span><span class="p">(</span><span class="nv">$chars</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nv">$str</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$title</span> <span class="o">=</span> <span class="s2">&quot;How to measure caching transcoders&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$teaser</span> <span class="o">=</span> <span class="s2">&quot;This is a much longer introduction on how to measure caching transcoders. Feel free to post your own findings.&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$author</span> <span class="o">=</span> <span class="s2">&quot;daschl&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$body</span> <span class="o">=</span> <span class="nv">$randomString</span><span class="p">(</span><span class="mi">10000</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$post</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">BlogPost</span><span class="p">(</span><span class="nv">$title</span><span class="p">,</span> <span class="nv">$teaser</span><span class="p">,</span> <span class="nv">$author</span><span class="p">,</span> <span class="nv">$body</span><span class="p">);</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now run <code>serialize</code> and <code>unserialize</code> in loops to measure performance as well as determine the resulting size of the object:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="nv">$iterations</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$start</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+</span><span class='line'><span class="k">for</span><span class="p">(</span><span class="nv">$i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="nv">$i</span><span class="o">&lt;</span><span class="nv">$iterations</span><span class="p">;</span><span class="nv">$i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nv">$serialized</span> <span class="o">=</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$post</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="nv">$end</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">echo</span> <span class="s2">&quot;Size: &quot;</span> <span class="o">.</span> <span class="nb">strlen</span><span class="p">(</span><span class="nv">$serialized</span><span class="p">)</span> <span class="o">.</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="k">echo</span> <span class="p">(</span><span class="nv">$end</span> <span class="o">-</span> <span class="nv">$start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">.</span> <span class="s2">&quot;Milliseconds</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>On my machine, to serialize 10000 objects it took about 33 milliseconds. The length of the resulting object (its string representation) is 10297 characters. This is kind of expected because the bulk of the object is the long article body. Before start comparing, we can already make one observation: its pretty fast. Now, let&rsquo;s move on to igbinary serialization and see how these results compare.</p>
+
+<h2>Serializing with igbinary</h2>
+
+<p>The <a href="http://pecl.php.net/package/igbinary">igbinary</a> extension was developed as a drop-in replacement for the default PHP serializer. Instead of storing the serialized object as a text, it is stored as binary data. You can install it either through PECL or compile it from source, either way before running the tests make sure you have the <code>igbinary</code> extension enabled:</p>
+
+<pre><code>michael@daschlbook ~ $ php -m | grep igbinary
+igbinary
+</code></pre>
+
+<p>Instead of using <code>serialize</code> or <code>unserialize</code>, igbinary provides us with appropriate <code>igbinary_serialize</code> and <code>igbinary_unserialize</code> functions. Now we can apply the same microbenchmark and see the results:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="nv">$iterations</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$start</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+</span><span class='line'><span class="k">for</span><span class="p">(</span><span class="nv">$i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="nv">$i</span><span class="o">&lt;</span><span class="nv">$iterations</span><span class="p">;</span><span class="nv">$i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nv">$serialized</span> <span class="o">=</span> <span class="nx">igbinary_serialize</span><span class="p">(</span><span class="nv">$post</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="nv">$end</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">echo</span> <span class="s2">&quot;Size: &quot;</span> <span class="o">.</span> <span class="nb">strlen</span><span class="p">(</span><span class="nv">$serialized</span><span class="p">)</span> <span class="o">.</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="k">echo</span> <span class="p">(</span><span class="nv">$end</span> <span class="o">-</span> <span class="nv">$start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">.</span> <span class="s2">&quot;Milliseconds</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>With default settings, to serialize 10000 objects with igbinary it took 678 milliseconds. The length of the resulting object is 10244 characters. If you compare it with the default serialization mechanism, that is 20 times slower and the resulting object isn&rsquo;t much smaller either. Bummer &ndash; or not? Let&rsquo;s look at why this is happening.</p>
+
+<p>Let&rsquo;s look at a different workload. Let&rsquo;s create a data structure which consist of 30 smaller blog posts and measure the statistics for both again (only doing 1000 iterations instead of 10000):</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="nv">$posts</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+</span><span class='line'><span class="k">for</span><span class="p">(</span><span class="nv">$i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="nv">$i</span><span class="o">&lt;</span><span class="mi">30</span><span class="p">;</span><span class="nv">$i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nv">$posts</span><span class="p">[]</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">BlogPost</span><span class="p">(</span><span class="nv">$title</span><span class="p">,</span> <span class="nv">$teaser</span><span class="p">,</span> <span class="nv">$author</span><span class="p">,</span> <span class="nv">$randomString</span><span class="p">(</span><span class="mi">50</span><span class="p">));</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The results are more interesting: on my machine igbinary takes about 95 milliseconds while serialize needs only 41 milliseconds. Now it&rsquo;s just 2 times slower. But here comes the important part: the resulting size of igbinary is 2385 characters, while serialize is 10467 characters! That&rsquo;s about 5 times smaller. Note that this gap increases the larger your PHP object gets (not in terms of long character strings but speaking of complexity like methods).</p>
+
+<p>Note that the igbinary docs say you should set <code>igbinary.compact_strings</code> to <code>Off</code> to increase performance, but there was no real measurable difference in my testings.</p>
+
+<p>There is one more thing we haven&rsquo;t compared: deserializing of previously serialized objects. We can take the same code from above, use the serialized part as input and measure the timings once again (not that we don&rsquo;t need to measure the size of the resulting object because we&rsquo;re creating a &ldquo;live&rdquo; object again):</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="nv">$posts</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+</span><span class='line'><span class="k">for</span><span class="p">(</span><span class="nv">$i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="nv">$i</span><span class="o">&lt;</span><span class="mi">30</span><span class="p">;</span><span class="nv">$i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nv">$posts</span><span class="p">[]</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">BlogPost</span><span class="p">(</span><span class="nv">$title</span><span class="p">,</span> <span class="nv">$teaser</span><span class="p">,</span> <span class="nv">$author</span><span class="p">,</span> <span class="nv">$randomString</span><span class="p">(</span><span class="mi">50</span><span class="p">));</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$serializedIgbinary</span> <span class="o">=</span> <span class="nx">igbinary_serialize</span><span class="p">(</span><span class="nv">$posts</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$serializedClassic</span> <span class="o">=</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$posts</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$iterations</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$start</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+</span><span class='line'><span class="k">for</span><span class="p">(</span><span class="nv">$i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="nv">$i</span><span class="o">&lt;</span><span class="nv">$iterations</span><span class="p">;</span><span class="nv">$i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nv">$unserialized</span> <span class="o">=</span> <span class="nx">igbinary_unserialize</span><span class="p">(</span><span class="nv">$serializedIgbinary</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="nv">$end</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">echo</span> <span class="p">(</span><span class="nv">$end</span> <span class="o">-</span> <span class="nv">$start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">.</span> <span class="s2">&quot;Milliseconds</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$start</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+</span><span class='line'><span class="k">for</span><span class="p">(</span><span class="nv">$i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="nv">$i</span><span class="o">&lt;</span><span class="nv">$iterations</span><span class="p">;</span><span class="nv">$i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nv">$unserialized</span> <span class="o">=</span> <span class="nb">unserialize</span><span class="p">(</span><span class="nv">$serializedClassic</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="nv">$end</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">echo</span> <span class="p">(</span><span class="nv">$end</span> <span class="o">-</span> <span class="nv">$start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">.</span> <span class="s2">&quot;Milliseconds</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This is giving us very interesting results: igbinary takes 65 milliseconds while classic unserialize needs 82 milliseconds! So igbinary is faster here. This is pretty good news, because in practice you will need to unserialize (speak &ldquo;fetch from cache&rdquo;) much more often than to serialize (speak &ldquo;store in cache&rdquo;). That&rsquo;s the whole point of a cache.</p>
+
+<p>Before we move on to JSON, I think it&rsquo;s fair to say that igbinary wins this comparison. Most of the time you want to store complex PHP objects and fetch them out fast and quickly. Of course it has the overhead of installing it as an extension, but since it&rsquo;s a drop-in replacement you can change your mind later (but take this with a grain of salt because you can only unserialize what was serialized with igbinary and vice versa &ndash; so you&rsquo;d need to fetch and restore them).</p>
+
+<p>Finally, when you are storing very long strings in objects, both have pretty much the same overhead (because you can&rsquo;t &ldquo;compact&rdquo; this long string very well). One workaround may be to compress and decompress the string as needed, using a mixture of gzip and base64 encoding. When serializing PHP objects, you can use the <a href="http://www.php.net/manual/en/language.oop5.magic.php#object.sleep">__sleep</a> and <a href="http://www.php.net/manual/en/language.oop5.magic.php#object.wakeup">__wakeup</a> methods to perform these kind of transformations.</p>
+
+<p>Adding these two methods to our <code>BlogPost</code> class results in a 20% saving when using the 10k random string again:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="k">public</span> <span class="k">function</span> <span class="nf">__sleep</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">body</span> <span class="o">=</span> <span class="nb">gzdeflate</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">body</span><span class="p">,</span> <span class="mi">9</span><span class="p">);</span>
+</span><span class='line'>  <span class="k">return</span> <span class="k">array</span><span class="p">(</span><span class="s1">&#39;title&#39;</span><span class="p">,</span> <span class="s1">&#39;teaser&#39;</span><span class="p">,</span> <span class="s1">&#39;author&#39;</span><span class="p">,</span> <span class="s1">&#39;body&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">public</span> <span class="k">function</span> <span class="nf">__wakeup</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">body</span> <span class="o">=</span> <span class="nb">gzinflate</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">body</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note that compressing takes time too, so measure if it makes sense in your case and the space savings are good enough. You also need the <code>zblib</code> extension to make this work properly.</p>
+
+<h2>Transcoding on top of JSON</h2>
+
+<p>First of all, JSON has not the same characteristics as serialization. This is just because JSON only supports a subset of the available data types that PHP supports and therefore encoding/decoding takes some extra steps on the application side. So why are we comparing it here? Well, JSON is used very often for storing data in caches. Not only is it human readable, it can also be used in combination with other languages and applications. Using JSON allows you to store cache information from a Java backend and use it in your PHP application. That doesn&rsquo;t work with traditional serialization approaches.</p>
+
+<p>If you need a primer on JSON and PHP, <a href="http://nitschinger.at/Handling-JSON-like-a-boss-in-PHP">read</a> my other article first. PHP allows you to transcode all objects (except resources) through the <a href="http://www.php.net/manual/en/function.json-encode.php">json_encode</a> and <a href="http://www.php.net/manual/en/function.json-decode.php">json_decode</a> functions. Private and protected variables are not converted, so we either need to make them public or provide a custom method that exports a storable object structure. While we&rsquo;re at it, we can provide a static factory method that initializes our BlogPost from the returned JSON string:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="k">public</span> <span class="k">function</span> <span class="nf">toJson</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">return</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>      <span class="s1">&#39;title&#39;</span> <span class="o">=&gt;</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">title</span><span class="p">,</span>
+</span><span class='line'>      <span class="s1">&#39;teaser&#39;</span> <span class="o">=&gt;</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">teaser</span><span class="p">,</span>
+</span><span class='line'>      <span class="s1">&#39;author&#39;</span> <span class="o">=&gt;</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">author</span><span class="p">,</span>
+</span><span class='line'>      <span class="s1">&#39;body&#39;</span> <span class="o">=&gt;</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">body</span>
+</span><span class='line'>  <span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">public</span> <span class="k">static</span> <span class="k">function</span> <span class="nf">fromJson</span><span class="p">(</span><span class="nv">$json</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nv">$d</span> <span class="o">=</span> <span class="nb">json_decode</span><span class="p">(</span><span class="nv">$json</span><span class="p">,</span> <span class="k">true</span><span class="p">);</span>
+</span><span class='line'>  <span class="k">return</span> <span class="k">new</span> <span class="nx">BlogPost</span><span class="p">(</span><span class="nv">$d</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">],</span> <span class="nv">$d</span><span class="p">[</span><span class="s1">&#39;teaser&#39;</span><span class="p">],</span> <span class="nv">$d</span><span class="p">[</span><span class="s1">&#39;author&#39;</span><span class="p">],</span> <span class="nv">$d</span><span class="p">[</span><span class="s1">&#39;body&#39;</span><span class="p">]);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note that the <code>toJson()</code> method returns a simple representation of the object, which is much less complicated than a full serialization approach. Let&rsquo;s run our benchmark again:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="nv">$post</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">BlogPost</span><span class="p">(</span><span class="nv">$title</span><span class="p">,</span> <span class="nv">$teaser</span><span class="p">,</span> <span class="nv">$author</span><span class="p">,</span> <span class="nv">$randomString</span><span class="p">(</span><span class="mi">10000</span><span class="p">));</span>
+</span><span class='line'><span class="nv">$post</span> <span class="o">=</span> <span class="nv">$post</span><span class="o">-&gt;</span><span class="na">toJson</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$iterations</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$start</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+</span><span class='line'><span class="k">for</span><span class="p">(</span><span class="nv">$i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="nv">$i</span><span class="o">&lt;</span><span class="nv">$iterations</span><span class="p">;</span><span class="nv">$i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nv">$encoded</span> <span class="o">=</span> <span class="nb">json_encode</span><span class="p">(</span><span class="nv">$post</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">echo</span> <span class="s2">&quot;Size: &quot;</span> <span class="o">.</span> <span class="nb">strlen</span><span class="p">(</span><span class="nv">$serialized</span><span class="p">)</span> <span class="o">.</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$end</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">echo</span> <span class="p">(</span><span class="nv">$end</span> <span class="o">-</span> <span class="nv">$start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">.</span> <span class="s2">&quot;Milliseconds</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>On my machine it takes 1.7 seconds (!) to complete the encoding. The resulting object size is 10196 bytes which is comparable to our earlier measurements (again, the large value dominates here). Testing it against complex objects is not interesting because we can&rsquo;t restore them anyway without further modifications. Running <code>json_decode</code> on the encoded object also takes around 1.5 seconds, so there is no major difference here.</p>
+
+<p>Personally, I&rsquo;d expected to have JSON transcoding to perform better, but again normally you don&rsquo;t run 10k iterations in a row. When you break it down to 10 encodings they take about 1 millisecond which is okay for most scenarios (given we encode a really large objects with a few kb here). Smaller objects like user sessions will encode much faster.</p>
+
+<p>Edit: a friendly reader on <a href="http://www.reddit.com/r/PHP/comments/17kcy3/benchmarking_cache_transcoders_in_php/">reddit</a> pointed out that you can (and should) use the <a href="http://www.php.net/manual/en/class.jsonserializable.php">JsonSerializable interface</a> instead of rolling your own method name like <code>toJson()</code>. Thanks!</p>
+
+<p>Edit2: another reader pointed out that naming a method <code>toJson()</code> which does not return JSON but an array is misleading. I agree, so if you adapt this approach in your environment choose a better name like <code>prepareForJson()</code>, <code>toArray()</code> or use the <code>JsonSerializable</code> Interface as shown above.</p>
+
+<h2>Conclusion</h2>
+
+<p>After running these microbenchmarks, my conclusion is that when you need object serialization, go with igbinary. It provides good enough serialization performance and huge wins on object sizes. Decoding performance is also much better than out-ouf-the-box serialization. If you need interoperability with other applications or if you don&rsquo;t want to limit yourself to serialized PHP blobs, go with JSON. JSON requires much more hand wiring but you&rsquo;ll gain a lot of flexibility.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Caching Doctrine Entities With Couchbase]]></title>
+    <link href="http://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase"/>
+    <updated>2013-01-08T13:49:48+01:00</updated>
+    <id>http://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase</id>
+    <content type="html"><![CDATA[<h2>Motivation</h2>
+
+<p>As part of our ongoing efforts to make Couchbase more integrated with frameworks and libraries, we added caching support for the <a href="http://www.doctrine-project.org/">Doctrine ORM</a>. Recently, the pull request has been merged into the master branch and is scheduled to be published along with the <a href="http://doctrine-project.org/jira/browse/DCOM/fixforversion/10327">2.4</a> release.</p>
+
+<p>Caching can either be used standalone (through the API provided by <a href="http://www.doctrine-project.org/projects/common.html">doctrine/common</a>) or integrated with the ORM functionality. We&rsquo;ll look at both variants through simple examples, a good documentation can also be found <a href="http://docs.doctrine-project.org/en/latest/reference/caching.html">here</a>. Note that at the time of writing, the CouchbaseCache is not mentioned as a caching driver because the documentation still needs to be updated.</p>
+
+<p>Since 2.4 has not been released yet, we need to work against the <code>2.4.x-dev</code> branch. We&rsquo;ll be using <a href="http://getcomposer.org/">Composer</a> to fetch our dependencies, so just need change the version number if you want to pin it down to 2.4 later.</p>
+
+<h2>Simple Caching</h2>
+
+<p>Our first example shows how the caching API can be used directly. If you are familiar with the Couchbase API, you may think that it&rsquo;s more or less just a different API with the same (and maybe less) semantics, but the point is that it uses the Doctrine Cache API interface and as a result you can switch between different caching implementations very easily.</p>
+
+<p>Create a directory called <code>couchbase-doctrine-simple</code> with the following <code>composer.json</code> inside:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="s2">&quot;require&quot;</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>      <span class="s2">&quot;doctrine/common&quot;</span><span class="o">:</span> <span class="s2">&quot;2.4.x-dev&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="s2">&quot;ext-couchbase&quot;</span><span class="o">:</span> <span class="s2">&quot;1.1.x&quot;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This installs the <a href="https://packagist.org/packages/doctrine/common">doctrine/common</a> package and also makes sure that we have the <code>couchbase.so</code> extension in place. If you haven&rsquo;t installed the Couchbase PHP extension already, head over to the <a href="http://www.couchbase.com/develop/php/current">official website</a> and install it based on the tutorial and the docs.</p>
+
+<p>Create a <code>index.php</code> with the following content (we&rsquo;ll break up the code afterwards):</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="c1">// 0: Composer Autoloader</span>
+</span><span class='line'><span class="k">require</span> <span class="s1">&#39;vendor/autoload.php&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 1: Open the Couchbase Connection</span>
+</span><span class='line'><span class="nv">$couchbase</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Couchbase</span><span class="p">(</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 2: Instantiate the Driver &amp; Inject the Connection</span>
+</span><span class='line'><span class="nv">$cacheDriver</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\Doctrine\Common\Cache\CouchbaseCache</span><span class="p">();</span>
+</span><span class='line'><span class="nv">$cacheDriver</span><span class="o">-&gt;</span><span class="na">setCouchbase</span><span class="p">(</span><span class="nv">$couchbase</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 3: Execute your commands!</span>
+</span><span class='line'><span class="nv">$key</span> <span class="o">=</span> <span class="s2">&quot;my-cache-item&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nv">$cacheDriver</span><span class="o">-&gt;</span><span class="na">contains</span><span class="p">(</span><span class="nv">$key</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nv">$cacheDriver</span><span class="o">-&gt;</span><span class="na">save</span><span class="p">(</span><span class="nv">$key</span><span class="p">,</span> <span class="s2">&quot;my_data&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">echo</span> <span class="nv">$cacheDriver</span><span class="o">-&gt;</span><span class="na">fetch</span><span class="p">(</span><span class="nv">$key</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>First, we need to bootstrap the composer autoloader so we don&rsquo;t have to write all <code>require</code> statements on our own. The next thing we need to do is actually connect to the Couchbase cluster:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="c1">// 1: Open the Couchbase Connection</span>
+</span><span class='line'><span class="nv">$couchbase</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Couchbase</span><span class="p">(</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here, we&rsquo;re connecting to a node in the cluster which points at <code>localhost</code>, but you can pass in an array of nodes as well. We connect to the <code>default</code> bucket, which has no password. Now that we have our connection established, we can instantiate the cache driver and inject our Couchbase client:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="c1">// 2: Instantiate the Driver &amp; Inject the Connection</span>
+</span><span class='line'><span class="nv">$cacheDriver</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\Doctrine\Common\Cache\CouchbaseCache</span><span class="p">();</span>
+</span><span class='line'><span class="nv">$cacheDriver</span><span class="o">-&gt;</span><span class="na">setCouchbase</span><span class="p">(</span><span class="nv">$couchbase</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>From here on, the API is the same for all cache drivers. The following code checks if the cache contains a key. If it is present, it prints out the document but if it isn&rsquo;t it creates a new one. This is a very simple example but shows how you can start to use Couchbase caching in your own projects with just a few lines of bootstrapping!</p>
+
+<p>Aside from these three methods, there is also a <code>delete</code> method available. Finally, you can pass an optional third param on <code>save</code> with a <code>$lifeTime</code> so that the cache item vanishes automatically.</p>
+
+<p>Since Couchbase Server doesn&rsquo;t care what you store, you can also save and fetch any kind of datatype (aside from resources):</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="nv">$cacheDriver</span><span class="o">-&gt;</span><span class="na">save</span><span class="p">(</span><span class="nv">$key</span><span class="p">,</span> <span class="k">array</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;bar&#39;</span><span class="p">));</span>
+</span><span class='line'><span class="nb">var_dump</span><span class="p">(</span><span class="nv">$cacheDriver</span><span class="o">-&gt;</span><span class="na">fetch</span><span class="p">(</span><span class="nv">$key</span><span class="p">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note that when you use the driver at this level, try to store JSON strings when you can (use <code>json_encode</code>/<code>json_decode</code> on your datastructures) This way you can take advantage of the brand new view engine inside Couchbase Server 2.0. You can always just store serialized objects as well (like we need to do with ORM integration) since for Couchbase Server it&rsquo;s just a byte stream.</p>
+
+<p>We can now build on this foundation and see how this works with ORM integration.</p>
+
+<h2>ORM Integration</h2>
+
+<p>Create a new directory called <code>couchbase-doctrine-orm</code> with the following <code>composer.json</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="s2">&quot;require&quot;</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>      <span class="s2">&quot;doctrine/orm&quot;</span><span class="o">:</span> <span class="s2">&quot;2.4.x-dev&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="s2">&quot;doctrine/dbal&quot;</span><span class="o">:</span> <span class="s2">&quot;2.4.x-dev&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="s2">&quot;doctrine/common&quot;</span><span class="o">:</span> <span class="s2">&quot;2.4.x-dev&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="s2">&quot;ext-couchbase&quot;</span><span class="o">:</span> <span class="s2">&quot;1.1.x&quot;</span>
+</span><span class='line'>  <span class="p">},</span>
+</span><span class='line'>  <span class="s2">&quot;autoload&quot;</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>      <span class="s2">&quot;psr-0&quot;</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>          <span class="s2">&quot;Entities&quot;</span><span class="o">:</span> <span class="s2">&quot;src/&quot;</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This time our <code>composer.json</code> file is a little bit longer, because we need to define all of our dependencies by hand (since we don&rsquo;t want to work against the stable release). Since we need to define Doctrine Entities we pass the composer autoloader the custom directory (<code>src/</code>).</p>
+
+<p>The next thing we need is our actual entity that we want to manage through Doctrine. Go ahead and create a <code>Person.php</code> file inside the <code>src/Entities</code> directory with the following content:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">namespace</span> <span class="nx">Entities</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sd">/** @Entity */</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">Person</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="sd">/**</span>
+</span><span class='line'><span class="sd">  * @Id @Column(type=&quot;integer&quot;) @GeneratedValue(strategy=&quot;AUTO&quot;)</span>
+</span><span class='line'><span class="sd">  */</span>
+</span><span class='line'>  <span class="k">private</span> <span class="nv">$id</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="sd">/** @Column(type=&quot;string&quot;) */</span>
+</span><span class='line'>  <span class="k">private</span> <span class="nv">$firstname</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="sd">/** @Column(type=&quot;string&quot;) */</span>
+</span><span class='line'>  <span class="k">private</span> <span class="nv">$lastname</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">setFirstname</span><span class="p">(</span><span class="nv">$firstname</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">firstname</span> <span class="o">=</span> <span class="nv">$firstname</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">getFirstname</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">firstname</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">setLastname</span><span class="p">(</span><span class="nv">$lastname</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">lastname</span> <span class="o">=</span> <span class="nv">$lastname</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">getLastname</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">lastname</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This is a very simple Doctrine Entity that has some properties and also a autogenerated <code>ID</code> field. I&rsquo;m going to use <a href="http://www.sqlite.org/">SQLite</a> in the following example, but feel free to use MySQL or any other relational database that you have available.</p>
+
+<p>To wire everything together, we&rsquo;re going to create a <code>index.php</code> file in the root directory of the project. Again, here is the full content and we&rsquo;re going to break it apart afterwards:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="c1">// Composer autoloader.</span>
+</span><span class='line'><span class="nv">$loader</span> <span class="o">=</span> <span class="k">require</span> <span class="s1">&#39;vendor/autoload.php&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sd">/**</span>
+</span><span class='line'><span class="sd"> * Initialize Couchbase &amp; the Cache.</span>
+</span><span class='line'><span class="sd"> */</span>
+</span><span class='line'><span class="nv">$couchbase</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Couchbase</span><span class="p">(</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$cacheDriver</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\Doctrine\Common\Cache\CouchbaseCache</span><span class="p">();</span>
+</span><span class='line'><span class="nv">$cacheDriver</span><span class="o">-&gt;</span><span class="na">setCouchbase</span><span class="p">(</span><span class="nv">$couchbase</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="sd">/**</span>
+</span><span class='line'><span class="sd"> * Initialize the Entity Manager.</span>
+</span><span class='line'><span class="sd"> */</span>
+</span><span class='line'><span class="nv">$paths</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="nx">__DIR__</span> <span class="o">.</span> <span class="s1">&#39;/src/Entities/&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$isDevMode</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$dbParams</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>  <span class="s1">&#39;driver&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;pdo_sqlite&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s1">&#39;user&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s1">&#39;password&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s1">&#39;path&#39;</span> <span class="o">=&gt;</span> <span class="nx">__DIR__</span> <span class="o">.</span> <span class="s1">&#39;/cbexample.sqlite&#39;</span>
+</span><span class='line'><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$config</span> <span class="o">=</span> <span class="nx">\Doctrine\ORM\Tools\Setup</span><span class="o">::</span><span class="na">createAnnotationMetadataConfiguration</span><span class="p">(</span><span class="nv">$paths</span><span class="p">,</span> <span class="nv">$isDevMode</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$cacheDriver</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$em</span> <span class="o">=</span> <span class="nx">\Doctrine\ORM\EntityManager</span><span class="o">::</span><span class="na">create</span><span class="p">(</span><span class="nv">$dbParams</span><span class="p">,</span> <span class="nv">$config</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="sd">/**</span>
+</span><span class='line'><span class="sd"> * Work with our Entities.</span>
+</span><span class='line'><span class="sd"> */</span>
+</span><span class='line'><span class="nv">$person</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\Entities\Person</span><span class="p">();</span>
+</span><span class='line'><span class="nv">$person</span><span class="o">-&gt;</span><span class="na">setFirstname</span><span class="p">(</span><span class="s2">&quot;Michael&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$person</span><span class="o">-&gt;</span><span class="na">setLastname</span><span class="p">(</span><span class="s2">&quot;Nitschinger&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$em</span><span class="o">-&gt;</span><span class="na">persist</span><span class="p">(</span><span class="nv">$person</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$em</span><span class="o">-&gt;</span><span class="na">flush</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Query with Result Cache</span>
+</span><span class='line'><span class="nv">$query</span> <span class="o">=</span> <span class="nv">$em</span><span class="o">-&gt;</span><span class="na">createQuery</span><span class="p">(</span><span class="s1">&#39;select p from Entities\Person p&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$query</span><span class="o">-&gt;</span><span class="na">useResultCache</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$results</span> <span class="o">=</span> <span class="nv">$query</span><span class="o">-&gt;</span><span class="na">getResult</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Since this may be a lot to grasp, let&rsquo;s break it into smaller sized chunks.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="nv">$couchbase</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Couchbase</span><span class="p">(</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$cacheDriver</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\Doctrine\Common\Cache\CouchbaseCache</span><span class="p">();</span>
+</span><span class='line'><span class="nv">$cacheDriver</span><span class="o">-&gt;</span><span class="na">setCouchbase</span><span class="p">(</span><span class="nv">$couchbase</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>After our bootstrapping the autoloader, we&rsquo;re initializing the cache driver. You already know what this means because we&rsquo;ve used the same code in the simple example before.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="nv">$paths</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="nx">__DIR__</span> <span class="o">.</span> <span class="s1">&#39;/src/Entities/&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$isDevMode</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$dbParams</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>  <span class="s1">&#39;driver&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;pdo_sqlite&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s1">&#39;user&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s1">&#39;password&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s1">&#39;path&#39;</span> <span class="o">=&gt;</span> <span class="nx">__DIR__</span> <span class="o">.</span> <span class="s1">&#39;/cbexample.sqlite&#39;</span>
+</span><span class='line'><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$config</span> <span class="o">=</span> <span class="nx">\Doctrine\ORM\Tools\Setup</span><span class="o">::</span><span class="na">createAnnotationMetadataConfiguration</span><span class="p">(</span><span class="nv">$paths</span><span class="p">,</span> <span class="nv">$isDevMode</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$cacheDriver</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$em</span> <span class="o">=</span> <span class="nx">\Doctrine\ORM\EntityManager</span><span class="o">::</span><span class="na">create</span><span class="p">(</span><span class="nv">$dbParams</span><span class="p">,</span> <span class="nv">$config</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The <code>\Doctrine\ORM\EntityManager</code> is one of the major building blocks inside Doctrine and needs to be initialized accordingly. Therefore, we need to provide it a valid configuration. Here we&rsquo;re going to use annotations (as seen on the Doctrine Entity, but you can also do it through XML or YAML). We also need to provide our database connection and the path to the entities. The important part here is that we pass the <code>$cacheDriver</code> to the factory method. This automatically initializes our <code>CouchbaseCache</code> to be used for all kinds of caching (Query, Metadata and Result caching).</p>
+
+<p>Now we can go ahead and create a record:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="nv">$person</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\Entities\Person</span><span class="p">();</span>
+</span><span class='line'><span class="nv">$person</span><span class="o">-&gt;</span><span class="na">setFirstname</span><span class="p">(</span><span class="s2">&quot;Michael&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$person</span><span class="o">-&gt;</span><span class="na">setLastname</span><span class="p">(</span><span class="s2">&quot;Nitschinger&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$em</span><span class="o">-&gt;</span><span class="na">persist</span><span class="p">(</span><span class="nv">$person</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$em</span><span class="o">-&gt;</span><span class="na">flush</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Afterwards, we can fetch it back through a query:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="nv">$query</span> <span class="o">=</span> <span class="nv">$em</span><span class="o">-&gt;</span><span class="na">createQuery</span><span class="p">(</span><span class="s1">&#39;select p from Entities\Person p&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$query</span><span class="o">-&gt;</span><span class="na">useResultCache</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$results</span> <span class="o">=</span> <span class="nv">$query</span><span class="o">-&gt;</span><span class="na">getResult</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note that we explicitely tell it to cache this query result for us (by default, result caching won&rsquo;t be used). If open the browser and point it to your Couchbase Server 2.0 management UI, you can see that Doctrine did create lots of documents behind the scenes. These are subsequently used to boost your application performance.</p>
+
+<h2>Summary</h2>
+
+<p>As you can see, using Couchbase as a Cache for Doctrine is not hard. You just need to initialize it and pass it into the configuration. From this point on, everything happens behind the scenes. And don&rsquo;t forget that you not only get exceptional performance, but also persistence, scalability and all the cool stuff that Couchbase Server provides out of the box.</p>
+
+<p>If you have any questions or input, please let me know in the comments! Finally, thanks to <a href="https://twitter.com/Ocramius">Marco Pivetta</a> for helping me debug an <a href="https://github.com/doctrine/common/pull/240">issue</a> with ORM integration!</p>
 ]]></content>
   </entry>
   
