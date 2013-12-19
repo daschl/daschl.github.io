@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Assembler | Nitschinger.at]]></title>
-  <link href="http://nitschinger.at/blog/categories/assembler/atom.xml" rel="self"/>
-  <link href="http://nitschinger.at/"/>
-  <updated>2013-12-19T10:22:50+01:00</updated>
-  <id>http://nitschinger.at/</id>
+  <link href="http://daschl.github.io/blog/categories/assembler/atom.xml" rel="self"/>
+  <link href="http://daschl.github.io/"/>
+  <updated>2013-12-19T10:28:47+01:00</updated>
+  <id>http://daschl.github.io/</id>
   <author>
     <name><![CDATA[Michael Nitschinger]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Printing JVM Generated Assembler on Mac OS X]]></title>
-    <link href="http://nitschinger.at/Printing-JVM-generated-Assembler-on-Mac-OS-X"/>
+    <link href="http://daschl.github.io/Printing-JVM-generated-Assembler-on-Mac-OS-X"/>
     <updated>2013-06-24T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Printing-JVM-generated-Assembler-on-Mac-OS-X</id>
+    <id>http://daschl.github.io/Printing-JVM-generated-Assembler-on-Mac-OS-X</id>
     <content type="html"><![CDATA[<p>Thankfully, the JVM abstracts all of the nitty gritty details from us. Sometimes though, we need to peel off the first layers and see what&rsquo;s going on underneath. If you are curious (and here may be dragons) and want to learn about the actual <a href="http://en.wikipedia.org/wiki/Assembly_language">assembler</a> that your code is generating, the JVM provides mechanisms to inspect it.</p>
 
 <p>Since I wanted to make it work on my development machine and didn&rsquo;t find something comprehensive for Mac, here is how to do it.</p>

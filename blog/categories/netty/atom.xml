@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Netty | Nitschinger.at]]></title>
-  <link href="http://nitschinger.at/blog/categories/netty/atom.xml" rel="self"/>
-  <link href="http://nitschinger.at/"/>
-  <updated>2013-12-19T10:22:50+01:00</updated>
-  <id>http://nitschinger.at/</id>
+  <link href="http://daschl.github.io/blog/categories/netty/atom.xml" rel="self"/>
+  <link href="http://daschl.github.io/"/>
+  <updated>2013-12-19T10:28:47+01:00</updated>
+  <id>http://daschl.github.io/</id>
   <author>
     <name><![CDATA[Michael Nitschinger]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Never awaitUninterruptibly() on Netty Channels]]></title>
-    <link href="http://nitschinger.at/Never-await-Uninterruptibly-on-Netty-Channels"/>
+    <link href="http://daschl.github.io/Never-await-Uninterruptibly-on-Netty-Channels"/>
     <updated>2013-03-05T13:49:48+01:00</updated>
-    <id>http://nitschinger.at/Never-await-Uninterruptibly-on-Netty-Channels</id>
+    <id>http://daschl.github.io/Never-await-Uninterruptibly-on-Netty-Channels</id>
     <content type="html"><![CDATA[<p>TL:DR; When acquiring <a href="http://netty.io/3.6/api/org/jboss/netty/channel/Channel.html">Channels</a> in <a href="http://netty.io">Netty</a>, always use a <a href="http://netty.io/3.6/api/org/jboss/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> and never <a href="http://docs.jboss.org/netty/3.2/api/org/jboss/netty/channel/ChannelFuture.html#awaitUninterruptibly(">awaitUninterruptibly()</a>). Curious why? Read on.</p>
 
 <p>In the <a href="http://www.couchbase.com/develop/java/current">Java SDK</a> for <a href="http://www.couchbase.com/">Couchbase</a>, we use Netty to establish and maintain a streaming connection to one of the cluster nodes in order to get notified when topology changes happen. This streaming connection needs to be established during the bootstrap process of the client and we need to block until the connection is established (actually we don&rsquo;t need to, but the current implementation works that way). The old implementation to acquire the Channel looked like this:</p>

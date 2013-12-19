@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Php | Nitschinger.at]]></title>
-  <link href="http://nitschinger.at/blog/categories/php/atom.xml" rel="self"/>
-  <link href="http://nitschinger.at/"/>
-  <updated>2013-12-19T10:22:50+01:00</updated>
-  <id>http://nitschinger.at/</id>
+  <link href="http://daschl.github.io/blog/categories/php/atom.xml" rel="self"/>
+  <link href="http://daschl.github.io/"/>
+  <updated>2013-12-19T10:28:47+01:00</updated>
+  <id>http://daschl.github.io/</id>
   <author>
     <name><![CDATA[Michael Nitschinger]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Useful Couchbase Resources & Blog Posts]]></title>
-    <link href="http://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts"/>
+    <link href="http://daschl.github.io/Useful-Couchbase-Resources-Blog-Posts"/>
     <updated>2013-08-06T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts</id>
+    <id>http://daschl.github.io/Useful-Couchbase-Resources-Blog-Posts</id>
     <content type="html"><![CDATA[<p>The following list is a convenient way to get access to lots of resources, blog posts and material that have been shared throughout the past months. I tried to separate them by area, but of course lots of them overlap to some extent.</p>
 
 <p>They are sorted by date (so you&rsquo;ll find the most recent ones on top) and include the author where possible. Be aware that some of the older articles may already be outdated  or not 100% accurate.</p>
@@ -177,9 +177,9 @@
   
   <entry>
     <title type="html"><![CDATA[A Journey on Avoiding Nulls in PHP]]></title>
-    <link href="http://nitschinger.at/A-Journey-on-Avoiding-Nulls-in-PHP"/>
+    <link href="http://daschl.github.io/A-Journey-on-Avoiding-Nulls-in-PHP"/>
     <updated>2013-02-19T13:49:48+01:00</updated>
-    <id>http://nitschinger.at/A-Journey-on-Avoiding-Nulls-in-PHP</id>
+    <id>http://daschl.github.io/A-Journey-on-Avoiding-Nulls-in-PHP</id>
     <content type="html"><![CDATA[<p>Let&rsquo;s face it: nulls are a hassle and lead to exceptions and inconsistent application state. <a href="http://en.wikipedia.org/wiki/Tony_Hoare">Tony Hoare</a>, the inventor of QuickSort, even calls it his <a href="http://qconlondon.com/london-2009/presentation/Null+References:+The+Billion+Dollar+Mistake">billion dollar mistake</a>.</p>
 
 <p>While every developer has kind of accepted their existence, they are suddenly there when we&rsquo;d desperately need them to not show up. How often did you write<code>if($obj === null)</code> in your PHP code? Can&rsquo;t there be a better, more elegant and fault-tolerant solution to the problem?</p>
@@ -411,9 +411,9 @@ public function equals($object) {
   
   <entry>
     <title type="html"><![CDATA[Benchmarking Cache Transcoders in PHP]]></title>
-    <link href="http://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP"/>
+    <link href="http://daschl.github.io/Benchmarking-Cache-Transcoders-in-PHP"/>
     <updated>2013-01-30T13:49:48+01:00</updated>
-    <id>http://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP</id>
+    <id>http://daschl.github.io/Benchmarking-Cache-Transcoders-in-PHP</id>
     <content type="html"><![CDATA[<h2>Motivation</h2>
 
 <p>Storing PHP objects (or simpler data types like arrays) in caches always requires some kind of transformation. You need a way of encoding/decoding data so that it can be stored and loaded properly. In most languages, this process is known as object <a href="http://en.wikipedia.org/wiki/Serialization">serialization</a>. PHP provides a mechanism for this out of the box, but in this article we&rsquo;ll also look at <a href="http://pecl.php.net/package/igbinary">igbinary</a> as a drop-in replacement for the default serializer. We also compare the results to object transcoding based on <a href="http://json.org/">JSON</a>, which is not really an object serialization mechanism but commonly used as a data chache structure which has its own benefits and drawbacks.</p>
@@ -746,9 +746,9 @@ $end = microtime(true);</p>
   
   <entry>
     <title type="html"><![CDATA[Caching Doctrine Entities With Couchbase]]></title>
-    <link href="http://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase"/>
+    <link href="http://daschl.github.io/Caching-Doctrine-Entities-with-Couchbase"/>
     <updated>2013-01-08T13:49:48+01:00</updated>
-    <id>http://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase</id>
+    <id>http://daschl.github.io/Caching-Doctrine-Entities-with-Couchbase</id>
     <content type="html"><![CDATA[<h2>Motivation</h2>
 
 <p>As part of our ongoing efforts to make Couchbase more integrated with frameworks and libraries, we added caching support for the <a href="http://www.doctrine-project.org/">Doctrine ORM</a>. Recently, the pull request has been merged into the master branch and is scheduled to be published along with the <a href="http://doctrine-project.org/jira/browse/DCOM/fixforversion/10327">2.4</a> release.</p>

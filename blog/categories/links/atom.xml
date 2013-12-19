@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Links | Nitschinger.at]]></title>
-  <link href="http://nitschinger.at/blog/categories/links/atom.xml" rel="self"/>
-  <link href="http://nitschinger.at/"/>
-  <updated>2013-12-19T10:22:50+01:00</updated>
-  <id>http://nitschinger.at/</id>
+  <link href="http://daschl.github.io/blog/categories/links/atom.xml" rel="self"/>
+  <link href="http://daschl.github.io/"/>
+  <updated>2013-12-19T10:28:47+01:00</updated>
+  <id>http://daschl.github.io/</id>
   <author>
     <name><![CDATA[Michael Nitschinger]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Useful Couchbase Resources & Blog Posts]]></title>
-    <link href="http://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts"/>
+    <link href="http://daschl.github.io/Useful-Couchbase-Resources-Blog-Posts"/>
     <updated>2013-08-06T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts</id>
+    <id>http://daschl.github.io/Useful-Couchbase-Resources-Blog-Posts</id>
     <content type="html"><![CDATA[<p>The following list is a convenient way to get access to lots of resources, blog posts and material that have been shared throughout the past months. I tried to separate them by area, but of course lots of them overlap to some extent.</p>
 
 <p>They are sorted by date (so you&rsquo;ll find the most recent ones on top) and include the author where possible. Be aware that some of the older articles may already be outdated  or not 100% accurate.</p>

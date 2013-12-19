@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Nitschinger.at]]></title>
-  <link href="http://nitschinger.at/atom.xml" rel="self"/>
-  <link href="http://nitschinger.at/"/>
-  <updated>2013-12-19T10:22:50+01:00</updated>
-  <id>http://nitschinger.at/</id>
+  <link href="http://daschl.github.io/atom.xml" rel="self"/>
+  <link href="http://daschl.github.io/"/>
+  <updated>2013-12-19T10:28:18+01:00</updated>
+  <id>http://daschl.github.io/</id>
   <author>
     <name><![CDATA[Michael Nitschinger]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Using JMH for Java Microbenchmarking]]></title>
-    <link href="http://nitschinger.at/Using-JMH-for-Java-Microbenchmarking"/>
+    <link href="http://daschl.github.io/Using-JMH-for-Java-Microbenchmarking"/>
     <updated>2013-11-22T13:49:48+01:00</updated>
-    <id>http://nitschinger.at/Using-JMH-for-Java-Microbenchmarking</id>
+    <id>http://daschl.github.io/Using-JMH-for-Java-Microbenchmarking</id>
     <content type="html"><![CDATA[<p>Larger companies like Google started their own projects to remedy all kinds of pitfalls and libraries like <a href="https://code.google.com/p/caliper/">Caliper</a> popped out of that. Now finally, some fine folks of the OpenJDK team thought they&rsquo;ll do their own and share it for everyone to use. The tool is called <a href="http://openjdk.java.net/projects/code-tools/jmh/">jmh</a> or also known as &ldquo;Java Microbenchmarking Harness&rdquo;.</p>
 
 <p>In this post I just show you how to get started, but there are still lots of things you need to think about. I really recommend you to watch <a href="http://vimeo.com/78900556">the talk by Aleksey Shipilev</a> which dives into concepts and pitfalls. You can also find the slides <a href="http://shipilev.net/pub/talks/devoxx-Nov2013-benchmarking.pdf">here</a>.</p>
@@ -446,9 +446,9 @@ b.KeyBench.validateShortKeyBinary    thrpt   1       200    1    17886.628      
   
   <entry>
     <title type="html"><![CDATA[What's New in the Couchbase Java SDK 1.2]]></title>
-    <link href="http://nitschinger.at/What-s-new-in-the-Couchbase-Java-SDK-1-2"/>
+    <link href="http://daschl.github.io/What-s-new-in-the-Couchbase-Java-SDK-1-2"/>
     <updated>2013-10-11T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/What-s-new-in-the-Couchbase-Java-SDK-1-2</id>
+    <id>http://daschl.github.io/What-s-new-in-the-Couchbase-Java-SDK-1-2</id>
     <content type="html"><![CDATA[<p>For all users of our Java SDK, we prepared some nice additions for you. This post covers them in detail and shows how you can get more productive.</p>
 
 <p>Note that this blog post assumes you are running the 1.2.1 release, because there have been some slight changes between 1.2.0 and 1.2.1 that affect for example the listener support and metrics collection.</p>
@@ -779,9 +779,9 @@ b.KeyBench.validateShortKeyBinary    thrpt   1       200    1    17886.628      
   
   <entry>
     <title type="html"><![CDATA[Using the Reactor Processor for High-Performance TCP]]></title>
-    <link href="http://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP"/>
+    <link href="http://daschl.github.io/Using-the-Reactor-Processor-for-High-Performance-TCP"/>
     <updated>2013-08-13T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP</id>
+    <id>http://daschl.github.io/Using-the-Reactor-Processor-for-High-Performance-TCP</id>
     <content type="html"><![CDATA[<p>First, a disclaimer: the all-new <a href="https://github.com/reactor/reactor">Reactor</a> framework is still under heavy development, but it already provides a very promising basement for applications and libraries that need high throughput and low latency. We at <a href="http://www.couchbase.com/">Couchbase</a> aim to provide the highest throughput at the lowest latency, so it is very critical to build upon an infrastructure that can provide it. Current, we are performing early investigations for a possible &ldquo;next generation Java SDK&rdquo; and Reactor seems very promising so far.</p>
 
 <p>This blog post shows you how to quickly set up a Processor (we&rsquo;ll see in a minute what that is) that dispatches requests to Consumers (also a very common term in Reactor). In our case, the Consumer is actually a TCP socket. Please note that the actual numbers, while impressive, can&rsquo;t be used for real world measurements. What you&rsquo;ll see here is a raw throughput test to define a baseline what can be expected under ideal conditions. We are also using localhost here to avoid network latency (which is the bottleneck for most network applications).</p>
@@ -1311,9 +1311,9 @@ $ ./gradlew install
   
   <entry>
     <title type="html"><![CDATA[Useful Couchbase Resources & Blog Posts]]></title>
-    <link href="http://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts"/>
+    <link href="http://daschl.github.io/Useful-Couchbase-Resources-Blog-Posts"/>
     <updated>2013-08-06T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts</id>
+    <id>http://daschl.github.io/Useful-Couchbase-Resources-Blog-Posts</id>
     <content type="html"><![CDATA[<p>The following list is a convenient way to get access to lots of resources, blog posts and material that have been shared throughout the past months. I tried to separate them by area, but of course lots of them overlap to some extent.</p>
 
 <p>They are sorted by date (so you&rsquo;ll find the most recent ones on top) and include the author where possible. Be aware that some of the older articles may already be outdated  or not 100% accurate.</p>
@@ -1473,9 +1473,9 @@ $ ./gradlew install
   
   <entry>
     <title type="html"><![CDATA[Printing JVM Generated Assembler on Mac OS X]]></title>
-    <link href="http://nitschinger.at/Printing-JVM-generated-Assembler-on-Mac-OS-X"/>
+    <link href="http://daschl.github.io/Printing-JVM-generated-Assembler-on-Mac-OS-X"/>
     <updated>2013-06-24T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Printing-JVM-generated-Assembler-on-Mac-OS-X</id>
+    <id>http://daschl.github.io/Printing-JVM-generated-Assembler-on-Mac-OS-X</id>
     <content type="html"><![CDATA[<p>Thankfully, the JVM abstracts all of the nitty gritty details from us. Sometimes though, we need to peel off the first layers and see what&rsquo;s going on underneath. If you are curious (and here may be dragons) and want to learn about the actual <a href="http://en.wikipedia.org/wiki/Assembly_language">assembler</a> that your code is generating, the JVM provides mechanisms to inspect it.</p>
 
 <p>Since I wanted to make it work on my development machine and didn&rsquo;t find something comprehensive for Mac, here is how to do it.</p>
@@ -1562,9 +1562,9 @@ Decoding compiled method 0x000000010ac74150:
   
   <entry>
     <title type="html"><![CDATA[Fun With Couchbase Views and MessagePack]]></title>
-    <link href="http://nitschinger.at/Fun-with-Couchbase-Views-and-Message-Pack"/>
+    <link href="http://daschl.github.io/Fun-with-Couchbase-Views-and-Message-Pack"/>
     <updated>2013-06-18T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Fun-with-Couchbase-Views-and-Message-Pack</id>
+    <id>http://daschl.github.io/Fun-with-Couchbase-Views-and-Message-Pack</id>
     <content type="html"><![CDATA[<p>Alright, before we start I have to admit that this is a little bit of a hack. Not that it doesn&rsquo;t work, but of course Couchbase Server 2.0 officially only supports JSON documents to be queried through Views. In addition to that, it is not so much known that you have access to all the other documents through Base64 encoding. Recently, <a href="http://avsej.net/2013/analyzing-binary-data-in-couchbase/">Sergey</a> showed us how to very easily analyze binary data in Couchbase Views and this brought me on the idea to take it one step further.</p>
 
 <p>In this blog post we&rsquo;re going to store <a href="http://msgpack.org/">MessagePack</a> formatted data in Couchbase and then make its content available to Views (and allow us to query it). Note that you don&rsquo;t need to patch Couchbase for this, its just a snippet of JavaScript code that you need to include in your map function. We&rsquo;ll be using Java on the client side here, but nearly every combination of our official SDKs and MessagePack modules works for this.</p>
@@ -2180,9 +2180,9 @@ Results have been uploaded. View them at: https://microbenchmarks.appspot.com/ru
   
   <entry>
     <title type="html"><![CDATA[A Couchbase Cluster in Minutes With Vagrant and Puppet]]></title>
-    <link href="http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet"/>
+    <link href="http://daschl.github.io/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet"/>
     <updated>2013-05-27T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet</id>
+    <id>http://daschl.github.io/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet</id>
     <content type="html"><![CDATA[<h2>Motivation</h2>
 
 <p>Since I work as part of the engineering team at Couchbase, I need to run my code against a variety of server deployments. We run a multitude of operating systems and software versions, and so do our customers. In order to fix bugs reliably and build new features, it is critical to get a cluster up and running that resembles these deployments as good as possible. I know that I can run all of these combinations on EC2, but the cost for this would be very high and most of the time its overkill.</p>
@@ -2463,9 +2463,9 @@ notice: Finished catalog run in 0.77 seconds
   
   <entry>
     <title type="html"><![CDATA[Logging With the Couchbase Java Client]]></title>
-    <link href="http://nitschinger.at/Logging-with-the-Couchbase-Java-Client"/>
+    <link href="http://daschl.github.io/Logging-with-the-Couchbase-Java-Client"/>
     <updated>2013-05-16T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Logging-with-the-Couchbase-Java-Client</id>
+    <id>http://daschl.github.io/Logging-with-the-Couchbase-Java-Client</id>
     <content type="html"><![CDATA[<h2>Introduction</h2>
 
 <p>There is a huge variety in logging frameworks for Java, and its hard to please everyone. To understand how logging is currently handled in the SDK, we have to go back a few years. As you may know, the SDK depends on the <a href="https://code.google.com/p/spymemcached/">spymemcached</a> library and therefore also inherits its logging mechanisms. Back in the days when <a href="https://twitter.com/dlsspy">@dustin</a> wrote spy, there was no good abstraction for logging available (like SLF4J), so he wrote his own. Nowadays things have changed, but spy still inherits this legacy.</p>
@@ -2742,9 +2742,9 @@ SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further detail
   
   <entry>
     <title type="html"><![CDATA[Couchbase Java SDK Internals]]></title>
-    <link href="http://nitschinger.at/Couchbase-Java-SDK-Internals"/>
+    <link href="http://daschl.github.io/Couchbase-Java-SDK-Internals"/>
     <updated>2013-04-17T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Couchbase-Java-SDK-Internals</id>
+    <id>http://daschl.github.io/Couchbase-Java-SDK-Internals</id>
     <content type="html"><![CDATA[<h2>Motivation</h2>
 
 <p>This blog post is intended to be a very detailed and informative article for those who already have used the Couchbase Java SDK and want to know how the internals work. This is not a introduction on how to use the Java SDK and we&rsquo;ll cover some fairly advanced topics on the way.</p>
@@ -2978,9 +2978,9 @@ INFO: Could not load properties file "cbclient.properties" because: File not fou
   
   <entry>
     <title type="html"><![CDATA[Never awaitUninterruptibly() on Netty Channels]]></title>
-    <link href="http://nitschinger.at/Never-await-Uninterruptibly-on-Netty-Channels"/>
+    <link href="http://daschl.github.io/Never-await-Uninterruptibly-on-Netty-Channels"/>
     <updated>2013-03-05T13:49:48+01:00</updated>
-    <id>http://nitschinger.at/Never-await-Uninterruptibly-on-Netty-Channels</id>
+    <id>http://daschl.github.io/Never-await-Uninterruptibly-on-Netty-Channels</id>
     <content type="html"><![CDATA[<p>TL:DR; When acquiring <a href="http://netty.io/3.6/api/org/jboss/netty/channel/Channel.html">Channels</a> in <a href="http://netty.io">Netty</a>, always use a <a href="http://netty.io/3.6/api/org/jboss/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> and never <a href="http://docs.jboss.org/netty/3.2/api/org/jboss/netty/channel/ChannelFuture.html#awaitUninterruptibly(">awaitUninterruptibly()</a>). Curious why? Read on.</p>
 
 <p>In the <a href="http://www.couchbase.com/develop/java/current">Java SDK</a> for <a href="http://www.couchbase.com/">Couchbase</a>, we use Netty to establish and maintain a streaming connection to one of the cluster nodes in order to get notified when topology changes happen. This streaming connection needs to be established during the bootstrap process of the client and we need to block until the connection is established (actually we don&rsquo;t need to, but the current implementation works that way). The old implementation to acquire the Channel looked like this:</p>
@@ -3095,9 +3095,9 @@ INFO: Could not load properties file "cbclient.properties" because: File not fou
   
   <entry>
     <title type="html"><![CDATA[A Journey on Avoiding Nulls in PHP]]></title>
-    <link href="http://nitschinger.at/A-Journey-on-Avoiding-Nulls-in-PHP"/>
+    <link href="http://daschl.github.io/A-Journey-on-Avoiding-Nulls-in-PHP"/>
     <updated>2013-02-19T13:49:48+01:00</updated>
-    <id>http://nitschinger.at/A-Journey-on-Avoiding-Nulls-in-PHP</id>
+    <id>http://daschl.github.io/A-Journey-on-Avoiding-Nulls-in-PHP</id>
     <content type="html"><![CDATA[<p>Let&rsquo;s face it: nulls are a hassle and lead to exceptions and inconsistent application state. <a href="http://en.wikipedia.org/wiki/Tony_Hoare">Tony Hoare</a>, the inventor of QuickSort, even calls it his <a href="http://qconlondon.com/london-2009/presentation/Null+References:+The+Billion+Dollar+Mistake">billion dollar mistake</a>.</p>
 
 <p>While every developer has kind of accepted their existence, they are suddenly there when we&rsquo;d desperately need them to not show up. How often did you write<code>if($obj === null)</code> in your PHP code? Can&rsquo;t there be a better, more elegant and fault-tolerant solution to the problem?</p>
@@ -3481,9 +3481,9 @@ INFO: Could not load properties file "cbclient.properties" because: File not fou
   
   <entry>
     <title type="html"><![CDATA[Benchmarking Cache Transcoders in PHP]]></title>
-    <link href="http://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP"/>
+    <link href="http://daschl.github.io/Benchmarking-Cache-Transcoders-in-PHP"/>
     <updated>2013-01-30T13:49:48+01:00</updated>
-    <id>http://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP</id>
+    <id>http://daschl.github.io/Benchmarking-Cache-Transcoders-in-PHP</id>
     <content type="html"><![CDATA[<h2>Motivation</h2>
 
 <p>Storing PHP objects (or simpler data types like arrays) in caches always requires some kind of transformation. You need a way of encoding/decoding data so that it can be stored and loaded properly. In most languages, this process is known as object <a href="http://en.wikipedia.org/wiki/Serialization">serialization</a>. PHP provides a mechanism for this out of the box, but in this article we&rsquo;ll also look at <a href="http://pecl.php.net/package/igbinary">igbinary</a> as a drop-in replacement for the default serializer. We also compare the results to object transcoding based on <a href="http://json.org/">JSON</a>, which is not really an object serialization mechanism but commonly used as a data chache structure which has its own benefits and drawbacks.</p>
@@ -3946,9 +3946,9 @@ igbinary
   
   <entry>
     <title type="html"><![CDATA[Caching Doctrine Entities With Couchbase]]></title>
-    <link href="http://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase"/>
+    <link href="http://daschl.github.io/Caching-Doctrine-Entities-with-Couchbase"/>
     <updated>2013-01-08T13:49:48+01:00</updated>
-    <id>http://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase</id>
+    <id>http://daschl.github.io/Caching-Doctrine-Entities-with-Couchbase</id>
     <content type="html"><![CDATA[<h2>Motivation</h2>
 
 <p>As part of our ongoing efforts to make Couchbase more integrated with frameworks and libraries, we added caching support for the <a href="http://www.doctrine-project.org/">Doctrine ORM</a>. Recently, the pull request has been merged into the master branch and is scheduled to be published along with the <a href="http://doctrine-project.org/jira/browse/DCOM/fixforversion/10327">2.4</a> release.</p>

@@ -1,4 +1,4 @@
 User-agent: *
 Disallow: 
 
-Sitemap: http://nitschinger.at/sitemap.xml 
+Sitemap: http://daschl.github.io/sitemap.xml 

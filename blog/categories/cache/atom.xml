@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Cache | Nitschinger.at]]></title>
-  <link href="http://nitschinger.at/blog/categories/cache/atom.xml" rel="self"/>
-  <link href="http://nitschinger.at/"/>
-  <updated>2013-12-19T10:22:50+01:00</updated>
-  <id>http://nitschinger.at/</id>
+  <link href="http://daschl.github.io/blog/categories/cache/atom.xml" rel="self"/>
+  <link href="http://daschl.github.io/"/>
+  <updated>2013-12-19T10:28:47+01:00</updated>
+  <id>http://daschl.github.io/</id>
   <author>
     <name><![CDATA[Michael Nitschinger]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Benchmarking Cache Transcoders in PHP]]></title>
-    <link href="http://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP"/>
+    <link href="http://daschl.github.io/Benchmarking-Cache-Transcoders-in-PHP"/>
     <updated>2013-01-30T13:49:48+01:00</updated>
-    <id>http://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP</id>
+    <id>http://daschl.github.io/Benchmarking-Cache-Transcoders-in-PHP</id>
     <content type="html"><![CDATA[<h2>Motivation</h2>
 
 <p>Storing PHP objects (or simpler data types like arrays) in caches always requires some kind of transformation. You need a way of encoding/decoding data so that it can be stored and loaded properly. In most languages, this process is known as object <a href="http://en.wikipedia.org/wiki/Serialization">serialization</a>. PHP provides a mechanism for this out of the box, but in this article we&rsquo;ll also look at <a href="http://pecl.php.net/package/igbinary">igbinary</a> as a drop-in replacement for the default serializer. We also compare the results to object transcoding based on <a href="http://json.org/">JSON</a>, which is not really an object serialization mechanism but commonly used as a data chache structure which has its own benefits and drawbacks.</p>
@@ -350,9 +350,9 @@ $end = microtime(true);</p>
   
   <entry>
     <title type="html"><![CDATA[Caching Doctrine Entities With Couchbase]]></title>
-    <link href="http://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase"/>
+    <link href="http://daschl.github.io/Caching-Doctrine-Entities-with-Couchbase"/>
     <updated>2013-01-08T13:49:48+01:00</updated>
-    <id>http://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase</id>
+    <id>http://daschl.github.io/Caching-Doctrine-Entities-with-Couchbase</id>
     <content type="html"><![CDATA[<h2>Motivation</h2>
 
 <p>As part of our ongoing efforts to make Couchbase more integrated with frameworks and libraries, we added caching support for the <a href="http://www.doctrine-project.org/">Doctrine ORM</a>. Recently, the pull request has been merged into the master branch and is scheduled to be published along with the <a href="http://doctrine-project.org/jira/browse/DCOM/fixforversion/10327">2.4</a> release.</p>

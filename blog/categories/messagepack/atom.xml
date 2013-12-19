@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Messagepack | Nitschinger.at]]></title>
-  <link href="http://nitschinger.at/blog/categories/messagepack/atom.xml" rel="self"/>
-  <link href="http://nitschinger.at/"/>
-  <updated>2013-12-19T10:22:50+01:00</updated>
-  <id>http://nitschinger.at/</id>
+  <link href="http://daschl.github.io/blog/categories/messagepack/atom.xml" rel="self"/>
+  <link href="http://daschl.github.io/"/>
+  <updated>2013-12-19T10:28:47+01:00</updated>
+  <id>http://daschl.github.io/</id>
   <author>
     <name><![CDATA[Michael Nitschinger]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Fun With Couchbase Views and MessagePack]]></title>
-    <link href="http://nitschinger.at/Fun-with-Couchbase-Views-and-Message-Pack"/>
+    <link href="http://daschl.github.io/Fun-with-Couchbase-Views-and-Message-Pack"/>
     <updated>2013-06-18T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Fun-with-Couchbase-Views-and-Message-Pack</id>
+    <id>http://daschl.github.io/Fun-with-Couchbase-Views-and-Message-Pack</id>
     <content type="html"><![CDATA[<p>Alright, before we start I have to admit that this is a little bit of a hack. Not that it doesn&rsquo;t work, but of course Couchbase Server 2.0 officially only supports JSON documents to be queried through Views. In addition to that, it is not so much known that you have access to all the other documents through Base64 encoding. Recently, <a href="http://avsej.net/2013/analyzing-binary-data-in-couchbase/">Sergey</a> showed us how to very easily analyze binary data in Couchbase Views and this brought me on the idea to take it one step further.</p>
 
 <p>In this blog post we&rsquo;re going to store <a href="http://msgpack.org/">MessagePack</a> formatted data in Couchbase and then make its content available to Views (and allow us to query it). Note that you don&rsquo;t need to patch Couchbase for this, its just a snippet of JavaScript code that you need to include in your map function. We&rsquo;ll be using Java on the client side here, but nearly every combination of our official SDKs and MessagePack modules works for this.</p>

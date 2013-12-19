@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Couchbase | Nitschinger.at]]></title>
-  <link href="http://nitschinger.at/blog/categories/couchbase/atom.xml" rel="self"/>
-  <link href="http://nitschinger.at/"/>
-  <updated>2013-12-19T10:22:50+01:00</updated>
-  <id>http://nitschinger.at/</id>
+  <link href="http://daschl.github.io/blog/categories/couchbase/atom.xml" rel="self"/>
+  <link href="http://daschl.github.io/"/>
+  <updated>2013-12-19T10:28:47+01:00</updated>
+  <id>http://daschl.github.io/</id>
   <author>
     <name><![CDATA[Michael Nitschinger]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[What's New in the Couchbase Java SDK 1.2]]></title>
-    <link href="http://nitschinger.at/What-s-new-in-the-Couchbase-Java-SDK-1-2"/>
+    <link href="http://daschl.github.io/What-s-new-in-the-Couchbase-Java-SDK-1-2"/>
     <updated>2013-10-11T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/What-s-new-in-the-Couchbase-Java-SDK-1-2</id>
+    <id>http://daschl.github.io/What-s-new-in-the-Couchbase-Java-SDK-1-2</id>
     <content type="html"><![CDATA[<p>For all users of our Java SDK, we prepared some nice additions for you. This post covers them in detail and shows how you can get more productive.</p>
 
 <p>Note that this blog post assumes you are running the 1.2.1 release, because there have been some slight changes between 1.2.0 and 1.2.1 that affect for example the listener support and metrics collection.</p>
@@ -280,9 +280,9 @@ CouchbaseClient client = new CouchbaseClient(cf);
   
   <entry>
     <title type="html"><![CDATA[Using the Reactor Processor for High-Performance TCP]]></title>
-    <link href="http://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP"/>
+    <link href="http://daschl.github.io/Using-the-Reactor-Processor-for-High-Performance-TCP"/>
     <updated>2013-08-13T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP</id>
+    <id>http://daschl.github.io/Using-the-Reactor-Processor-for-High-Performance-TCP</id>
     <content type="html"><![CDATA[<p>First, a disclaimer: the all-new <a href="https://github.com/reactor/reactor">Reactor</a> framework is still under heavy development, but it already provides a very promising basement for applications and libraries that need high throughput and low latency. We at <a href="http://www.couchbase.com/">Couchbase</a> aim to provide the highest throughput at the lowest latency, so it is very critical to build upon an infrastructure that can provide it. Current, we are performing early investigations for a possible &ldquo;next generation Java SDK&rdquo; and Reactor seems very promising so far.</p>
 
 <p>This blog post shows you how to quickly set up a Processor (we&rsquo;ll see in a minute what that is) that dispatches requests to Consumers (also a very common term in Reactor). In our case, the Consumer is actually a TCP socket. Please note that the actual numbers, while impressive, can&rsquo;t be used for real world measurements. What you&rsquo;ll see here is a raw throughput test to define a baseline what can be expected under ideal conditions. We are also using localhost here to avoid network latency (which is the bottleneck for most network applications).</p>
@@ -650,9 +650,9 @@ writeBuffer.clear();
   
   <entry>
     <title type="html"><![CDATA[Useful Couchbase Resources & Blog Posts]]></title>
-    <link href="http://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts"/>
+    <link href="http://daschl.github.io/Useful-Couchbase-Resources-Blog-Posts"/>
     <updated>2013-08-06T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts</id>
+    <id>http://daschl.github.io/Useful-Couchbase-Resources-Blog-Posts</id>
     <content type="html"><![CDATA[<p>The following list is a convenient way to get access to lots of resources, blog posts and material that have been shared throughout the past months. I tried to separate them by area, but of course lots of them overlap to some extent.</p>
 
 <p>They are sorted by date (so you&rsquo;ll find the most recent ones on top) and include the author where possible. Be aware that some of the older articles may already be outdated  or not 100% accurate.</p>
@@ -812,9 +812,9 @@ writeBuffer.clear();
   
   <entry>
     <title type="html"><![CDATA[Fun With Couchbase Views and MessagePack]]></title>
-    <link href="http://nitschinger.at/Fun-with-Couchbase-Views-and-Message-Pack"/>
+    <link href="http://daschl.github.io/Fun-with-Couchbase-Views-and-Message-Pack"/>
     <updated>2013-06-18T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Fun-with-Couchbase-Views-and-Message-Pack</id>
+    <id>http://daschl.github.io/Fun-with-Couchbase-Views-and-Message-Pack</id>
     <content type="html"><![CDATA[<p>Alright, before we start I have to admit that this is a little bit of a hack. Not that it doesn&rsquo;t work, but of course Couchbase Server 2.0 officially only supports JSON documents to be queried through Views. In addition to that, it is not so much known that you have access to all the other documents through Base64 encoding. Recently, <a href="http://avsej.net/2013/analyzing-binary-data-in-couchbase/">Sergey</a> showed us how to very easily analyze binary data in Couchbase Views and this brought me on the idea to take it one step further.</p>
 
 <p>In this blog post we&rsquo;re going to store <a href="http://msgpack.org/">MessagePack</a> formatted data in Couchbase and then make its content available to Views (and allow us to query it). Note that you don&rsquo;t need to patch Couchbase for this, its just a snippet of JavaScript code that you need to include in your map function. We&rsquo;ll be using Java on the client side here, but nearly every combination of our official SDKs and MessagePack modules works for this.</p>
@@ -1252,9 +1252,9 @@ Results have been uploaded. View them at: https://microbenchmarks.appspot.com/ru
   
   <entry>
     <title type="html"><![CDATA[A Couchbase Cluster in Minutes With Vagrant and Puppet]]></title>
-    <link href="http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet"/>
+    <link href="http://daschl.github.io/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet"/>
     <updated>2013-05-27T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet</id>
+    <id>http://daschl.github.io/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet</id>
     <content type="html"><![CDATA[<h2>Motivation</h2>
 
 <p>Since I work as part of the engineering team at Couchbase, I need to run my code against a variety of server deployments. We run a multitude of operating systems and software versions, and so do our customers. In order to fix bugs reliably and build new features, it is critical to get a cluster up and running that resembles these deployments as good as possible. I know that I can run all of these combinations on EC2, but the cost for this would be very high and most of the time its overkill.</p>

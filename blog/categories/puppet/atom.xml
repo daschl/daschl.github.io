@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Puppet | Nitschinger.at]]></title>
-  <link href="http://nitschinger.at/blog/categories/puppet/atom.xml" rel="self"/>
-  <link href="http://nitschinger.at/"/>
-  <updated>2013-12-19T10:22:50+01:00</updated>
-  <id>http://nitschinger.at/</id>
+  <link href="http://daschl.github.io/blog/categories/puppet/atom.xml" rel="self"/>
+  <link href="http://daschl.github.io/"/>
+  <updated>2013-12-19T10:28:47+01:00</updated>
+  <id>http://daschl.github.io/</id>
   <author>
     <name><![CDATA[Michael Nitschinger]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[A Couchbase Cluster in Minutes With Vagrant and Puppet]]></title>
-    <link href="http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet"/>
+    <link href="http://daschl.github.io/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet"/>
     <updated>2013-05-27T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet</id>
+    <id>http://daschl.github.io/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet</id>
     <content type="html"><![CDATA[<h2>Motivation</h2>
 
 <p>Since I work as part of the engineering team at Couchbase, I need to run my code against a variety of server deployments. We run a multitude of operating systems and software versions, and so do our customers. In order to fix bugs reliably and build new features, it is critical to get a cluster up and running that resembles these deployments as good as possible. I know that I can run all of these combinations on EC2, but the cost for this would be very high and most of the time its overkill.</p>

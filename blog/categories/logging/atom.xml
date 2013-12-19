@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Logging | Nitschinger.at]]></title>
-  <link href="http://nitschinger.at/blog/categories/logging/atom.xml" rel="self"/>
-  <link href="http://nitschinger.at/"/>
-  <updated>2013-12-19T10:22:50+01:00</updated>
-  <id>http://nitschinger.at/</id>
+  <link href="http://daschl.github.io/blog/categories/logging/atom.xml" rel="self"/>
+  <link href="http://daschl.github.io/"/>
+  <updated>2013-12-19T10:28:47+01:00</updated>
+  <id>http://daschl.github.io/</id>
   <author>
     <name><![CDATA[Michael Nitschinger]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Logging With the Couchbase Java Client]]></title>
-    <link href="http://nitschinger.at/Logging-with-the-Couchbase-Java-Client"/>
+    <link href="http://daschl.github.io/Logging-with-the-Couchbase-Java-Client"/>
     <updated>2013-05-16T14:49:48+02:00</updated>
-    <id>http://nitschinger.at/Logging-with-the-Couchbase-Java-Client</id>
+    <id>http://daschl.github.io/Logging-with-the-Couchbase-Java-Client</id>
     <content type="html"><![CDATA[<h2>Introduction</h2>
 
 <p>There is a huge variety in logging frameworks for Java, and its hard to please everyone. To understand how logging is currently handled in the SDK, we have to go back a few years. As you may know, the SDK depends on the <a href="https://code.google.com/p/spymemcached/">spymemcached</a> library and therefore also inherits its logging mechanisms. Back in the days when <a href="https://twitter.com/dlsspy">@dustin</a> wrote spy, there was no good abstraction for logging available (like SLF4J), so he wrote his own. Nowadays things have changed, but spy still inherits this legacy.</p>

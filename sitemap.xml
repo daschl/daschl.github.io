@@ -1,67 +1,67 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
     <url>
-        <loc>http://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase</loc>
+        <loc>http://daschl.github.io/Caching-Doctrine-Entities-with-Couchbase</loc>
         <lastmod>2013-12-19T10:22:50+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP</loc>
+        <loc>http://daschl.github.io/Benchmarking-Cache-Transcoders-in-PHP</loc>
         <lastmod>2013-12-19T10:19:02+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/A-Journey-on-Avoiding-Nulls-in-PHP</loc>
+        <loc>http://daschl.github.io/A-Journey-on-Avoiding-Nulls-in-PHP</loc>
         <lastmod>2013-12-19T10:14:26+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/Never-await-Uninterruptibly-on-Netty-Channels</loc>
+        <loc>http://daschl.github.io/Never-await-Uninterruptibly-on-Netty-Channels</loc>
         <lastmod>2013-12-19T10:14:43+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/Couchbase-Java-SDK-Internals</loc>
+        <loc>http://daschl.github.io/Couchbase-Java-SDK-Internals</loc>
         <lastmod>2013-12-19T10:07:34+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/Logging-with-the-Couchbase-Java-Client</loc>
+        <loc>http://daschl.github.io/Logging-with-the-Couchbase-Java-Client</loc>
         <lastmod>2013-12-19T09:36:19+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet</loc>
+        <loc>http://daschl.github.io/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet</loc>
         <lastmod>2013-12-19T09:32:42+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/Fun-with-Couchbase-Views-and-Message-Pack</loc>
+        <loc>http://daschl.github.io/Fun-with-Couchbase-Views-and-Message-Pack</loc>
         <lastmod>2013-12-19T09:38:37+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/Printing-JVM-generated-Assembler-on-Mac-OS-X</loc>
+        <loc>http://daschl.github.io/Printing-JVM-generated-Assembler-on-Mac-OS-X</loc>
         <lastmod>2013-12-18T16:36:21+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts</loc>
+        <loc>http://daschl.github.io/Useful-Couchbase-Resources-Blog-Posts</loc>
         <lastmod>2013-12-18T16:34:28+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP</loc>
+        <loc>http://daschl.github.io/Using-the-Reactor-Processor-for-High-Performance-TCP</loc>
         <lastmod>2013-12-18T16:30:18+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/What-s-new-in-the-Couchbase-Java-SDK-1-2</loc>
+        <loc>http://daschl.github.io/What-s-new-in-the-Couchbase-Java-SDK-1-2</loc>
         <lastmod>2013-12-18T14:17:14+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/Using-JMH-for-Java-Microbenchmarking</loc>
+        <loc>http://daschl.github.io/Using-JMH-for-Java-Microbenchmarking</loc>
         <lastmod>2013-12-18T14:05:04+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/blog/archives/</loc>
+        <loc>http://daschl.github.io/blog/archives/</loc>
         <lastmod>2013-12-19T10:22:50+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/</loc>
+        <loc>http://daschl.github.io/</loc>
         <lastmod>2013-12-19T10:22:50+01:00</lastmod>
     </url>
     <url>
-        <loc>http://nitschinger.at/robots.txt</loc>
+        <loc>http://daschl.github.io/robots.txt</loc>
         <lastmod>2013-12-18T13:49:45+01:00</lastmod>
     </url>
 </urlset>

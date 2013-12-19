@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Benchmarking | Nitschinger.at]]></title>
-  <link href="http://nitschinger.at/blog/categories/benchmarking/atom.xml" rel="self"/>
-  <link href="http://nitschinger.at/"/>
-  <updated>2013-12-19T10:22:50+01:00</updated>
-  <id>http://nitschinger.at/</id>
+  <link href="http://daschl.github.io/blog/categories/benchmarking/atom.xml" rel="self"/>
+  <link href="http://daschl.github.io/"/>
+  <updated>2013-12-19T10:28:47+01:00</updated>
+  <id>http://daschl.github.io/</id>
   <author>
     <name><![CDATA[Michael Nitschinger]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Using JMH for Java Microbenchmarking]]></title>
-    <link href="http://nitschinger.at/Using-JMH-for-Java-Microbenchmarking"/>
+    <link href="http://daschl.github.io/Using-JMH-for-Java-Microbenchmarking"/>
     <updated>2013-11-22T13:49:48+01:00</updated>
-    <id>http://nitschinger.at/Using-JMH-for-Java-Microbenchmarking</id>
+    <id>http://daschl.github.io/Using-JMH-for-Java-Microbenchmarking</id>
     <content type="html"><![CDATA[<p>Larger companies like Google started their own projects to remedy all kinds of pitfalls and libraries like <a href="https://code.google.com/p/caliper/">Caliper</a> popped out of that. Now finally, some fine folks of the OpenJDK team thought they&rsquo;ll do their own and share it for everyone to use. The tool is called <a href="http://openjdk.java.net/projects/code-tools/jmh/">jmh</a> or also known as &ldquo;Java Microbenchmarking Harness&rdquo;.</p>
 
 <p>In this post I just show you how to get started, but there are still lots of things you need to think about. I really recommend you to watch <a href="http://vimeo.com/78900556">the talk by Aleksey Shipilev</a> which dives into concepts and pitfalls. You can also find the slides <a href="http://shipilev.net/pub/talks/devoxx-Nov2013-benchmarking.pdf">here</a>.</p>
