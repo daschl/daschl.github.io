@@ -1,0 +1,762 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Using the Reactor Processor for High-Performance TCP - Nitschinger.at</title>
+  <meta name="author" content="Michael Nitschinger">
+
+  
+  <meta name="description" content="First, a disclaimer: the all-new Reactor framework is still under heavy development, but it already provides a very promising basement for &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Nitschinger.at" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Nitschinger.at</a></h1>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:nitschinger.at" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Using the Reactor Processor for High-Performance TCP</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-13T14:49:48+02:00" pubdate data-updated="true">Aug 13<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>First, a disclaimer: the all-new <a href="https://github.com/reactor/reactor">Reactor</a> framework is still under heavy development, but it already provides a very promising basement for applications and libraries that need high throughput and low latency. We at <a href="http://www.couchbase.com/">Couchbase</a> aim to provide the highest throughput at the lowest latency, so it is very critical to build upon an infrastructure that can provide it. Current, we are performing early investigations for a possible &ldquo;next generation Java SDK&rdquo; and Reactor seems very promising so far.</p>
+
+<p>This blog post shows you how to quickly set up a Processor (we&rsquo;ll see in a minute what that is) that dispatches requests to Consumers (also a very common term in Reactor). In our case, the Consumer is actually a TCP socket. Please note that the actual numbers, while impressive, can&rsquo;t be used for real world measurements. What you&rsquo;ll see here is a raw throughput test to define a baseline what can be expected under ideal conditions. We are also using localhost here to avoid network latency (which is the bottleneck for most network applications).</p>
+
+<p>I&rsquo;m going to use a Couchbase server as an endpoint, but feel free to use whatever you want instead. The whole API is very generic and the consumers can be exchanged easily.</p>
+
+<h2>Setup</h2>
+
+<p>Before we can get started, all we need to do is include the <code>reactor-tcp</code> artifact from maven. Now you can do this through gradle, maven, ivy or what you want, but at this point, I would recommend you to check out the <a href="https://github.com/reactor/reactor">reactor</a> project directly from github and build it on your own, so you&rsquo;ll have the latest and greatest code in your local repository:</p>
+
+<pre><code>$ git clone https://github.com/reactor/reactor.git
+$ cd reactor
+$ ./gradlew install
+</code></pre>
+
+<p>This will download and install everything you need. The next step is to create a maven or gradle project in your IDE, but I&rsquo;ll leave that part up to the reader. The maven dependency you need to include is:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;dependency&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;groupId&gt;</span>org.projectreactor<span class="nt">&lt;/groupId&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;artifactId&gt;</span>reactor-tcp<span class="nt">&lt;/artifactId&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;version&gt;</span>1.0.0.BUILD-SNAPSHOT<span class="nt">&lt;/version&gt;</span>
+</span><span class='line'><span class="nt">&lt;/dependency&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Or, for all gradle folks:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='groovy'><span class='line'><span class="n">dependencies</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">compile</span> <span class="s1">&#39;org.projectreactor:reactor-tcp:1.0.0.BUILD-SNAPSHOT&#39;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>The Processor</h2>
+
+<p>Now, let&rsquo;s get to some actual code. The Processor is a very lightweight abstraction over the <a href="https://github.com/LMAX-Exchange/disruptor">LMAX Disruptor</a> a high performant RingBuffer. A RingBuffer provides much better characteristics than a normal Queue, and the Disruptor is heavily optimized for dispatching tasks in the nanosecond area (which means millions of operations per second). I recommend you to read <a href="https://github.com/LMAX-Exchange/disruptor/blob/master/docs/Disruptor.docx">this paper</a> and also check out talks by <a href="http://mechanical-sympathy.blogspot.co.at/">Martin Thompson</a> if you are interested.</p>
+
+<p>The basic idea is that we decouple consumers from producers, so that each of them can work on their own pace (not blocking each other) and also benefiting from batching if the producers are faster than the consumers. We&rsquo;ll see why this is particularly important with TCP in a second.</p>
+
+<p>A <code>Processor</code> can be created by instantiating a <code>ProcessorSpec</code> and defining some mandatory options. Then, the <code>Processor</code> is built for us.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ProcessorSpec</span><span class="o">&lt;</span><span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;&gt;</span> <span class="n">writeProcessor</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ProcessorSpec</span><span class="o">&lt;</span><span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;&gt;()</span>
+</span><span class='line'>  <span class="o">.</span><span class="na">dataSupplier</span><span class="o">(</span><span class="k">new</span> <span class="n">Supplier</span><span class="o">&lt;</span><span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;&gt;()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="nd">@Override</span>
+</span><span class='line'>      <span class="kd">public</span> <span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;</span> <span class="nf">get</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="k">new</span> <span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;(</span><span class="k">new</span> <span class="n">Buffer</span><span class="o">());</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">})</span>
+</span><span class='line'>  <span class="o">.</span><span class="na">consume</span><span class="o">(</span><span class="k">new</span> <span class="n">Node</span><span class="o">(</span><span class="s">&quot;127.0.0.1&quot;</span><span class="o">,</span> <span class="n">environment</span><span class="o">))</span>
+</span><span class='line'>  <span class="o">.</span><span class="na">get</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note that this <code>Spec</code> pattern is very common in reactor, as it allows for very easy and yet flexible object creation. There are a few things that we need to cover.</p>
+
+<p>First, the generic type here is <code>Event&lt;Buffer&gt;</code>. The producers will wrap the payload (here we use raw <code>Buffers</code>) in an <code>Event</code> and the consumers will unwrap and use it properly. The <code>Event</code> type also allows for headers that can be used for custom routing, but we won&rsquo;t cover that here.</p>
+
+<p>Second, the <code>dataSupplier</code> is a speciality of the Disruptor RingBuffer. In order to minimize garbage collection and make effective use of memory layout, we need to pre-allocate our container objects. They will be reused throughout the application and will never be garbage collected.</p>
+
+<p>Third, through the <code>consume</code> method we can tell the <code>Processor</code> who will be notified when new data is added to the RingBuffer. In our case, the <code>Node</code> represents the TCP client which we&rsquo;ll build in a second.</p>
+
+<p>Now, how do we write to the Processor? Let&rsquo;s add a simple method that does it for us:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">write</span><span class="o">(</span><span class="kd">final</span> <span class="n">Buffer</span> <span class="n">data</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="kd">final</span> <span class="n">Operation</span><span class="o">&lt;</span><span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;&gt;</span> <span class="n">op</span> <span class="o">=</span> <span class="n">writeProcessor</span><span class="o">.</span><span class="na">get</span><span class="o">();</span>
+</span><span class='line'>  <span class="n">op</span><span class="o">.</span><span class="na">get</span><span class="o">().</span><span class="na">setData</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">op</span><span class="o">.</span><span class="na">commit</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here, we get a <code>Operation</code> out of the processor (that wraps our data) and override it with the data that we actually want to store this time. You can see that we are not allocating new objects in the RingBuffer, we just use the old one that has been provided for us. With the <code>commit</code> method we put it back into the RingBuffer. Actually, behind the scenes, it makes use of Sequences and Barriers inside the RingBuffer, but this is completely hidden from us.</p>
+
+<p>Here is the full code for the lazy reader:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">import</span> <span class="nn">reactor.core.Environment</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">reactor.core.processor.Operation</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">reactor.core.processor.Processor</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">reactor.core.processor.spec.ProcessorSpec</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">reactor.event.Event</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">reactor.function.Supplier</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">reactor.io.Buffer</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MessageDispatcher</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">private</span> <span class="kd">final</span> <span class="n">Environment</span> <span class="n">environment</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">private</span> <span class="kd">final</span> <span class="n">Processor</span><span class="o">&lt;</span><span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;&gt;</span> <span class="n">writeProcessor</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">MessageDispatcher</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">this</span><span class="o">(</span><span class="k">new</span> <span class="n">Environment</span><span class="o">());</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">MessageDispatcher</span><span class="o">(</span><span class="kd">final</span> <span class="n">Environment</span> <span class="n">env</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">environment</span> <span class="o">=</span> <span class="n">env</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">writeProcessor</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ProcessorSpec</span><span class="o">&lt;</span><span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;&gt;()</span>
+</span><span class='line'>      <span class="o">.</span><span class="na">dataSupplier</span><span class="o">(</span><span class="k">new</span> <span class="n">Supplier</span><span class="o">&lt;</span><span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;&gt;()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="nd">@Override</span>
+</span><span class='line'>        <span class="kd">public</span> <span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;</span> <span class="nf">get</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="k">new</span> <span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;(</span><span class="k">new</span> <span class="n">Buffer</span><span class="o">());</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>      <span class="o">})</span>
+</span><span class='line'>      <span class="o">.</span><span class="na">consume</span><span class="o">(</span><span class="k">new</span> <span class="n">Node</span><span class="o">(</span><span class="s">&quot;127.0.0.1&quot;</span><span class="o">,</span> <span class="n">environment</span><span class="o">))</span>
+</span><span class='line'>      <span class="o">.</span><span class="na">get</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">write</span><span class="o">(</span><span class="kd">final</span> <span class="n">Buffer</span> <span class="n">data</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">final</span> <span class="n">Operation</span><span class="o">&lt;</span><span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;&gt;</span> <span class="n">op</span> <span class="o">=</span> <span class="n">writeProcessor</span><span class="o">.</span><span class="na">get</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">op</span><span class="o">.</span><span class="na">get</span><span class="o">().</span><span class="na">setData</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">op</span><span class="o">.</span><span class="na">commit</span><span class="o">();</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>One final note before we move on: did you spot the <code>Environment</code> here? This is also a common theme in the Reactor framework. The <code>Environment</code> is used in many places to signal information about &ndash; who would have thought that &ndash; the JVM environment. The general recommendation is to create only one <code>Environment</code> instance per JVM, so we happily pass it around in our small application.</p>
+
+<h2>The Consumer</h2>
+
+<p>Before we get into the nitty-gritty network details, let&rsquo;s add a consumer that just prints out the data that he &ldquo;sees&rdquo;. If you want to try this sample, make sure to change the previous code temporarily from <code>.consume(new Node(...))</code> to <code>.consume(new EchoConsumer())</code>.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">EchoConsumer</span> <span class="kd">implements</span> <span class="n">Consumer</span><span class="o">&lt;</span><span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;&gt;</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">accept</span><span class="o">(</span><span class="kd">final</span> <span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;</span> <span class="n">bufferEvent</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Arrays</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">bufferEvent</span><span class="o">.</span><span class="na">getData</span><span class="o">().</span><span class="na">asBytes</span><span class="o">()));</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The <code>accept</code> method is always called once there is information available on the Processor. Let&rsquo;s add a simple test case to verify that this works:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">import</span> <span class="nn">org.junit.Test</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">reactor.io.Buffer</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MessageDispatcherTest</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Test</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">echoSomeGarbage</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">MessageDispatcher</span> <span class="n">dispatcher</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MessageDispatcher</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">dispatcher</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="n">Buffer</span><span class="o">.</span><span class="na">wrap</span><span class="o">(</span><span class="s">&quot;Hello World!&quot;</span><span class="o">));</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now if we run this test, we should see <code>[72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33]</code> printed on the console &ndash; great! This is the byte array representation of our wrapped buffer. Of course we could make our lives easier and use <code>Strings</code> instead of <code>Buffer</code> in our implementation, but the <code>Buffer</code> works much better with network communication.</p>
+
+<p>The next step would be to send the data over the network. Let&rsquo;s replace our Consumer with a more intelligent one. Be aware that the <code>TcpClient</code> that you&rsquo;ll see doesn&rsquo;t communicate with Java NIO directly &ndash; it makes use of the excellent <a href="http://netty.io/">Netty</a> project which provides a convenient and performant wrapper around NIO and OIO (we use NIO here).</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Node</span> <span class="kd">implements</span> <span class="n">Consumer</span><span class="o">&lt;</span><span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;&gt;</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">private</span> <span class="kd">final</span> <span class="n">TcpClient</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">,</span> <span class="n">Buffer</span><span class="o">&gt;</span> <span class="n">client</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">TcpConnection</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">,</span> <span class="n">Buffer</span><span class="o">&gt;</span> <span class="n">conn</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">Node</span><span class="o">(</span><span class="n">String</span> <span class="n">hostname</span><span class="o">,</span> <span class="n">Environment</span> <span class="n">env</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">client</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TcpClientSpec</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">,</span> <span class="n">Buffer</span><span class="o">&gt;(</span><span class="n">NettyTcpClient</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+</span><span class='line'>      <span class="o">.</span><span class="na">env</span><span class="o">(</span><span class="n">env</span><span class="o">)</span>
+</span><span class='line'>      <span class="o">.</span><span class="na">connect</span><span class="o">(</span><span class="n">hostname</span><span class="o">,</span> <span class="mi">11210</span><span class="o">)</span>
+</span><span class='line'>      <span class="o">.</span><span class="na">get</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">conn</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">open</span><span class="o">().</span><span class="na">await</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">accept</span><span class="o">(</span><span class="kd">final</span> <span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;</span> <span class="n">bufferEvent</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Buffer</span> <span class="n">buf</span> <span class="o">=</span> <span class="n">bufferEvent</span><span class="o">.</span><span class="na">getData</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">final</span> <span class="n">CountDownLatch</span> <span class="n">latch</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CountDownLatch</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">conn</span><span class="o">.</span><span class="na">send</span><span class="o">(</span><span class="n">buf</span><span class="o">,</span> <span class="k">new</span> <span class="n">Consumer</span><span class="o">&lt;</span><span class="n">Boolean</span><span class="o">&gt;()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="nd">@Override</span>
+</span><span class='line'>      <span class="kd">public</span> <span class="kt">void</span> <span class="nf">accept</span><span class="o">(</span><span class="kd">final</span> <span class="n">Boolean</span> <span class="n">success</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">latch</span><span class="o">.</span><span class="na">countDown</span><span class="o">();</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>    <span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">latch</span><span class="o">.</span><span class="na">await</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="n">TimeUnit</span><span class="o">.</span><span class="na">SECONDS</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="kd">final</span> <span class="n">Exception</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="s">&quot;Something went wrong while waiting :(&quot;</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>While this might seem like a lot of code, it&rsquo;s not so bad. We do two things here. During object construction, we create a new <code>TcpClient</code> through the <code>TcpClientSpec</code> (see the Spec again?) and pass it the environment and the socket to connect to. The next thing we need to do is actually open the connection and wait until finished.</p>
+
+<p>Now that we have an open connection, we can write to it. Since everything is non-blocking in Reactor, so is socket writing. In order to not overwhelm the underlying infrastructure, we have to wait until it is actually finished before moving on to handle the next <code>Event</code> in the Processor. We do this by using a <code>CountDownLatch</code>, which will be counted down once the writing has finished. In our simple example we just fail if it took longer than one second. In a real application, one could report errors or retry with Backoff.</p>
+
+<p>Before we can run that code, we need to add a test case to make it all work.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Buffer</span><span class="o">[]</span> <span class="n">buffers</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Buffer</span><span class="o">[</span><span class="mi">10</span><span class="o">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Before</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">initBuffers</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span>  <span class="o">{</span>
+</span><span class='line'>      <span class="n">Buffer</span> <span class="n">buf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Buffer</span><span class="o">(</span><span class="mi">30</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">buf</span><span class="o">.</span><span class="na">append</span><span class="o">((</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x80</span><span class="o">);</span> <span class="c1">// Magic Byte</span>
+</span><span class='line'>      <span class="n">buf</span><span class="o">.</span><span class="na">append</span><span class="o">((</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x09</span><span class="o">);</span> <span class="c1">// GETQ Opcode</span>
+</span><span class='line'>      <span class="n">buf</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="k">new</span> <span class="kt">byte</span><span class="o">[]</span> <span class="o">{</span><span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x03</span><span class="o">});</span> <span class="c1">// 3 byte keylength (KEY)</span>
+</span><span class='line'>      <span class="n">buf</span><span class="o">.</span><span class="na">append</span><span class="o">((</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">);</span> <span class="c1">// Extra Length</span>
+</span><span class='line'>      <span class="n">buf</span><span class="o">.</span><span class="na">append</span><span class="o">((</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">);</span> <span class="c1">// data type</span>
+</span><span class='line'>      <span class="n">buf</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="k">new</span> <span class="kt">byte</span><span class="o">[]</span> <span class="o">{</span><span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x00</span><span class="o">});</span> <span class="c1">// reserved</span>
+</span><span class='line'>      <span class="n">buf</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="k">new</span> <span class="kt">byte</span><span class="o">[]</span> <span class="o">{</span><span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x03</span><span class="o">});</span> <span class="c1">// total body size</span>
+</span><span class='line'>      <span class="n">buf</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="k">new</span> <span class="kt">byte</span><span class="o">[]</span> <span class="o">{</span><span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x00</span><span class="o">});</span> <span class="c1">// Opaque</span>
+</span><span class='line'>      <span class="n">buf</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="k">new</span> <span class="kt">byte</span><span class="o">[]</span> <span class="o">{</span><span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x00</span><span class="o">,</span> <span class="mh">0x00</span><span class="o">});</span> <span class="c1">// CAS</span>
+</span><span class='line'>      <span class="n">buf</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="k">new</span> <span class="kt">byte</span><span class="o">[]</span> <span class="o">{</span><span class="mh">0x65</span><span class="o">,</span> <span class="mh">0x6F</span><span class="o">,</span> <span class="o">(</span><span class="kt">byte</span><span class="o">)(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">9</span><span class="o">)});</span>
+</span><span class='line'>      <span class="n">buffers</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">buf</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">giveItSomeLoad</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">MessageDispatcher</span> <span class="n">dispatcher</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MessageDispatcher</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kt">long</span> <span class="n">amountOfOps</span> <span class="o">=</span> <span class="mi">100000000</span><span class="o">;</span>
+</span><span class='line'>  <span class="k">for</span> <span class="o">(</span><span class="kt">long</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">amountOfOps</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">dispatcher</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="k">new</span> <span class="n">Buffer</span><span class="o">(</span><span class="n">buffers</span><span class="o">[(</span><span class="kt">int</span><span class="o">)(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">9</span><span class="o">)]).</span><span class="na">flip</span><span class="o">());</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>To actually simulate something real, this test creates ten buffer instances with Couchbase messages. Those familiar with the memcached binary protocol can identify it as a GETQ request. This means it does not return anything when the key is not found (which is what we want, because in this case we want to benchmark the upper limit for write throughput and not concern us with parsing of error responses). Once the data is created, we run a given amount of operations and call the <code>write</code> method on the <code>MessageDispatcher</code>.</p>
+
+<h2>Batch all the things!</h2>
+
+<p>If we run this, we get a &ndash; very disappointing &ndash; number of only 50K ops/s. In addition, we get lots of CPU usage on the Java process (100% and more on a quad core processor here). Why is it so slow? The answer is: network overhead. In our case, we send out 27 byte chunks over the network. With all the TCP, IP and Ethernet headers, there is lots of unnecessary overhead involved that puts down our performance. The answer to that is batching! If our producers are faster than the consumers, we can batch the intermediate data up into a buffer and send it over the wire in one chunk. This will give us a much better goodput ratio.</p>
+
+<p>To help us with batching the Disruptor and the Processor expose the start end end of a batching phase to our consumer. To get this information, we need to extend from the <code>BatchConsumer</code> instead of the regular <code>Consumer</code>. Let&rsquo;s refactor our node and add some batching characteristics:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">BatchingNode</span> <span class="kd">implements</span> <span class="n">BatchConsumer</span><span class="o">&lt;</span><span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;&gt;</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">private</span> <span class="kd">final</span> <span class="n">TcpClient</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">,</span> <span class="n">Buffer</span><span class="o">&gt;</span> <span class="n">client</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">TcpConnection</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">,</span> <span class="n">Buffer</span><span class="o">&gt;</span> <span class="n">conn</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">Buffer</span> <span class="n">writeBuffer</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">BatchingNode</span><span class="o">(</span><span class="n">String</span> <span class="n">hostname</span><span class="o">,</span> <span class="n">Environment</span> <span class="n">env</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">client</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TcpClientSpec</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">,</span> <span class="n">Buffer</span><span class="o">&gt;(</span><span class="n">NettyTcpClient</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+</span><span class='line'>      <span class="o">.</span><span class="na">env</span><span class="o">(</span><span class="n">env</span><span class="o">)</span>
+</span><span class='line'>      <span class="o">.</span><span class="na">connect</span><span class="o">(</span><span class="n">hostname</span><span class="o">,</span> <span class="mi">11210</span><span class="o">)</span>
+</span><span class='line'>      <span class="o">.</span><span class="na">get</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">conn</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">open</span><span class="o">().</span><span class="na">await</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">writeBuffer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Buffer</span><span class="o">(</span><span class="mi">1500</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">start</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">end</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">flush</span><span class="o">();</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">accept</span><span class="o">(</span><span class="kd">final</span> <span class="n">Event</span><span class="o">&lt;</span><span class="n">Buffer</span><span class="o">&gt;</span> <span class="n">bufferEvent</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Buffer</span> <span class="n">buf</span> <span class="o">=</span> <span class="n">bufferEvent</span><span class="o">.</span><span class="na">getData</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">writeBuffer</span><span class="o">.</span><span class="na">remaining</span><span class="o">()</span> <span class="o">&lt;=</span> <span class="n">buf</span><span class="o">.</span><span class="na">remaining</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">flush</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">writeBuffer</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">buf</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">flush</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">final</span> <span class="n">CountDownLatch</span> <span class="n">latch</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CountDownLatch</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">writeBuffer</span><span class="o">.</span><span class="na">flip</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">conn</span><span class="o">.</span><span class="na">send</span><span class="o">(</span><span class="n">writeBuffer</span><span class="o">,</span> <span class="k">new</span> <span class="n">Consumer</span><span class="o">&lt;</span><span class="n">Boolean</span><span class="o">&gt;()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="nd">@Override</span>
+</span><span class='line'>      <span class="kd">public</span> <span class="kt">void</span> <span class="nf">accept</span><span class="o">(</span><span class="kd">final</span> <span class="n">Boolean</span> <span class="n">success</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">latch</span><span class="o">.</span><span class="na">countDown</span><span class="o">();</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>    <span class="o">});</span>
+</span><span class='line'>    <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">latch</span><span class="o">.</span><span class="na">await</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="n">TimeUnit</span><span class="o">.</span><span class="na">SECONDS</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="kd">final</span> <span class="n">Exception</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="s">&quot;got ex&quot;</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="n">writeBuffer</span><span class="o">.</span><span class="na">clear</span><span class="o">();</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The code here is not much different. Note that we refactored the writing part out into the <code>flush</code> method. In the <code>accept</code> method, we write to the network if the buffer is full, otherwise we just add it to our write buffer. Note that we also need to <code>flush</code> if the batching is over (notified through the <code>end</code> method), otherwise we would potentially keep data around for a longer time than needed (and latency is still important to us).</p>
+
+<p>Let&rsquo;s run the test case again&hellip; now we get 500k ops/s with only 40% CPU load on the java process! Now that&rsquo;s what I call an improvement!</p>
+
+<h2>Summary</h2>
+
+<p>This was a very quick introduction into the Processor, just one piece in the very promising Reactor framework. There is so much more to blog about in the future, so stay tuned!</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Michael Nitschinger</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-13T14:49:48+02:00" pubdate data-updated="true">Aug 13<span>th</span>, 2013</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/couchbase/'>couchbase</a>, <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/reactor/'>reactor</a>, <a class='category' href='/blog/categories/tcp/'>tcp</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP" data-via="daschl" data-counturl="http://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/Useful-Couchbase-Resources-Blog-Posts" title="Previous Post: Useful Couchbase Resources & Blog Posts">&laquo; Useful Couchbase Resources & Blog Posts</a>
+      
+      
+        <a class="basic-alignment right" href="/What-s-new-in-the-Couchbase-Java-SDK-1-2" title="Next Post: What's new in the Couchbase Java SDK 1.2">What's new in the Couchbase Java SDK 1.2 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/Using-JMH-for-Java-Microbenchmarking">Using JMH for Java Microbenchmarking</a>
+      </li>
+    
+      <li class="post">
+        <a href="/What-s-new-in-the-Couchbase-Java-SDK-1-2">What's New in the Couchbase Java SDK 1.2</a>
+      </li>
+    
+      <li class="post">
+        <a href="/Using-the-Reactor-Processor-for-High-Performance-TCP">Using the Reactor Processor for High-Performance TCP</a>
+      </li>
+    
+      <li class="post">
+        <a href="/Useful-Couchbase-Resources-Blog-Posts">Useful Couchbase Resources & Blog Posts</a>
+      </li>
+    
+      <li class="post">
+        <a href="/Printing-JVM-generated-Assembler-on-Mac-OS-X">Printing JVM Generated Assembler on Mac OS X</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Michael Nitschinger -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'daschl';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP';
+        var disqus_url = 'http://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

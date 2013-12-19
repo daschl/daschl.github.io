@@ -1,0 +1,513 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>A Couchbase Cluster in Minutes With Vagrant and Puppet - Nitschinger.at</title>
+  <meta name="author" content="Michael Nitschinger">
+
+  
+  <meta name="description" content="Motivation Since I work as part of the engineering team at Couchbase, I need to run my code against a variety of server deployments. We run a &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Nitschinger.at" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Nitschinger.at</a></h1>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:nitschinger.at" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">A Couchbase Cluster in Minutes With Vagrant and Puppet</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-27T14:49:48+02:00" pubdate data-updated="true">May 27<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h2>Motivation</h2>
+
+<p>Since I work as part of the engineering team at Couchbase, I need to run my code against a variety of server deployments. We run a multitude of operating systems and software versions, and so do our customers. In order to fix bugs reliably and build new features, it is critical to get a cluster up and running that resembles these deployments as good as possible. I know that I can run all of these combinations on EC2, but the cost for this would be very high and most of the time its overkill.</p>
+
+<p>What I need is to get such a cluster up and running in minutes and not spending too much time on configuring it. I heard about <a href="http://www.vagrantup.com/">Vagrant</a> and <a href="https://puppetlabs.com/">Puppet</a> in the past, but never got around to use them on my own box (though I always use <a href="https://www.virtualbox.org/">VirtualBox</a> on MacOS to create virtual machines by hand).</p>
+
+<p>This morning I sat down to take a closer look on how these tools can help me to get more productive &ndash; and to my huge surprise I got a 4 node Couchbase Server cluster running in less than 30 minutes (with looking up all the configuration details). Since its so easy, I want to share it with you.</p>
+
+<h2>Prerequisites</h2>
+
+<p>Before we can provision our nodes, you need to make sure to have Vagrant and VirtualBox installed. If you use MacOS like me, just download the <code>.dmg</code> files for both and you&rsquo;re set. Now, create a directory somewhere to store the configuration files &ndash; I called mine &lsquo;vagrants&rsquo;.</p>
+
+<p>In this directory, you need to create a <code>Vagrantfile</code>. Its like the Vagrants <code>makefile</code> and it will pick it up to learn how you want to have your nodes provisioned. Note that this doesn&rsquo;t configure the software on top of the OS (like installing Couchbase), this is handled by puppet in a separate step. Here is the full config:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">Vagrant</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="s2">&quot;2&quot;</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1"># Number of nodes to provision</span>
+</span><span class='line'>  <span class="n">numNodes</span> <span class="o">=</span> <span class="mi">4</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1"># IP Address Base for private network</span>
+</span><span class='line'>  <span class="n">ipAddrPrefix</span> <span class="o">=</span> <span class="s2">&quot;192.168.56.10&quot;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1"># Define Number of RAM for each node</span>
+</span><span class='line'>  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provider</span> <span class="s2">&quot;virtualbox&quot;</span> <span class="k">do</span> <span class="o">|</span><span class="n">v</span><span class="o">|</span>
+</span><span class='line'>      <span class="n">v</span><span class="o">.</span><span class="n">customize</span> <span class="o">[</span><span class="s2">&quot;modifyvm&quot;</span><span class="p">,</span> <span class="ss">:id</span><span class="p">,</span> <span class="s2">&quot;--memory&quot;</span><span class="p">,</span> <span class="mi">1024</span><span class="o">]</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1"># Provision the server itself with puppet</span>
+</span><span class='line'>  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provision</span> <span class="ss">:puppet</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1"># Download the initial box from this url</span>
+</span><span class='line'>  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box_url</span> <span class="o">=</span> <span class="s2">&quot;http://files.vagrantup.com/precise64.box&quot;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1"># Provision Config for each of the nodes</span>
+</span><span class='line'>  <span class="mi">1</span><span class="o">.</span><span class="n">upto</span><span class="p">(</span><span class="n">numNodes</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">num</span><span class="o">|</span>
+</span><span class='line'>      <span class="n">nodeName</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;node&quot;</span> <span class="o">+</span> <span class="n">num</span><span class="o">.</span><span class="n">to_s</span><span class="p">)</span><span class="o">.</span><span class="n">to_sym</span>
+</span><span class='line'>      <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">define</span> <span class="n">nodeName</span> <span class="k">do</span> <span class="o">|</span><span class="n">node</span><span class="o">|</span>
+</span><span class='line'>          <span class="n">node</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span> <span class="o">=</span> <span class="s2">&quot;precise64&quot;</span>
+</span><span class='line'>          <span class="n">node</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">network</span> <span class="ss">:private_network</span><span class="p">,</span> <span class="ss">ip</span><span class="p">:</span> <span class="n">ipAddrPrefix</span> <span class="o">+</span> <span class="n">num</span><span class="o">.</span><span class="n">to_s</span>
+</span><span class='line'>          <span class="n">node</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provider</span> <span class="s2">&quot;virtualbox&quot;</span> <span class="k">do</span> <span class="o">|</span><span class="n">v</span><span class="o">|</span>
+</span><span class='line'>              <span class="n">v</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Couchbase Server Node &quot;</span> <span class="o">+</span> <span class="n">num</span><span class="o">.</span><span class="n">to_s</span>
+</span><span class='line'>          <span class="k">end</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This file is just ruby code that configures Vagrant. Let&rsquo;s go through each directive and see what it does for us.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># Number of nodes to provision</span>
+</span><span class='line'><span class="n">numNodes</span> <span class="o">=</span> <span class="mi">4</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1"># IP Address Base for private network</span>
+</span><span class='line'><span class="n">ipAddrPrefix</span> <span class="o">=</span> <span class="s2">&quot;192.168.56.10&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You can change these values, I just created them to fit my environment here. Depending on the amount of <code>numNodes</code> set, VMs will be created. I added a loop down below depending on this setting, so I don&rsquo;t have to duplicate code a lot. The ip address prefix is used to easily determine the (static) IP address for the server. The numbers will be counted upwards incrementally, so you will end up with four servers accessible through <code>192.168.56.101</code> to <code>192.168.56.104</code>.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># Define Number of RAM for each node</span>
+</span><span class='line'><span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provider</span> <span class="s2">&quot;virtualbox&quot;</span> <span class="k">do</span> <span class="o">|</span><span class="n">v</span><span class="o">|</span>
+</span><span class='line'>  <span class="n">v</span><span class="o">.</span><span class="n">customize</span> <span class="o">[</span><span class="s2">&quot;modifyvm&quot;</span><span class="p">,</span> <span class="ss">:id</span><span class="p">,</span> <span class="s2">&quot;--memory&quot;</span><span class="p">,</span> <span class="mi">1024</span><span class="o">]</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This config block is needed to increase the memory size of the VM. By default its less than that (I believe around 512MB), and I want to have 1 gig of RAM for each. Of course, feel free to tune that value or remove it completely.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># Provision the server itself with puppet</span>
+</span><span class='line'><span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provision</span> <span class="ss">:puppet</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Because we&rsquo;ll be using puppet to provision the server software, we need to tell Vagrant to use it.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># Download the initial box from this url</span>
+</span><span class='line'><span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box_url</span> <span class="o">=</span> <span class="s2">&quot;http://files.vagrantup.com/precise64.box&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Vagrant reuses predefined images so you don&rsquo;t have to reinstall everything from scratch. Here we use a predefined Ubuntu 12.04 64bit box.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># Provision Config for each of the nodes</span>
+</span><span class='line'><span class="mi">1</span><span class="o">.</span><span class="n">upto</span><span class="p">(</span><span class="n">numNodes</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">num</span><span class="o">|</span>
+</span><span class='line'>  <span class="n">nodeName</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;node&quot;</span> <span class="o">+</span> <span class="n">num</span><span class="o">.</span><span class="n">to_s</span><span class="p">)</span><span class="o">.</span><span class="n">to_sym</span>
+</span><span class='line'>  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">define</span> <span class="n">nodeName</span> <span class="k">do</span> <span class="o">|</span><span class="n">node</span><span class="o">|</span>
+</span><span class='line'>      <span class="n">node</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span> <span class="o">=</span> <span class="s2">&quot;precise64&quot;</span>
+</span><span class='line'>      <span class="n">node</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">network</span> <span class="ss">:private_network</span><span class="p">,</span> <span class="ss">ip</span><span class="p">:</span> <span class="n">ipAddrPrefix</span> <span class="o">+</span> <span class="n">num</span><span class="o">.</span><span class="n">to_s</span>
+</span><span class='line'>      <span class="n">node</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provider</span> <span class="s2">&quot;virtualbox&quot;</span> <span class="k">do</span> <span class="o">|</span><span class="n">v</span><span class="o">|</span>
+</span><span class='line'>          <span class="n">v</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Couchbase Server Node &quot;</span> <span class="o">+</span> <span class="n">num</span><span class="o">.</span><span class="n">to_s</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This code block configures each virtual machine. Given the number of nodes we want to create, for each of them it assigns an IP address and gives it a descriptive name inside Virtualbox. If you want to add server-dependent settings, the &ldquo;node&rdquo; block is the right place for it. Otherwise it will pick the cluster wide settings defined in the &ldquo;config&rdquo; block.</p>
+
+<p>Now if we would run <code>vagrant up</code> from the command line in this directory, we&rsquo;d get four Ubuntu machines setup where we could SSH into, but nothing else would be installed. In order to make them do something, we want to install Couchbase Server. Puppet is a system automation software and very good at provisioning systems. Vagrant has amazing support for it, all we need to is create a <code>default.pp</code> file inside a <code>manifests</code> directory that looks like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>exec { "couchbase-server-source": 
+</span><span class='line'>  command =&gt; "/usr/bin/wget http://packages.couchbase.com/releases/2.0.1/couchbase-server-enterprise_x86_64_2.0.1.deb",
+</span><span class='line'>  cwd =&gt; "/home/vagrant/",
+</span><span class='line'>  creates =&gt; "/home/vagrant/couchbase-server-enterprise_x86_64_2.0.1.deb",
+</span><span class='line'>  before =&gt; Package['couchbase-server']
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>exec { "install-deps":
+</span><span class='line'>  command =&gt; "/usr/bin/apt-get install libssl0.9.8",
+</span><span class='line'>  before =&gt; Package['couchbase-server']
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>package { "couchbase-server":
+</span><span class='line'>  provider =&gt; dpkg,
+</span><span class='line'>  ensure =&gt; installed,
+</span><span class='line'>  source =&gt; "/home/vagrant/couchbase-server-enterprise_x86_64_2.0.1.deb"
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Let&rsquo;s go over the internals once more.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>exec { "couchbase-server-source": 
+</span><span class='line'>  command =&gt; "/usr/bin/wget http://packages.couchbase.com/releases/2.0.1/couchbase-server-enterprise_x86_64_2.0.1.deb",
+</span><span class='line'>  cwd =&gt; "/home/vagrant/",
+</span><span class='line'>  creates =&gt; "/home/vagrant/couchbase-server-enterprise_x86_64_2.0.1.deb",
+</span><span class='line'>  before =&gt; Package['couchbase-server']
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In puppet, we define some tasks that we want to run. This task executes a shell command <code>wget</code> and stores the file inside the home directory of the user. We tell puppet to download the debian package of the server. Note that there is a <code>before</code> dependency to the package installation task, because we can&rsquo;t install it before the file wasn&rsquo;t downloaded.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>exec { "install-deps":
+</span><span class='line'>  command =&gt; "/usr/bin/apt-get install libssl0.9.8",
+</span><span class='line'>  before =&gt; Package['couchbase-server']
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We also need to install <code>libssl0.9.8</code> on the server, this is the only dependency it has. We use the command line tool <code>apt-get</code> for this.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>package { "couchbase-server":
+</span><span class='line'>  provider =&gt; dpkg,
+</span><span class='line'>  ensure =&gt; installed,
+</span><span class='line'>  source =&gt; "/home/vagrant/couchbase-server-enterprise_x86_64_2.0.1.deb"
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Finally, we can install the debian package from couchbase-server, because the file is in place and all dependencies are satisfied.</p>
+
+<p>Of course, this puppet file is very simple and I&rsquo;m you can do much more with it (and maybe even simplify it more) &ndash; but for my needs it is more than enough. If I want a different server version, I just need to change the puppet file and point it to the new debian package.</p>
+
+<p>Now if we run <code>vagrant up</code> again, much more happens. Note that if you want to play with your puppet files, you can also use <code>vagrant provision</code> to apply the changes while the node is running.</p>
+
+<p>If everything is okay, the output should look like this:</p>
+
+<pre><code>Bringing machine 'node1' up with 'virtualbox' provider...
+Bringing machine 'node2' up with 'virtualbox' provider...
+Bringing machine 'node3' up with 'virtualbox' provider...
+Bringing machine 'node4' up with 'virtualbox' provider...
+[node1] Clearing any previously set forwarded ports...
+[node1] Creating shared folders metadata...
+[node1] Clearing any previously set network interfaces...
+[node1] Preparing network interfaces based on configuration...
+[node1] Forwarding ports...
+[node1] -- 22 =&gt; 2222 (adapter 1)
+[node1] Running any VM customizations...
+[node1] Booting VM...
+[node1] Waiting for VM to boot. This can take a few minutes.
+[node1] VM booted and ready for use!
+[node1] Configuring and enabling network interfaces...
+[node1] Mounting shared folders...
+[node1] -- /vagrant
+[node1] -- /tmp/vagrant-puppet/manifests
+[node1] Running provisioner: puppet...
+Running Puppet with default.pp...
+stdin: is not a tty
+notice: /Stage[main]//Exec[install-deps]/returns: executed successfully
+notice: Finished catalog run in 0.77 seconds
+.... more for all the other nodes.
+</code></pre>
+
+<p>You can then point your browser to <code>192.168.56.10[1-4]</code> and work with your Couchbase cluster. If you are done with it, you can use the <code>vagrant halt</code> command to shut it down cleanly. Very handy is also <code>vagrant suspend</code>, which will save the state of the nodes instead of shutting them down completely.</p>
+
+<p>If you want to interact with one of the nodes instead of the whole cluster, you can always specify the node identifier. For example, if you want to start only the first node you can do it with the <code>vagrant up node1</code> command.</p>
+
+<p>To me, this is a very fast and clean way to provision server nodes. I just need to change a few lines in a file and get a new cluster without much hassle. Even more important, I can put those config files in version control and <a href="https://github.com/daschl/vagrants">share them</a> with other folks!</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Michael Nitschinger</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-27T14:49:48+02:00" pubdate data-updated="true">May 27<span>th</span>, 2013</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/couchbase/'>couchbase</a>, <a class='category' href='/blog/categories/puppet/'>puppet</a>, <a class='category' href='/blog/categories/vagrant/'>vagrant</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet" data-via="daschl" data-counturl="http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/Logging-with-the-Couchbase-Java-Client" title="Previous Post: Logging with the Couchbase Java Client">&laquo; Logging with the Couchbase Java Client</a>
+      
+      
+        <a class="basic-alignment right" href="/Fun-with-Couchbase-Views-and-Message-Pack" title="Next Post: Fun with Couchbase Views and MessagePack">Fun with Couchbase Views and MessagePack &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/Using-JMH-for-Java-Microbenchmarking">Using JMH for Java Microbenchmarking</a>
+      </li>
+    
+      <li class="post">
+        <a href="/What-s-new-in-the-Couchbase-Java-SDK-1-2">What's New in the Couchbase Java SDK 1.2</a>
+      </li>
+    
+      <li class="post">
+        <a href="/Using-the-Reactor-Processor-for-High-Performance-TCP">Using the Reactor Processor for High-Performance TCP</a>
+      </li>
+    
+      <li class="post">
+        <a href="/Useful-Couchbase-Resources-Blog-Posts">Useful Couchbase Resources & Blog Posts</a>
+      </li>
+    
+      <li class="post">
+        <a href="/Printing-JVM-generated-Assembler-on-Mac-OS-X">Printing JVM Generated Assembler on Mac OS X</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Michael Nitschinger -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'daschl';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet';
+        var disqus_url = 'http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

@@ -1,98 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
 
-<!DOCTYPE html>
-<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
-<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
-<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
-<head>
-  <meta charset="utf-8">
-  <title>Nitschinger.at</title>
-  <meta name="author" content="Michael Nitschinger">
-
-  
-  <meta name="description" content="Larger companies like Google started their own projects to remedy all kinds of pitfalls and libraries like Caliper popped out of that. Now finally, &hellip;">
-  
-
-  <!-- http://t.co/dKP3o1e -->
-  <meta name="HandheldFriendly" content="True">
-  <meta name="MobileOptimized" content="320">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  
-  <link rel="canonical" href="http://nitschinger.at">
-  <link href="/favicon.png" rel="icon">
-  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
-  <link href="/atom.xml" rel="alternate" title="Nitschinger.at" type="application/atom+xml">
-  <script src="/javascripts/modernizr-2.0.js"></script>
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
-  <script src="/javascripts/octopress.js" type="text/javascript"></script>
-  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
-<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-
-  
-
-</head>
-
-<body   >
-  <header role="banner"><hgroup>
-  <h1><a href="/">Nitschinger.at</a></h1>
-  
-</hgroup>
-
-</header>
-  <nav role="navigation"><ul class="subscription" data-subscription="rss">
-  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
-  
-</ul>
-  
-<form action="http://google.com/search" method="get">
-  <fieldset role="search">
-    <input type="hidden" name="q" value="site:nitschinger.at" />
-    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
-  </fieldset>
-</form>
-  
-<ul class="main-navigation">
-  <li><a href="/">Blog</a></li>
-  <li><a href="/blog/archives">Archives</a></li>
-</ul>
-
-</nav>
-  <div id="main">
-    <div id="content">
-      <div class="blog-index">
-  
-  
-  
-    <article>
-      
-  <header>
+  <title><![CDATA[Nitschinger.at]]></title>
+  <link href="http://nitschinger.at/atom.xml" rel="self"/>
+  <link href="http://nitschinger.at/"/>
+  <updated>2013-12-19T09:38:37+01:00</updated>
+  <id>http://nitschinger.at/</id>
+  <author>
+    <name><![CDATA[Michael Nitschinger]]></name>
     
-      <h1 class="entry-title"><a href="/Using-JMH-for-Java-Microbenchmarking">Using JMH for Java Microbenchmarking</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
 
   
-
-
-<time datetime="2013-11-22T13:49:48+01:00" pubdate data-updated="true">Nov 22<span>nd</span>, 2013</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Larger companies like Google started their own projects to remedy all kinds of pitfalls and libraries like <a href="https://code.google.com/p/caliper/">Caliper</a> popped out of that. Now finally, some fine folks of the OpenJDK team thought they&rsquo;ll do their own and share it for everyone to use. The tool is called <a href="http://openjdk.java.net/projects/code-tools/jmh/">jmh</a> or also known as &ldquo;Java Microbenchmarking Harness&rdquo;.</p>
+  <entry>
+    <title type="html"><![CDATA[Using JMH for Java Microbenchmarking]]></title>
+    <link href="http://nitschinger.at/Using-JMH-for-Java-Microbenchmarking"/>
+    <updated>2013-11-22T13:49:48+01:00</updated>
+    <id>http://nitschinger.at/Using-JMH-for-Java-Microbenchmarking</id>
+    <content type="html"><![CDATA[<p>Larger companies like Google started their own projects to remedy all kinds of pitfalls and libraries like <a href="https://code.google.com/p/caliper/">Caliper</a> popped out of that. Now finally, some fine folks of the OpenJDK team thought they&rsquo;ll do their own and share it for everyone to use. The tool is called <a href="http://openjdk.java.net/projects/code-tools/jmh/">jmh</a> or also known as &ldquo;Java Microbenchmarking Harness&rdquo;.</p>
 
 <p>In this post I just show you how to get started, but there are still lots of things you need to think about. I really recommend you to watch <a href="http://vimeo.com/78900556">the talk by Aleksey Shipilev</a> which dives into concepts and pitfalls. You can also find the slides <a href="http://shipilev.net/pub/talks/devoxx-Nov2013-benchmarking.pdf">here</a>.</p>
 
@@ -515,42 +441,15 @@ b.KeyBench.validateShortKeyBinary    thrpt   1       200    1    17886.628      
 
 
 <p>Thanks for pointing it out Aleksey!</p>
-</div>
+]]></content>
+  </entry>
   
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/What-s-new-in-the-Couchbase-Java-SDK-1-2">What&#8217;s New in the Couchbase Java SDK 1.2</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-10-11T14:49:48+02:00" pubdate data-updated="true">Oct 11<span>th</span>, 2013</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>For all users of our Java SDK, we prepared some nice additions for you. This post covers them in detail and shows how you can get more productive.</p>
+  <entry>
+    <title type="html"><![CDATA[What's New in the Couchbase Java SDK 1.2]]></title>
+    <link href="http://nitschinger.at/What-s-new-in-the-Couchbase-Java-SDK-1-2"/>
+    <updated>2013-10-11T14:49:48+02:00</updated>
+    <id>http://nitschinger.at/What-s-new-in-the-Couchbase-Java-SDK-1-2</id>
+    <content type="html"><![CDATA[<p>For all users of our Java SDK, we prepared some nice additions for you. This post covers them in detail and shows how you can get more productive.</p>
 
 <p>Note that this blog post assumes you are running the 1.2.1 release, because there have been some slight changes between 1.2.0 and 1.2.1 that affect for example the listener support and metrics collection.</p>
 
@@ -875,42 +774,15 @@ b.KeyBench.validateShortKeyBinary    thrpt   1       200    1    17886.628      
 <p>In addition to the enhancements shown above, the release includes &ndash; as always &ndash; numerous smaller bugfixes. The default poll interval for <code>ReplicateTo</code> and <code>PersistTo</code> has been lowered to <code>10ms</code> to account for performance changes that went into the Couchbase Sever 2.2 release. Also, the client now uses the <code>CRAM-MD5</code> authentication mechanism automatically if the server supports it (since 2.2 as well).</p>
 
 <p>These awesome new features should be enough reason to upgrade right now! If anything pops up that doesn&rsquo;t work as expected, please ask customer support or open a ticket <a href="http://www.couchbase.com/issues/browse/JCBC">here</a>.</p>
-</div>
+]]></content>
+  </entry>
   
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/Using-the-Reactor-Processor-for-High-Performance-TCP">Using the Reactor Processor for High-Performance TCP</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-08-13T14:49:48+02:00" pubdate data-updated="true">Aug 13<span>th</span>, 2013</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>First, a disclaimer: the all-new <a href="https://github.com/reactor/reactor">Reactor</a> framework is still under heavy development, but it already provides a very promising basement for applications and libraries that need high throughput and low latency. We at <a href="http://www.couchbase.com/">Couchbase</a> aim to provide the highest throughput at the lowest latency, so it is very critical to build upon an infrastructure that can provide it. Current, we are performing early investigations for a possible &ldquo;next generation Java SDK&rdquo; and Reactor seems very promising so far.</p>
+  <entry>
+    <title type="html"><![CDATA[Using the Reactor Processor for High-Performance TCP]]></title>
+    <link href="http://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP"/>
+    <updated>2013-08-13T14:49:48+02:00</updated>
+    <id>http://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP</id>
+    <content type="html"><![CDATA[<p>First, a disclaimer: the all-new <a href="https://github.com/reactor/reactor">Reactor</a> framework is still under heavy development, but it already provides a very promising basement for applications and libraries that need high throughput and low latency. We at <a href="http://www.couchbase.com/">Couchbase</a> aim to provide the highest throughput at the lowest latency, so it is very critical to build upon an infrastructure that can provide it. Current, we are performing early investigations for a possible &ldquo;next generation Java SDK&rdquo; and Reactor seems very promising so far.</p>
 
 <p>This blog post shows you how to quickly set up a Processor (we&rsquo;ll see in a minute what that is) that dispatches requests to Consumers (also a very common term in Reactor). In our case, the Consumer is actually a TCP socket. Please note that the actual numbers, while impressive, can&rsquo;t be used for real world measurements. What you&rsquo;ll see here is a raw throughput test to define a baseline what can be expected under ideal conditions. We are also using localhost here to avoid network latency (which is the bottleneck for most network applications).</p>
 
@@ -1434,42 +1306,15 @@ $ ./gradlew install
 <h2>Summary</h2>
 
 <p>This was a very quick introduction into the Processor, just one piece in the very promising Reactor framework. There is so much more to blog about in the future, so stay tuned!</p>
-</div>
+]]></content>
+  </entry>
   
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/Useful-Couchbase-Resources-Blog-Posts">Useful Couchbase Resources & Blog Posts</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-08-06T14:49:48+02:00" pubdate data-updated="true">Aug 6<span>th</span>, 2013</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>The following list is a convenient way to get access to lots of resources, blog posts and material that have been shared throughout the past months. I tried to separate them by area, but of course lots of them overlap to some extent.</p>
+  <entry>
+    <title type="html"><![CDATA[Useful Couchbase Resources & Blog Posts]]></title>
+    <link href="http://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts"/>
+    <updated>2013-08-06T14:49:48+02:00</updated>
+    <id>http://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts</id>
+    <content type="html"><![CDATA[<p>The following list is a convenient way to get access to lots of resources, blog posts and material that have been shared throughout the past months. I tried to separate them by area, but of course lots of them overlap to some extent.</p>
 
 <p>They are sorted by date (so you&rsquo;ll find the most recent ones on top) and include the author where possible. Be aware that some of the older articles may already be outdated  or not 100% accurate.</p>
 
@@ -1623,42 +1468,15 @@ $ ./gradlew install
 
 
 <p>Last Updated: 2013-08-06 (daschl)</p>
-</div>
+]]></content>
+  </entry>
   
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/Printing-JVM-generated-Assembler-on-Mac-OS-X">Printing JVM Generated Assembler on Mac OS X</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-06-24T14:49:48+02:00" pubdate data-updated="true">Jun 24<span>th</span>, 2013</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Thankfully, the JVM abstracts all of the nitty gritty details from us. Sometimes though, we need to peel off the first layers and see what&rsquo;s going on underneath. If you are curious (and here may be dragons) and want to learn about the actual <a href="http://en.wikipedia.org/wiki/Assembly_language">assembler</a> that your code is generating, the JVM provides mechanisms to inspect it.</p>
+  <entry>
+    <title type="html"><![CDATA[Printing JVM Generated Assembler on Mac OS X]]></title>
+    <link href="http://nitschinger.at/Printing-JVM-generated-Assembler-on-Mac-OS-X"/>
+    <updated>2013-06-24T14:49:48+02:00</updated>
+    <id>http://nitschinger.at/Printing-JVM-generated-Assembler-on-Mac-OS-X</id>
+    <content type="html"><![CDATA[<p>Thankfully, the JVM abstracts all of the nitty gritty details from us. Sometimes though, we need to peel off the first layers and see what&rsquo;s going on underneath. If you are curious (and here may be dragons) and want to learn about the actual <a href="http://en.wikipedia.org/wiki/Assembly_language">assembler</a> that your code is generating, the JVM provides mechanisms to inspect it.</p>
 
 <p>Since I wanted to make it work on my development machine and didn&rsquo;t find something comprehensive for Mac, here is how to do it.</p>
 
@@ -1739,42 +1557,15 @@ Decoding compiled method 0x000000010ac74150:
 </code></pre>
 
 <p>Now I guess this is were the real fun starts, happy debugging!</p>
-</div>
+]]></content>
+  </entry>
   
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/Fun-with-Couchbase-Views-and-Message-Pack">Fun With Couchbase Views and MessagePack</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-06-18T14:49:48+02:00" pubdate data-updated="true">Jun 18<span>th</span>, 2013</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Alright, before we start I have to admit that this is a little bit of a hack. Not that it doesn&rsquo;t work, but of course Couchbase Server 2.0 officially only supports JSON documents to be queried through Views. In addition to that, it is not so much known that you have access to all the other documents through Base64 encoding. Recently, <a href="http://avsej.net/2013/analyzing-binary-data-in-couchbase/">Sergey</a> showed us how to very easily analyze binary data in Couchbase Views and this brought me on the idea to take it one step further.</p>
+  <entry>
+    <title type="html"><![CDATA[Fun With Couchbase Views and MessagePack]]></title>
+    <link href="http://nitschinger.at/Fun-with-Couchbase-Views-and-Message-Pack"/>
+    <updated>2013-06-18T14:49:48+02:00</updated>
+    <id>http://nitschinger.at/Fun-with-Couchbase-Views-and-Message-Pack</id>
+    <content type="html"><![CDATA[<p>Alright, before we start I have to admit that this is a little bit of a hack. Not that it doesn&rsquo;t work, but of course Couchbase Server 2.0 officially only supports JSON documents to be queried through Views. In addition to that, it is not so much known that you have access to all the other documents through Base64 encoding. Recently, <a href="http://avsej.net/2013/analyzing-binary-data-in-couchbase/">Sergey</a> showed us how to very easily analyze binary data in Couchbase Views and this brought me on the idea to take it one step further.</p>
 
 <p>In this blog post we&rsquo;re going to store <a href="http://msgpack.org/">MessagePack</a> formatted data in Couchbase and then make its content available to Views (and allow us to query it). Note that you don&rsquo;t need to patch Couchbase for this, its just a snippet of JavaScript code that you need to include in your map function. We&rsquo;ll be using Java on the client side here, but nearly every combination of our official SDKs and MessagePack modules works for this.</p>
 
@@ -2384,42 +2175,15 @@ Results have been uploaded. View them at: https://microbenchmarks.appspot.com/ru
 <h2>Summary</h2>
 
 <p>I hope this blog post was a fun introduction and showed what&rsquo;s possible with Couchbase Server 2.0 and its new View engine. I found that MessagePack really saves you a good amount of bytes on the wire (and on the server), but is much slower on the JVM when it comes to encoding data (here <code>HashMap</code>s).</p>
-</div>
+]]></content>
+  </entry>
   
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet">A Couchbase Cluster in Minutes With Vagrant and Puppet</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-05-27T14:49:48+02:00" pubdate data-updated="true">May 27<span>th</span>, 2013</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>Motivation</h2>
+  <entry>
+    <title type="html"><![CDATA[A Couchbase Cluster in Minutes With Vagrant and Puppet]]></title>
+    <link href="http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet"/>
+    <updated>2013-05-27T14:49:48+02:00</updated>
+    <id>http://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet</id>
+    <content type="html"><![CDATA[<h2>Motivation</h2>
 
 <p>Since I work as part of the engineering team at Couchbase, I need to run my code against a variety of server deployments. We run a multitude of operating systems and software versions, and so do our customers. In order to fix bugs reliably and build new features, it is critical to get a cluster up and running that resembles these deployments as good as possible. I know that I can run all of these combinations on EC2, but the cost for this would be very high and most of the time its overkill.</p>
 
@@ -2694,42 +2458,15 @@ notice: Finished catalog run in 0.77 seconds
 <p>If you want to interact with one of the nodes instead of the whole cluster, you can always specify the node identifier. For example, if you want to start only the first node you can do it with the <code>vagrant up node1</code> command.</p>
 
 <p>To me, this is a very fast and clean way to provision server nodes. I just need to change a few lines in a file and get a new cluster without much hassle. Even more important, I can put those config files in version control and <a href="https://github.com/daschl/vagrants">share them</a> with other folks!</p>
-</div>
+]]></content>
+  </entry>
   
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/Logging-with-the-Couchbase-Java-Client">Logging With the Couchbase Java Client</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-05-16T14:49:48+02:00" pubdate data-updated="true">May 16<span>th</span>, 2013</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>Introduction</h2>
+  <entry>
+    <title type="html"><![CDATA[Logging With the Couchbase Java Client]]></title>
+    <link href="http://nitschinger.at/Logging-with-the-Couchbase-Java-Client"/>
+    <updated>2013-05-16T14:49:48+02:00</updated>
+    <id>http://nitschinger.at/Logging-with-the-Couchbase-Java-Client</id>
+    <content type="html"><![CDATA[<h2>Introduction</h2>
 
 <p>There is a huge variety in logging frameworks for Java, and its hard to please everyone. To understand how logging is currently handled in the SDK, we have to go back a few years. As you may know, the SDK depends on the <a href="https://code.google.com/p/spymemcached/">spymemcached</a> library and therefore also inherits its logging mechanisms. Back in the days when <a href="https://twitter.com/dlsspy">@dustin</a> wrote spy, there was no good abstraction for logging available (like SLF4J), so he wrote his own. Nowadays things have changed, but spy still inherits this legacy.</p>
 
@@ -3000,97 +2737,7 @@ SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further detail
 <p>Once you know the abstraction in spymemcached and how it works, switching logging implementations is easy and straightforward. If you work with one of the Couchbase people to report errors, please try to include output with DEBUG turned on, because this includes lots of useful information that can be used to determine the failure sources.</p>
 
 <p>With the SLF4J facade added in the next spy release (2.9), you will be able to plug every large logging framework out there into the SDK. Let us know if you see a use case not covered with these mechanisms or if you have other comments on this.</p>
-</div>
+]]></content>
+  </entry>
   
-  
-
-
-    </article>
-  
-  <div class="pagination">
-    
-    <a href="/blog/archives">Blog Archives</a>
-    
-  </div>
-</div>
-<aside class="sidebar">
-  
-    <section>
-  <h1>Recent Posts</h1>
-  <ul id="recent_posts">
-    
-      <li class="post">
-        <a href="/Using-JMH-for-Java-Microbenchmarking">Using JMH for Java Microbenchmarking</a>
-      </li>
-    
-      <li class="post">
-        <a href="/What-s-new-in-the-Couchbase-Java-SDK-1-2">What&#8217;s New in the Couchbase Java SDK 1.2</a>
-      </li>
-    
-      <li class="post">
-        <a href="/Using-the-Reactor-Processor-for-High-Performance-TCP">Using the Reactor Processor for High-Performance TCP</a>
-      </li>
-    
-      <li class="post">
-        <a href="/Useful-Couchbase-Resources-Blog-Posts">Useful Couchbase Resources & Blog Posts</a>
-      </li>
-    
-      <li class="post">
-        <a href="/Printing-JVM-generated-Assembler-on-Mac-OS-X">Printing JVM Generated Assembler on Mac OS X</a>
-      </li>
-    
-  </ul>
-</section>
-
-
-
-
-
-  
-</aside>
-
-    </div>
-  </div>
-  <footer role="contentinfo"><p>
-  Copyright &copy; 2013 - Michael Nitschinger -
-  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
-</p>
-
-</footer>
-  
-
-<script type="text/javascript">
-      var disqus_shortname = 'daschl';
-      
-        
-        var disqus_script = 'count.js';
-      
-    (function () {
-      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
-      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-    }());
-</script>
-
-
-
-
-
-
-
-  <script type="text/javascript">
-    (function(){
-      var twitterWidgets = document.createElement('script');
-      twitterWidgets.type = 'text/javascript';
-      twitterWidgets.async = true;
-      twitterWidgets.src = '//platform.twitter.com/widgets.js';
-      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
-    })();
-  </script>
-
-
-
-
-
-</body>
-</html>
+</feed>
