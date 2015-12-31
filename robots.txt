@@ -1,4 +1,0 @@
-User-agent: *
-Disallow: 
-
-Sitemap: http://daschl.github.io/sitemap.xml 
