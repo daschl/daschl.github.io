@@ -133,7 +133,21 @@ try {
 <p>In the end we still block on the caller thread, but we are compliant with Netty. The main takeaway for me is that you should never block on acquiring Channels in Netty, just because of the fact that your client side code may be used in a server side context as well. This is especially true for library developers like me.</p>
 
                     </div>
-                    
+                    <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'a3564b8d59a2331a4c30acf6f0179b8f85001b7edca74d867e07ef6a77aa09d3654416020a9327c1ad0acc8e0e32de1d1f0e768da8a660024fb44cc0ca974a9d';
+    var disqus_identifier = 'http:\/\/nitschinger.at\/Never-await-Uninterruptibly-on-Netty-Channels\/';
+    var disqus_title = 'Never awaitUninterruptibly() on Netty Channels';
+    var disqus_url = 'http:\/\/nitschinger.at\/Never-await-Uninterruptibly-on-Netty-Channels\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
                 </section>
             </div>
             <div class="footer">
