@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Osx on daschl writes. sometimes.</title>
+    <link>http://nitschinger.at/tags/osx/</link>
+    <description>Recent content in Osx on daschl writes. sometimes.</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 15 Jun 2016 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://nitschinger.at/tags/osx/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Scheduling Timers on OS X with Rust and Kqueue</title>
+      <link>http://nitschinger.at/Scheduling-Timers-on-OS-X-with-Rust-and-Kqueue/</link>
+      <pubDate>Wed, 15 Jun 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://nitschinger.at/Scheduling-Timers-on-OS-X-with-Rust-and-Kqueue/</guid>
+      <description>
+
+&lt;p&gt;As a more or less POSIX compatible system I would&amp;rsquo;ve expected
+&lt;a href=&#34;http://man7.org/linux/man-pages/man2/timer_create.2.html&#34;&gt;timer_create&lt;/a&gt; and
+friends to be available on OS X, but it turns out those functions are not
+available (at least I couldn&amp;rsquo;t find them after hours of research).&lt;/p&gt;
+
+&lt;p&gt;Looking into alternatives (spoiler: there are not many I think if you want to
+work from C/Rust) I settled on &lt;a href=&#34;https://en.wikipedia.org/wiki/Kqueue&#34;&gt;Kqueue&lt;/a&gt;.
+It doesn&amp;rsquo;t have all the features that the &lt;code&gt;timer_&lt;/code&gt; functions provide, but for
+what I need it seems to be good enough. Also, there are a bunch of crates like
+&lt;a href=&#34;https://crates.io/crates/mio&#34;&gt;mio&lt;/a&gt; and &lt;a href=&#34;https://crates.io/crates/nix&#34;&gt;nix&lt;/a&gt;
+available that either provide abstractions or use Kqueue already so I had
+something to refer to.&lt;/p&gt;
+
+&lt;p&gt;I didn&amp;rsquo;t find documentation or blog posts on this topic so I decided it is
+time to write one. This doesn&amp;rsquo;t go into all the details since, frankly, I don&amp;rsquo;t
+know all of them yet too. It should be enough to get you started though.&lt;/p&gt;
+
+&lt;h2 id=&#34;a-kqueue-primer&#34;&gt;A Kqueue primer&lt;/h2&gt;
+
+&lt;p&gt;Kqueue is a event notification system originally introduced in FreeBSD and
+subsequently supported in many more BSD variants as well as OS X. It can be used
+for similar tasks (like handling network connections) as the
+&lt;a href=&#34;https://en.wikipedia.org/wiki/Epoll&#34;&gt;epoll&lt;/a&gt; system on Linux or the
+&lt;a href=&#34;https://en.wikipedia.org/wiki/Input/output_completion_port&#34;&gt;IOCP&lt;/a&gt; framework on
+Windows. You can also schedule timers with it, and this is what we are doing in
+this blog post.&lt;/p&gt;
+
+&lt;p&gt;There are two main functions you need to work with:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span style=&#34;color: #A90D91&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;kqueue&lt;/span&gt;(&lt;span style=&#34;color: #A90D91&#34;&gt;void&lt;/span&gt;);
+
+&lt;span style=&#34;color: #A90D91&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;kevent&lt;/span&gt;(&lt;span style=&#34;color: #A90D91&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;kq&lt;/span&gt;, &lt;span style=&#34;color: #A90D91&#34;&gt;const&lt;/span&gt; &lt;span style=&#34;color: #A90D91&#34;&gt;struct&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;kevent&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;*changelist&lt;/span&gt;, &lt;span style=&#34;color: #A90D91&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;nchanges&lt;/span&gt;,
+    &lt;span style=&#34;color: #A90D91&#34;&gt;struct&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;kevent&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;*eventlist&lt;/span&gt;, &lt;span style=&#34;color: #A90D91&#34;&gt;int&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;nevents&lt;/span&gt;, &lt;span style=&#34;color: #A90D91&#34;&gt;const&lt;/span&gt; &lt;span style=&#34;color: #A90D91&#34;&gt;struct&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;timespec&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;*timeout&lt;/span&gt;);
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;which translate to the following rust signatures (from &lt;code&gt;nix&lt;/code&gt;):&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span style=&#34;color: #A90D91&#34;&gt;fn&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;kqueue&lt;/span&gt;() &lt;span style=&#34;color: #000000&#34;&gt;-&amp;gt;&lt;/span&gt; &lt;span style=&#34;color: #A90D91&#34;&gt;Result&lt;/span&gt;&lt;span style=&#34;color: #000000&#34;&gt;&amp;lt;RawFd&amp;gt;&lt;/span&gt;
+&lt;span style=&#34;color: #A90D91&#34;&gt;fn&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;kevent&lt;/span&gt;(&lt;span style=&#34;color: #000000&#34;&gt;kq:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;RawFd&lt;/span&gt;, &lt;span style=&#34;color: #000000&#34;&gt;changelist:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;&amp;amp;&lt;/span&gt;[&lt;span style=&#34;color: #000000&#34;&gt;KEvent&lt;/span&gt;], &lt;span style=&#34;color: #000000&#34;&gt;eventlist:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span style=&#34;color: #A90D91&#34;&gt;mut&lt;/span&gt; [&lt;span style=&#34;color: #000000&#34;&gt;KEvent&lt;/span&gt;], &lt;span style=&#34;color: #000000&#34;&gt;timeout_ms:&lt;/span&gt; &lt;span style=&#34;color: #A90D91&#34;&gt;usize&lt;/span&gt;) &lt;span style=&#34;color: #000000&#34;&gt;-&amp;gt;&lt;/span&gt; &lt;span style=&#34;color: #A90D91&#34;&gt;Result&lt;/span&gt;&lt;span style=&#34;color: #000000&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span style=&#34;color: #A90D91&#34;&gt;usize&lt;/span&gt;&lt;span style=&#34;color: #000000&#34;&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;The &lt;code&gt;kqueue&lt;/code&gt; function translates into a system call and creates a   new kernel
+event queue and returns a descriptor. The &lt;code&gt;kevent&lt;/code&gt; function is used to both
+register new &lt;code&gt;KEvents&lt;/code&gt; as well as check if any of them are currently pending.&lt;/p&gt;
+
+&lt;p&gt;The &lt;code&gt;KEvent&lt;/code&gt; is a generic struct that describes the type of event to monitor
+and looks like this in rust (also from &lt;code&gt;nix&lt;/code&gt;):&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span style=&#34;color: #A90D91&#34;&gt;pub&lt;/span&gt; &lt;span style=&#34;color: #A90D91&#34;&gt;struct&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;KEvent&lt;/span&gt; {
+    &lt;span style=&#34;color: #A90D91&#34;&gt;pub&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;ident:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;uintptr_t&lt;/span&gt;,
+    &lt;span style=&#34;color: #A90D91&#34;&gt;pub&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;filter:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;EventFilter&lt;/span&gt;,
+    &lt;span style=&#34;color: #A90D91&#34;&gt;pub&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;flags:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;EventFlag&lt;/span&gt;,
+    &lt;span style=&#34;color: #A90D91&#34;&gt;pub&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;fflags:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;FilterFlag&lt;/span&gt;,
+    &lt;span style=&#34;color: #A90D91&#34;&gt;pub&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;data:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;intptr_t&lt;/span&gt;,
+    &lt;span style=&#34;color: #A90D91&#34;&gt;pub&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;udata:&lt;/span&gt; &lt;span style=&#34;color: #A90D91&#34;&gt;usize&lt;/span&gt;,
+}
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;The &lt;code&gt;ident&lt;/code&gt; holds a value which is used to identify the event. Depending on the
+configured filter its type and meaning can change (but is very often a file
+descriptor). The &lt;code&gt;filter&lt;/code&gt; is important since it determines the kernel filter to
+process this event. For our timers we&amp;rsquo;ll use &lt;code&gt;EventFilter::EVFILT_TIMER&lt;/code&gt;, but
+there are many more available. The &lt;code&gt;flags&lt;/code&gt; define which actions to perform
+on the given event. The &lt;code&gt;fflags&lt;/code&gt; allow you to configure filter-specific flags,
+in our example we won&amp;rsquo;t use them. Finally &lt;code&gt;data&lt;/code&gt; allows to set filter-specific
+values and &lt;code&gt;udata&lt;/code&gt; is opaque user-defined data that is passed through the kernel
+unchanged.&lt;/p&gt;
+
+&lt;p&gt;Check out &lt;a href=&#34;http://rustdoc.s3-website-us-east-1.amazonaws.com/nix/master/osx/nix/sys/event/index.html&#34;&gt;the docs in nix&lt;/a&gt;
+for all the different values on &lt;code&gt;EventFlag&lt;/code&gt;, &lt;code&gt;EventFilter&lt;/code&gt; and &lt;code&gt;FilterFlag&lt;/code&gt;. Also,
+the original documentation on &lt;a href=&#34;https://www.freebsd.org/cgi/man.cgi?query=kqueue&#34;&gt;kqueue&lt;/a&gt;
+provides lots of insights into the flags and their functionality.&lt;/p&gt;
+
+&lt;p&gt;The last thing you need to know before diving into the actual code is the difference
+between &lt;code&gt;changelist&lt;/code&gt; and &lt;code&gt;eventlist&lt;/code&gt;: Both take a slice of &lt;code&gt;KEvents&lt;/code&gt;, but only
+&lt;code&gt;eventlist&lt;/code&gt; is mutable.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;The &lt;code&gt;changelist&lt;/code&gt; is used to register events with kqueue.&lt;/li&gt;
+&lt;li&gt;The &lt;code&gt;eventlist&lt;/code&gt; contains all the events which are currently active at the
+time of polling.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Note that the same slice underlying container (like a &lt;code&gt;Vec&lt;/code&gt;) can be used to
+ maintain both lists.&lt;/p&gt;
+
+&lt;p&gt;With the basics covered, let&amp;rsquo;s dive into the code.&lt;/p&gt;
+
+&lt;h2 id=&#34;scheduling-timers&#34;&gt;Scheduling Timers&lt;/h2&gt;
+
+&lt;p&gt;Create a new (&lt;code&gt;--bin&lt;/code&gt;) project through &lt;code&gt;cargo&lt;/code&gt; and add &lt;code&gt;nix&lt;/code&gt; as a dependency:&lt;/p&gt;
+[dependencies]
+nix = &#34;0.6.0&#34;
+
+&lt;p&gt;Add this to the top of your &lt;code&gt;main.rs&lt;/code&gt; file so we have the imports out of the
+way:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span style=&#34;color: #A90D91&#34;&gt;extern&lt;/span&gt; &lt;span style=&#34;color: #A90D91&#34;&gt;crate&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;nix&lt;/span&gt;;
+
+&lt;span style=&#34;color: #A90D91&#34;&gt;use&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;nix::sys::event::&lt;/span&gt;{&lt;span style=&#34;color: #000000&#34;&gt;KEvent&lt;/span&gt;, &lt;span style=&#34;color: #000000&#34;&gt;kqueue&lt;/span&gt;, &lt;span style=&#34;color: #000000&#34;&gt;kevent&lt;/span&gt;, &lt;span style=&#34;color: #000000&#34;&gt;EventFilter&lt;/span&gt;, &lt;span style=&#34;color: #000000&#34;&gt;FilterFlag&lt;/span&gt;};
+&lt;span style=&#34;color: #A90D91&#34;&gt;use&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;nix::sys::event::&lt;/span&gt;{&lt;span style=&#34;color: #000000&#34;&gt;EV_ADD&lt;/span&gt;, &lt;span style=&#34;color: #000000&#34;&gt;EV_ENABLE&lt;/span&gt;};
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Next, we add a helper function that encapsulates the &lt;code&gt;KEvent&lt;/code&gt; creation:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span style=&#34;color: #A90D91&#34;&gt;fn&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;event&lt;/span&gt;(&lt;span style=&#34;color: #000000&#34;&gt;id:&lt;/span&gt; &lt;span style=&#34;color: #A90D91&#34;&gt;usize&lt;/span&gt;, &lt;span style=&#34;color: #000000&#34;&gt;timer:&lt;/span&gt; &lt;span style=&#34;color: #A90D91&#34;&gt;isize&lt;/span&gt;) &lt;span style=&#34;color: #000000&#34;&gt;-&amp;gt;&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;KEvent&lt;/span&gt; {
+    &lt;span style=&#34;color: #000000&#34;&gt;KEvent&lt;/span&gt; {
+        &lt;span style=&#34;color: #000000&#34;&gt;ident:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;id&lt;/span&gt;,
+        &lt;span style=&#34;color: #000000&#34;&gt;filter:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;EventFilter::EVFILT_TIMER&lt;/span&gt;,
+        &lt;span style=&#34;color: #000000&#34;&gt;flags:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;EV_ADD&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;|&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;EV_ENABLE&lt;/span&gt;,
+        &lt;span style=&#34;color: #000000&#34;&gt;fflags:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;FilterFlag::empty&lt;/span&gt;(),
+        &lt;span style=&#34;color: #000000&#34;&gt;data:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;timer&lt;/span&gt;,
+        &lt;span style=&#34;color: #000000&#34;&gt;udata:&lt;/span&gt; &lt;span style=&#34;color: #1C01CE&#34;&gt;0&lt;/span&gt;,
+    }
+}
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Here the caller passes in the event id as well as the timer in milliseconds. Since
+we want to get a timer event we need to use the &lt;code&gt;EventFilter::EVFILT_TIMER&lt;/code&gt; filter.
+The &lt;code&gt;EV_ADD | EV_ENABLE&lt;/code&gt; indicates we want to add and enable the timer at the same
+time. No flag filters are needed and the &lt;code&gt;data&lt;/code&gt; payload for our timer event is the
+time provided by the caller. We also don&amp;rsquo;t set any opaque user data here.&lt;/p&gt;
+
+&lt;p&gt;Inside our &lt;code&gt;main&lt;/code&gt; function we first need to grab a &lt;code&gt;kqueue&lt;/code&gt; and then register
+events. We make use of our &lt;code&gt;event&lt;/code&gt; function here and create one event that
+runs each second and one that runs every 1.5 seconds:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span style=&#34;color: #177500&#34;&gt;// Initialize the Kqueue&lt;/span&gt;
+&lt;span style=&#34;color: #A90D91&#34;&gt;let&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;kq&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;kqueue&lt;/span&gt;().&lt;span style=&#34;color: #000000&#34;&gt;expect&lt;/span&gt;(&lt;span style=&#34;color: #C41A16&#34;&gt;&amp;quot;Could not get kqueue&amp;quot;&lt;/span&gt;);
+
+&lt;span style=&#34;color: #177500&#34;&gt;// Create a Vec&amp;lt;KEvent&amp;gt; with both events&lt;/span&gt;
+&lt;span style=&#34;color: #A90D91&#34;&gt;let&lt;/span&gt; &lt;span style=&#34;color: #A90D91&#34;&gt;mut&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;changes&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;vec!&lt;/span&gt;[&lt;span style=&#34;color: #000000&#34;&gt;event&lt;/span&gt;(&lt;span style=&#34;color: #1C01CE&#34;&gt;1&lt;/span&gt;, &lt;span style=&#34;color: #1C01CE&#34;&gt;1000&lt;/span&gt;), &lt;span style=&#34;color: #000000&#34;&gt;event&lt;/span&gt;(&lt;span style=&#34;color: #1C01CE&#34;&gt;2&lt;/span&gt;, &lt;span style=&#34;color: #1C01CE&#34;&gt;1500&lt;/span&gt;)];
+
+&lt;span style=&#34;color: #177500&#34;&gt;// Register the events in the `changelist`.&lt;/span&gt;
+&lt;span style=&#34;color: #000000&#34;&gt;kevent&lt;/span&gt;(&lt;span style=&#34;color: #000000&#34;&gt;kq&lt;/span&gt;, &lt;span style=&#34;color: #000000&#34;&gt;changes&lt;/span&gt;.&lt;span style=&#34;color: #000000&#34;&gt;as_slice&lt;/span&gt;(), &lt;span style=&#34;color: #000000&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span style=&#34;color: #A90D91&#34;&gt;mut&lt;/span&gt; [], &lt;span style=&#34;color: #1C01CE&#34;&gt;0&lt;/span&gt;).&lt;span style=&#34;color: #000000&#34;&gt;unwrap&lt;/span&gt;();
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Kqueue now knows about the events we are interested in, so it&amp;rsquo;s time to run
+a loop and poll until they happen:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span style=&#34;color: #A90D91&#34;&gt;loop&lt;/span&gt; {
+  &lt;span style=&#34;color: #A90D91&#34;&gt;match&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;kevent&lt;/span&gt;(&lt;span style=&#34;color: #000000&#34;&gt;kq&lt;/span&gt;, &lt;span style=&#34;color: #000000&#34;&gt;&amp;amp;&lt;/span&gt;[], &lt;span style=&#34;color: #000000&#34;&gt;changes&lt;/span&gt;.&lt;span style=&#34;color: #000000&#34;&gt;as_mut_slice&lt;/span&gt;(), &lt;span style=&#34;color: #1C01CE&#34;&gt;0&lt;/span&gt;) {
+    &lt;span style=&#34;color: #A90D91&#34;&gt;Ok&lt;/span&gt;(&lt;span style=&#34;color: #000000&#34;&gt;v&lt;/span&gt;) &lt;span style=&#34;color: #A90D91&#34;&gt;if&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;v&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;&amp;gt;&lt;/span&gt; &lt;span style=&#34;color: #1C01CE&#34;&gt;0&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;=&amp;gt;&lt;/span&gt; {
+      &lt;span style=&#34;color: #000000&#34;&gt;println!&lt;/span&gt;(&lt;span style=&#34;color: #C41A16&#34;&gt;&amp;quot;---&amp;quot;&lt;/span&gt;);
+      &lt;span style=&#34;color: #A90D91&#34;&gt;for&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;i&lt;/span&gt; &lt;span style=&#34;color: #A90D91&#34;&gt;in&lt;/span&gt; &lt;span style=&#34;color: #1C01CE&#34;&gt;0&lt;/span&gt;..&lt;span style=&#34;color: #000000&#34;&gt;v&lt;/span&gt; {
+        &lt;span style=&#34;color: #000000&#34;&gt;println!&lt;/span&gt;(&lt;span style=&#34;color: #C41A16&#34;&gt;&amp;quot;Event with ID {:?} triggered&amp;quot;&lt;/span&gt;, &lt;span style=&#34;color: #000000&#34;&gt;changes&lt;/span&gt;.&lt;span style=&#34;color: #000000&#34;&gt;get&lt;/span&gt;(&lt;span style=&#34;color: #000000&#34;&gt;i&lt;/span&gt;).&lt;span style=&#34;color: #000000&#34;&gt;unwrap&lt;/span&gt;().&lt;span style=&#34;color: #000000&#34;&gt;ident&lt;/span&gt;);
+      }
+    }
+    &lt;span style=&#34;color: #A90D91&#34;&gt;Err&lt;/span&gt;(&lt;span style=&#34;color: #000000&#34;&gt;e&lt;/span&gt;) &lt;span style=&#34;color: #000000&#34;&gt;=&amp;gt;&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;panic!&lt;/span&gt;(&lt;span style=&#34;color: #C41A16&#34;&gt;&amp;quot;{:?}&amp;quot;&lt;/span&gt;, &lt;span style=&#34;color: #000000&#34;&gt;e&lt;/span&gt;), &lt;span style=&#34;color: #177500&#34;&gt;// Panic on Errors&lt;/span&gt;
+    &lt;span style=&#34;color: #000000&#34;&gt;_&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;=&amp;gt;&lt;/span&gt; () &lt;span style=&#34;color: #177500&#34;&gt;// Ignore Ok(0),&lt;/span&gt;
+  }
+}
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;We poll &lt;code&gt;kevent&lt;/code&gt; and the &lt;code&gt;changes&lt;/code&gt; slice is updated with the results on each
+poll with the &lt;code&gt;eventlist&lt;/code&gt;. &lt;code&gt;kevent&lt;/code&gt; returns either an &lt;code&gt;Err&lt;/code&gt; or &lt;code&gt;Ok&lt;/code&gt; with the
+number of events that are available now. Note that &lt;code&gt;Ok(0)&lt;/code&gt; is a special case
+that nothing is available, so we move on. If we have at least one event pending
+we iterate through all pending events and print their ID.&lt;/p&gt;
+
+&lt;p&gt;So if you run this example what you&amp;rsquo;ll see is:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ cargo run
+       Fresh bitflags v0.4.0
+       Fresh semver v0.1.20
+       Fresh void v1.0.2
+       Fresh cfg-if v0.1.0
+       Fresh libc v0.2.12
+       Fresh rustc_version v0.1.7
+       Fresh nix v0.6.0
+       Fresh kqueue-samples v0.1.0
+     Running `target/debug/kqueue-samples`
+---
+Event with ID 1 triggered
+---
+Event with ID 2 triggered
+---
+Event with ID 1 triggered
+---
+Event with ID 1 triggered
+Event with ID 2 triggered
+---
+Event with ID 1 triggered
+---
+Event with ID 2 triggered
+---
+^C
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Since our timers fire at different intervals (and occasionally fire together) you
+can see that every time the different events are available to process by your
+application.&lt;/p&gt;
+
+&lt;p&gt;Of course this is barely scratching the surface of what you can do with &lt;code&gt;kqueue&lt;/code&gt;
+but I&amp;rsquo;d like to mention one final thing: as you can see even if you just
+registered the events once they fire over and over again. If you want to fire
+them just once you can use &lt;code&gt;flags: EV_ADD | EV_ENABLE | EV_ONESHOT&lt;/code&gt; instead.&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
