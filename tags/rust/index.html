@@ -352,6 +352,8 @@
 
 <p>This is what you came for, right? Lets see how our implementation performs in comparison to the go one. To establish a meaningful baseline we need to define a common text corpus that is used for the benchmark.</p>
 
+<p><strong>Edit:</strong> I forgot to mention the versions used: Rust is at <code>1.14.0-nightly</code> since the benchmarking tool is unstable and the version of go used is <code>go1.7.1 darwin/amd64</code>.</p>
+
 <p>I copied the text out of the <a href="https://en.wikipedia.org/wiki/Rust_(programming_language)">Rust Wikipedia</a> page that is exact 1000 characters long and contains around 150-160 tokens depending on the type of tokenizer used.</p>
 <div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span><span style="color: #A90D91">static</span> <span style="color: #000000">INPUT:</span> <span style="color: #000000">&amp;</span><span style="color: #A90D91">&#39;static</span> <span style="color: #A90D91">str</span> <span style="color: #000000">=</span>
     <span style="color: #C41A16">&quot;In addition to conventional static typing, before version 0.4, Rust also supported \</span>

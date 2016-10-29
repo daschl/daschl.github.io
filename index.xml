@@ -290,6 +290,8 @@
 
 &lt;p&gt;This is what you came for, right? Lets see how our implementation performs in comparison to the go one. To establish a meaningful baseline we need to define a common text corpus that is used for the benchmark.&lt;/p&gt;
 
+&lt;p&gt;&lt;strong&gt;Edit:&lt;/strong&gt; I forgot to mention the versions used: Rust is at &lt;code&gt;1.14.0-nightly&lt;/code&gt; since the benchmarking tool is unstable and the version of go used is &lt;code&gt;go1.7.1 darwin/amd64&lt;/code&gt;.&lt;/p&gt;
+
 &lt;p&gt;I copied the text out of the &lt;a href=&#34;https://en.wikipedia.org/wiki/Rust_(programming_language)&#34;&gt;Rust Wikipedia&lt;/a&gt; page that is exact 1000 characters long and contains around 150-160 tokens depending on the type of tokenizer used.&lt;/p&gt;
 &lt;div class=&#34;highlight&#34; style=&#34;background: #ffffff&#34;&gt;&lt;pre style=&#34;line-height: 125%&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span style=&#34;color: #A90D91&#34;&gt;static&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;INPUT:&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span style=&#34;color: #A90D91&#34;&gt;&amp;#39;static&lt;/span&gt; &lt;span style=&#34;color: #A90D91&#34;&gt;str&lt;/span&gt; &lt;span style=&#34;color: #000000&#34;&gt;=&lt;/span&gt;
     &lt;span style=&#34;color: #C41A16&#34;&gt;&amp;quot;In addition to conventional static typing, before version 0.4, Rust also supported \&lt;/span&gt;
