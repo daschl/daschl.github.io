@@ -79,7 +79,7 @@
                     <div class="post-description">
                         
 
-<p>I work for <a href="http://www.couchbase.com/">Couchbase</a> where we are currently developing full text search capabilities based on <a href="blevesearch.com">bleve</a>. Bleve is implemented in <a href="golang.org">go</a> and inspired by <a href="http://lucene.apache.org/core/">Apache Lucene</a>, the reference implementation when it comes to full text search. While I am not directly involved in developing bleve I was curious about how it works internally and did take a look at the analyzers it provides.</p>
+<p>I work for <a href="http://www.couchbase.com/">Couchbase</a> where we are currently developing full text search capabilities based on <a href="http://blevesearch.com/">bleve</a>. Bleve is implemented in <a href="http://golang.org/">go</a> and inspired by <a href="http://lucene.apache.org/core/">Apache Lucene</a>, the reference implementation when it comes to full text search. While I am not directly involved in developing bleve I was curious about how it works internally and did take a look at the analyzers it provides.</p>
 
 <p>Analyzers take your free form text and turn it into tokens which can then be used for indexing or queries. Since I know our team is currently at work doing performance optimizations in all places I wanted to take a stab at implementing similar analyzers in <a href="https://www.rust-lang.org/">Rust</a> and see how they perform in comparison.</p>
 
@@ -115,7 +115,7 @@
 
 <p>One problem with this approach is that the <code>String</code> implicitly performs a heap allocation, and when we are slicing hundreds or thousands of small tokens we are allocating lots of small chunks on the heap.</p>
 
-<p>The first idea to avoid this is using a <code>&amp;str</code> instead, but we potentially need to modify the term and then we are back at heap allocations (as an exercise for the reader, using <a href="https://doc.rust-lang.org/std/borrow/enum.Cow.html">Cow</a> could also be an option). So, how can we make this more efficient?</p>
+<p>The first idea to avoid this is using a <code>&amp;str</code> instead, but we potentially need to modify the term and then we are back at heap allocations (as an exercise for the reader or as a future blog post, using <a href="https://doc.rust-lang.org/std/borrow/enum.Cow.html">Cow</a> could also be an option). So, how can we make this more efficient?</p>
 
 <p>One thing I realized during experimentation and later researching on the web is that when you are tokenizing text you mostly end up with lots of small tokens which maybe are even filtered out in the next step of the process. It would be nice if could stack allocate those small terms and as a fallback perform heap allocation for the rest! It turns out we can do just that, and here is one way:</p>
 <div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span><span style="color: #A90D91">const</span> <span style="color: #000000">MAX_STACK_TERM_LEN:</span> <span style="color: #A90D91">usize</span> <span style="color: #000000">=</span> <span style="color: #1C01CE">15</span>;
