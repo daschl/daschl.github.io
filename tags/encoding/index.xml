@@ -13,10 +13,10 @@
     
     <item>
       <title>Fun with Couchbase Views and MessagePack</title>
-      <link>https://nitschinger.at/fun-with-couchbase-views-and-message-pack/</link>
+      <link>https://nitschinger.at/Fun-with-Couchbase-Views-and-Message-Pack/</link>
       <pubDate>Tue, 18 Jun 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/fun-with-couchbase-views-and-message-pack/</guid>
+      <guid>https://nitschinger.at/Fun-with-Couchbase-Views-and-Message-Pack/</guid>
       <description>Alright, before we start I have to admit that this is a little bit of a hack. Not that it doesn&amp;rsquo;t work, but of course Couchbase Server 2.0 officially only supports JSON documents to be queried through Views. In addition to that, it is not so much known that you have access to all the other documents through Base64 encoding. Recently, Sergey showed us how to very easily analyze binary data in Couchbase Views and this brought me on the idea to take it one step further.</description>
     </item>
     

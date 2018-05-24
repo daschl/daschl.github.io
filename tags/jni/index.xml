@@ -13,10 +13,10 @@
     
     <item>
       <title>First Steps with Rust and JNI</title>
-      <link>https://nitschinger.at/first-steps-with-rust-and-jni/</link>
+      <link>https://nitschinger.at/First-Steps-with-Rust-and-JNI/</link>
       <pubDate>Fri, 19 Feb 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/first-steps-with-rust-and-jni/</guid>
+      <guid>https://nitschinger.at/First-Steps-with-Rust-and-JNI/</guid>
       <description>The first steps are always the hardest, at least thats how the saying goes. But it turns out that calling into Rust from Java is easier than I originally thought.
 The following blog post shows you how to setup and compile a Rust library which can be called from Java userland. Note that everything you see in this post, while being functional, is very simplistic. Real world JNI has lots of nitty gritty details and pitfalls, but we need to start somewhere right?</description>
     </item>

@@ -13,10 +13,10 @@
     
     <item>
       <title>ElasticSearch and SQL Server are sitting in a tree...</title>
-      <link>https://nitschinger.at/elastic-search-and-sql-server-are-sitting-in-a-tree/</link>
+      <link>https://nitschinger.at/Elastic-Search-and-SQL-Server-are-sitting-in-a-tree/</link>
       <pubDate>Mon, 20 Aug 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/elastic-search-and-sql-server-are-sitting-in-a-tree/</guid>
+      <guid>https://nitschinger.at/Elastic-Search-and-SQL-Server-are-sitting-in-a-tree/</guid>
       <description>Motivation With modern NoSQL datastores on the rise, classical relational databases with their rigid data model get challenged every day. Nonetheless, they still own the market and therefore every developer needs to have solid skills in working with them in a reliable and performant way.
 While relational databases have lots of use cases, there are areas where different technologies are a much better fit. One of them is flexible and complex real-time searching.</description>
     </item>

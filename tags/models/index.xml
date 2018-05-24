@@ -13,10 +13,10 @@
     
     <item>
       <title>Introducing Relationships in Lithium</title>
-      <link>https://nitschinger.at/introducing-relationships-in-lithium/</link>
+      <link>https://nitschinger.at/Introducing-Relationships-in-Lithium/</link>
       <pubDate>Sat, 03 Mar 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/introducing-relationships-in-lithium/</guid>
+      <guid>https://nitschinger.at/Introducing-Relationships-in-Lithium/</guid>
       <description>Introduction The model relationship support in Lithium is one of the hottest topics on IRC lately, so I thought it would be a good idea to blog about it.
 Currently, Lithium supports 1:1 and 1:n relationships for relational databases. There is no m:n support out of the box (like CakePHP&amp;rsquo;s $hasAndBelongsToMany). This also means that MongoDB relationships are not implemented for now. If you look at the Roadmap, you can see that this is on the &amp;ldquo;pre 1.</description>
     </item>

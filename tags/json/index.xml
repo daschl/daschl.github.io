@@ -13,19 +13,19 @@
     
     <item>
       <title>Benchmarking Cache Transcoders in PHP</title>
-      <link>https://nitschinger.at/benchmarking-cache-transcoders-in-php/</link>
+      <link>https://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP/</link>
       <pubDate>Wed, 30 Jan 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/benchmarking-cache-transcoders-in-php/</guid>
+      <guid>https://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP/</guid>
       <description>Motivation Storing PHP objects (or simpler data types like arrays) in caches always requires some kind of transformation. You need a way of encoding/decoding data so that it can be stored and loaded properly. In most languages, this process is known as object serialization. PHP provides a mechanism for this out of the box, but in this article we&amp;rsquo;ll also look at igbinary as a drop-in replacement for the default serializer.</description>
     </item>
     
     <item>
       <title>Handling JSON like a boss in PHP</title>
-      <link>https://nitschinger.at/handling-json-like-a-boss-in-php/</link>
+      <link>https://nitschinger.at/Handling-JSON-like-a-boss-in-PHP/</link>
       <pubDate>Wed, 06 Jun 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/handling-json-like-a-boss-in-php/</guid>
+      <guid>https://nitschinger.at/Handling-JSON-like-a-boss-in-PHP/</guid>
       <description>There are already lots of tutorials out there on handling JSON with PHP, but most of them don&amp;rsquo;t go much deeper than throwing an array against json_encode and hoping for the best. This article aims to be a solid introduction into JSON and how to handle it correctly in combination with PHP. Also, readers who don&amp;rsquo;t use PHP as their programming language can benefit from the first part that acts as a general overview on JSON.</description>
     </item>
     

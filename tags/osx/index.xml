@@ -13,10 +13,10 @@
     
     <item>
       <title>Scheduling Timers on OS X with Rust and Kqueue</title>
-      <link>https://nitschinger.at/scheduling-timers-on-os-x-with-rust-and-kqueue/</link>
+      <link>https://nitschinger.at/Scheduling-Timers-on-OS-X-with-Rust-and-Kqueue/</link>
       <pubDate>Wed, 15 Jun 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/scheduling-timers-on-os-x-with-rust-and-kqueue/</guid>
+      <guid>https://nitschinger.at/Scheduling-Timers-on-OS-X-with-Rust-and-Kqueue/</guid>
       <description>As a more or less POSIX compatible system I would&amp;rsquo;ve expected timer_create and friends to be available on OS X, but it turns out those functions are not available (at least I couldn&amp;rsquo;t find them after hours of research).
 Looking into alternatives (spoiler: there are not many I think if you want to work from C/Rust) I settled on Kqueue. It doesn&amp;rsquo;t have all the features that the timer_ functions provide, but for what I need it seems to be good enough.</description>
     </item>

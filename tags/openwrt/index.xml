@@ -13,10 +13,10 @@
     
     <item>
       <title>Rust on the WiFi Pineapple (and OpenWrt)</title>
-      <link>https://nitschinger.at/rust-on-the-wifi-pineapple-and-openwrt/</link>
+      <link>https://nitschinger.at/Rust-on-the-Wifi-Pineapple-and-OpenWRT/</link>
       <pubDate>Mon, 02 Jan 2017 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/rust-on-the-wifi-pineapple-and-openwrt/</guid>
+      <guid>https://nitschinger.at/Rust-on-the-Wifi-Pineapple-and-OpenWRT/</guid>
       <description>Over the holidays I wanted to get a very simple Rust application running on my WiFi Pineapple Nano. Since I don&amp;rsquo;t have much experience with embedded systems and cross-compilation, it sounded like something fun to do and I was sure I might learn a thing or two. Many hours later and lots of frustration, I ended up with a simple solution that I&amp;rsquo;d like to share in this post.</description>
     </item>
     

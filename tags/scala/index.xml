@@ -13,10 +13,10 @@
     
     <item>
       <title>Accessing Couchbase from Scala</title>
-      <link>https://nitschinger.at/accessing-couchbase-from-scala/</link>
+      <link>https://nitschinger.at/Accessing-Couchbase-from-Scala/</link>
       <pubDate>Thu, 26 Apr 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/accessing-couchbase-from-scala/</guid>
+      <guid>https://nitschinger.at/Accessing-Couchbase-from-Scala/</guid>
       <description>In my recent adventure on exploring both Couchbase and Scala, I noticed that there are not many tutorials out there using both at the same time. We&amp;rsquo;ll use the couchbase-java driver in its latest version (1.1), because it provides support for views and Couchbase 2.0. Note that I won&amp;rsquo;t cover installing Couchbase here, since there is plenty of material out there. Also, I assume you have scala and sbt already installed.</description>
     </item>
     

@@ -13,10 +13,10 @@
     
     <item>
       <title>Using the Reactor Processor for High-Performance TCP</title>
-      <link>https://nitschinger.at/using-the-reactor-processor-for-high-performance-tcp/</link>
+      <link>https://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP/</link>
       <pubDate>Tue, 13 Aug 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/using-the-reactor-processor-for-high-performance-tcp/</guid>
+      <guid>https://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP/</guid>
       <description>First, a disclaimer: the all-new Reactor framework is still under heavy development, but it already provides a very promising basement for applications and libraries that need high throughput and low latency. We at Couchbase aim to provide the highest throughput at the lowest latency, so it is very critical to build upon an infrastructure that can provide it. Current, we are performing early investigations for a possible &amp;ldquo;next generation Java SDK&amp;rdquo; and Reactor seems very promising so far.</description>
     </item>
     

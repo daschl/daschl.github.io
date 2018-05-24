@@ -13,10 +13,10 @@
     
     <item>
       <title>Using Environments in Lithium</title>
-      <link>https://nitschinger.at/using-environments-in-lithium/</link>
+      <link>https://nitschinger.at/Using-Environments-in-Lithium/</link>
       <pubDate>Tue, 19 Jul 2011 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/using-environments-in-lithium/</guid>
+      <guid>https://nitschinger.at/Using-Environments-in-Lithium/</guid>
       <description>Introduction Environments help you to manage multiple configurations for your application. Maybe you have a different database for testing than for production or you use file caching in development but APC in production. If your framework does not support this (or a similar) concept, it can be a pain to code this overhead for yourself. Therefore, Lithium frees you from this by providing a Environment class (in the \lithium\core namespace) which handles everything for you automatically.</description>
     </item>
     

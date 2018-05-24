@@ -13,20 +13,20 @@
     
     <item>
       <title>Testing the Lithium core for fun and profit</title>
-      <link>https://nitschinger.at/testing-the-lithium-core-for-fun-and-profit/</link>
+      <link>https://nitschinger.at/Testing-the-Lithium-core-for-fun-and-profit/</link>
       <pubDate>Sat, 09 Jul 2011 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/testing-the-lithium-core-for-fun-and-profit/</guid>
+      <guid>https://nitschinger.at/Testing-the-Lithium-core-for-fun-and-profit/</guid>
       <description>In modern web frameworks, testing is one of the most important pillars that ensure a clean, stable and extendable codebase. Testing support in Lithium was built in from the beginning and therefore it already features a great code coverage. The Lithium project aims to work out of the box on many platforms, including Microsoft Windows and its IIS, which was often neglected in the past.
 The main purpose of this post is to show you how core tests work and were the core team needs help to improve things further.</description>
     </item>
     
     <item>
       <title>Understanding the Lithium Router - Part 2</title>
-      <link>https://nitschinger.at/understanding-the-lithium-router-part-2/</link>
+      <link>https://nitschinger.at/Understanding-the-Lithium-Router-Part-2/</link>
       <pubDate>Thu, 24 Feb 2011 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/understanding-the-lithium-router-part-2/</guid>
+      <guid>https://nitschinger.at/Understanding-the-Lithium-Router-Part-2/</guid>
       <description>Introduction Routes play an essential role in your request/response-cycle and therefore should also be tested like any other component that you develop. As the Lithium routing infrastructure also consists of classes and methods, we can run unit and integration tests against them.
 If we follow the testing conventions, we need to differentiate two distinct methods of testing. The first one (the so called &amp;ldquo;Unit Test&amp;rdquo;), is used to test your routes one by one, isolated from your application and ideally all dependencies are mocked away.</description>
     </item>

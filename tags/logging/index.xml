@@ -13,10 +13,10 @@
     
     <item>
       <title>Logging with the Couchbase Java Client</title>
-      <link>https://nitschinger.at/logging-with-the-couchbase-java-client/</link>
+      <link>https://nitschinger.at/Logging-with-the-Couchbase-Java-Client/</link>
       <pubDate>Thu, 16 May 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/logging-with-the-couchbase-java-client/</guid>
+      <guid>https://nitschinger.at/Logging-with-the-Couchbase-Java-Client/</guid>
       <description>Introduction There is a huge variety in logging frameworks for Java, and its hard to please everyone. To understand how logging is currently handled in the SDK, we have to go back a few years. As you may know, the SDK depends on the spymemcached library and therefore also inherits its logging mechanisms. Back in the days when @dustin wrote spy, there was no good abstraction for logging available (like SLF4J), so he wrote his own.</description>
     </item>
     

@@ -13,10 +13,10 @@
     
     <item>
       <title>Quick Tip: Lithium Redirect</title>
-      <link>https://nitschinger.at/quick-tip-lithium-redirect/</link>
+      <link>https://nitschinger.at/Quick-Tip-Lithium-Redirect/</link>
       <pubDate>Fri, 16 Sep 2011 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/quick-tip-lithium-redirect/</guid>
+      <guid>https://nitschinger.at/Quick-Tip-Lithium-Redirect/</guid>
       <description>While migrating lithium_bin as part of research over to MongoDB (from CouchDB), I found the following snippet in the routes.php file:
 Router::connect(&#39;/&#39;, array(), function($request) { $location = array(&#39;controller&#39; =&amp;gt; &#39;pastes&#39;, &#39;action&#39; =&amp;gt; &#39;add&#39;); return new Response(compact(&#39;location&#39;)); });  This means that when the user enters the application via the root url (/), he instantly gets redirected to /pastes/add (or a different URL if you have custom routes configured).
 This may seem ok at first, but there&amp;rsquo;s a problem.</description>

@@ -13,19 +13,19 @@
     
     <item>
       <title>Securing Lithium Forms</title>
-      <link>https://nitschinger.at/securing-lithium-forms/</link>
+      <link>https://nitschinger.at/Securing-Lithium-Forms/</link>
       <pubDate>Wed, 08 Jun 2011 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/securing-lithium-forms/</guid>
+      <guid>https://nitschinger.at/Securing-Lithium-Forms/</guid>
       <description>CSRF (Cross-Site-Request-Forgery) attacks work by sending arbitary (form) requests from a victim. Normally, the receiving site (in our case the Controller who processes the form data) doesn&amp;rsquo;t know where the data comes from. The CSRF protection in Lithium aims to solve this problem in an elegant and secure way. You can read more about those attacks here. Note that you&amp;rsquo;ll need to clone the latest master branch of Lithium if you want to try it out now.</description>
     </item>
     
     <item>
       <title>Write your own Helper with Lithium</title>
-      <link>https://nitschinger.at/write-your-own-helper-with-lithium/</link>
+      <link>https://nitschinger.at/Write-your-own-Helper-with-Lithium/</link>
       <pubDate>Tue, 23 Nov 2010 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/write-your-own-helper-with-lithium/</guid>
+      <guid>https://nitschinger.at/Write-your-own-Helper-with-Lithium/</guid>
       <description>Lithium comes with two helpers out of the box. The Form-Helper and the Html-Helper. Both are great and help you to make your View-Code more flexible, maintainable and easier to read.
 But what do you do when you need a functionality that they don&amp;rsquo;t provide? Right, you write your own. Let&amp;rsquo;s imagine you want to tell your blog-readers how many posts you have stored in your database. In our first iteration our code might look like this:</description>
     </item>

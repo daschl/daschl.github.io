@@ -13,59 +13,59 @@
     
     <item>
       <title>Rust on the WiFi Pineapple (and OpenWrt)</title>
-      <link>https://nitschinger.at/rust-on-the-wifi-pineapple-and-openwrt/</link>
+      <link>https://nitschinger.at/Rust-on-the-Wifi-Pineapple-and-OpenWRT/</link>
       <pubDate>Mon, 02 Jan 2017 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/rust-on-the-wifi-pineapple-and-openwrt/</guid>
+      <guid>https://nitschinger.at/Rust-on-the-Wifi-Pineapple-and-OpenWRT/</guid>
       <description>Over the holidays I wanted to get a very simple Rust application running on my WiFi Pineapple Nano. Since I don&amp;rsquo;t have much experience with embedded systems and cross-compilation, it sounded like something fun to do and I was sure I might learn a thing or two. Many hours later and lots of frustration, I ended up with a simple solution that I&amp;rsquo;d like to share in this post.</description>
     </item>
     
     <item>
       <title>Text Analysis in Rust - Tokenization</title>
-      <link>https://nitschinger.at/text-analysis-in-rust-tokenization/</link>
+      <link>https://nitschinger.at/Text-Analysis-in-Rust-Tokenization/</link>
       <pubDate>Fri, 28 Oct 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/text-analysis-in-rust-tokenization/</guid>
+      <guid>https://nitschinger.at/Text-Analysis-in-Rust-Tokenization/</guid>
       <description>I work for Couchbase where we are currently developing full text search capabilities based on bleve. Bleve is implemented in go and inspired by Apache Lucene, the reference implementation when it comes to full text search. While I am not directly involved in developing bleve I was curious about how it works internally and did take a look at the analyzers it provides.
 Analyzers take your free form text and turn it into tokens which can then be used for indexing or queries.</description>
     </item>
     
     <item>
       <title>Scheduling Timers on OS X with Rust and Kqueue</title>
-      <link>https://nitschinger.at/scheduling-timers-on-os-x-with-rust-and-kqueue/</link>
+      <link>https://nitschinger.at/Scheduling-Timers-on-OS-X-with-Rust-and-Kqueue/</link>
       <pubDate>Wed, 15 Jun 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/scheduling-timers-on-os-x-with-rust-and-kqueue/</guid>
+      <guid>https://nitschinger.at/Scheduling-Timers-on-OS-X-with-Rust-and-Kqueue/</guid>
       <description>As a more or less POSIX compatible system I would&amp;rsquo;ve expected timer_create and friends to be available on OS X, but it turns out those functions are not available (at least I couldn&amp;rsquo;t find them after hours of research).
 Looking into alternatives (spoiler: there are not many I think if you want to work from C/Rust) I settled on Kqueue. It doesn&amp;rsquo;t have all the features that the timer_ functions provide, but for what I need it seems to be good enough.</description>
     </item>
     
     <item>
       <title>First Steps with Rust and JNI</title>
-      <link>https://nitschinger.at/first-steps-with-rust-and-jni/</link>
+      <link>https://nitschinger.at/First-Steps-with-Rust-and-JNI/</link>
       <pubDate>Fri, 19 Feb 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/first-steps-with-rust-and-jni/</guid>
+      <guid>https://nitschinger.at/First-Steps-with-Rust-and-JNI/</guid>
       <description>The first steps are always the hardest, at least thats how the saying goes. But it turns out that calling into Rust from Java is easier than I originally thought.
 The following blog post shows you how to setup and compile a Rust library which can be called from Java userland. Note that everything you see in this post, while being functional, is very simplistic. Real world JNI has lots of nitty gritty details and pitfalls, but we need to start somewhere right?</description>
     </item>
     
     <item>
       <title>Binding Threads And Processes to CPUs in Rust</title>
-      <link>https://nitschinger.at/binding-threads-and-processes-to-cpus-in-rust/</link>
+      <link>https://nitschinger.at/Binding-Threads-And-Processes-to-CPUs-in-Rust/</link>
       <pubDate>Thu, 11 Feb 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/binding-threads-and-processes-to-cpus-in-rust/</guid>
+      <guid>https://nitschinger.at/Binding-Threads-And-Processes-to-CPUs-in-Rust/</guid>
       <description>In the previous post I&amp;rsquo;ve introduced the hwloc-rs library, which allows you to discover and manage hardware topologies. Discovering the capabilities of a machine is insightful, but it gets more interesting if you can perform certain actions based on those insights.
 Binding threads or processes to distinct CPU cores is very important in high performance applications to isolate workloads, keep inter-core messaging latency to a minimum and also to prevent the operating system from relocating your threads between cores as it sees fit.</description>
     </item>
     
     <item>
       <title>Discovering Hardware Topology in Rust</title>
-      <link>https://nitschinger.at/discovering-hardware-topology-in-rust/</link>
+      <link>https://nitschinger.at/Discovering-Hardware-Topology-in-Rust/</link>
       <pubDate>Fri, 08 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/discovering-hardware-topology-in-rust/</guid>
+      <guid>https://nitschinger.at/Discovering-Hardware-Topology-in-Rust/</guid>
       <description>Todays programming languages and operation systems provide a bunch of abstraction layers over our hardware. Most of the time this is great, since we can write code quickly and make it run on lots of different machines. The opportunity cost with abstraction is (most of the time) performance and a lack of understanding.
 To get the best performance out of hour hardware, it is important to understand it. Concepts like cache locality matter a lot, especially in modern NUMA architectures.</description>
     </item>

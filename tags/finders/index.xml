@@ -13,10 +13,10 @@
     
     <item>
       <title>Custom Finders with Lithium</title>
-      <link>https://nitschinger.at/custom-finders-with-lithium/</link>
+      <link>https://nitschinger.at/Custom-Finders-with-Lithium/</link>
       <pubDate>Fri, 03 Jun 2011 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/custom-finders-with-lithium/</guid>
+      <guid>https://nitschinger.at/Custom-Finders-with-Lithium/</guid>
       <description>Finders assist you with often-used database queries so you don&amp;rsquo;t have to write them over and over again. Out of the box, Lithium provides you with a bunch of them: all, first, count list and &amp;ldquo;magic finders like&amp;rdquo; findById or findFirstById. How these are constructed in the core is not relevant for now, but Lithium provides you with a mechanism to write your own finders easily.
 To understand how we can implement our own finder, let&amp;rsquo;s take a look at the built-in first one.</description>
     </item>

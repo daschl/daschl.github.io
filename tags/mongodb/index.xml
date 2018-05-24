@@ -13,10 +13,10 @@
     
     <item>
       <title>Lithium Routes And MongoDB</title>
-      <link>https://nitschinger.at/lithium-routes-and-mongo-db/</link>
+      <link>https://nitschinger.at/Lithium-Routes-And-Mongo-DB/</link>
       <pubDate>Fri, 19 Nov 2010 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/lithium-routes-and-mongo-db/</guid>
+      <guid>https://nitschinger.at/Lithium-Routes-And-Mongo-DB/</guid>
       <description>Lithium comes with a powerful and flexible routing system. However, in its default configuration, you may encounter some problems with MongoDB-ObjectIDs and reverse routing. ObjectIDs are usually the &amp;ldquo;primary keys&amp;rdquo; of your Document in MongoDB, are 12 bytes long and consist of numbers and characters from &amp;lsquo;a&amp;rsquo; to &amp;lsquo;f&amp;rsquo;. A typical ObjectID would look similar to 4ce2d9f99436485e05000000.
 If you take a closer look at the default routes that ship with Lithium, you&amp;rsquo;ll maybe notice that the :id part only matches numbers (and not characters).</description>
     </item>

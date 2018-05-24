@@ -13,20 +13,20 @@
     
     <item>
       <title>New Features in the Couchbase Java Client 1.1-dp4</title>
-      <link>https://nitschinger.at/new-features-in-the-couchbase-java-client-1-1-dp4/</link>
+      <link>https://nitschinger.at/New-Features-in-the-Couchbase-Java-Client-1-1-dp4/</link>
       <pubDate>Wed, 07 Nov 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/new-features-in-the-couchbase-java-client-1-1-dp4/</guid>
+      <guid>https://nitschinger.at/New-Features-in-the-Couchbase-Java-Client-1-1-dp4/</guid>
       <description>Introduction The latest Java Developer Preview (dp4) is hot off the press, and therefore I thought it would be a good idea to show you how to use some of the brand-new features that are now available. This post will show you how to use the new ComplexKey class for view queries and also how to create and delete buckets directly from your SDK.
 First, we added a very flexible way of providing parameters to view queries.</description>
     </item>
     
     <item>
       <title>Getting Started with Couchbase and PHP</title>
-      <link>https://nitschinger.at/getting-started-with-couchbase-and-php/</link>
+      <link>https://nitschinger.at/Getting-Started-with-Couchbase-and-PHP/</link>
       <pubDate>Mon, 12 Mar 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/getting-started-with-couchbase-and-php/</guid>
+      <guid>https://nitschinger.at/Getting-Started-with-Couchbase-and-PHP/</guid>
       <description>Couchbase is a simple, fast and elastic document-oriented database. It is the product of a merge between the companies behind Memcached (Membase) and CouchDB. The current version is 1.8 and the 2.0 version is already in a developer preview release. If you haven&amp;rsquo;t heard much about Couchbase yet, start at the Couchbase Webinar Series, which will get you up to speed. The full manual is available here.
 As there were a lot of merges, renamings and releases, it was pretty hard to follow up with the current/best database version and SDK to use for your project.</description>
     </item>

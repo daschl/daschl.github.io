@@ -13,10 +13,10 @@
     
     <item>
       <title>Printing JVM generated Assembler on Mac OS X</title>
-      <link>https://nitschinger.at/printing-jvm-generated-assembler-on-mac-os-x/</link>
+      <link>https://nitschinger.at/Printing-JVM-generated-Assembler-on-Mac-OS-X/</link>
       <pubDate>Mon, 24 Jun 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/printing-jvm-generated-assembler-on-mac-os-x/</guid>
+      <guid>https://nitschinger.at/Printing-JVM-generated-Assembler-on-Mac-OS-X/</guid>
       <description>Thankfully, the JVM abstracts all of the nitty gritty details from us. Sometimes though, we need to peel off the first layers and see what&amp;rsquo;s going on underneath. If you are curious (and here may be dragons) and want to learn about the actual assembler that your code is generating, the JVM provides mechanisms to inspect it.
 Since I wanted to make it work on my development machine and didn&amp;rsquo;t find something comprehensive for Mac, here is how to do it.</description>
     </item>

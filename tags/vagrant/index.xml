@@ -13,10 +13,10 @@
     
     <item>
       <title>A Couchbase Cluster in Minutes with Vagrant and Puppet</title>
-      <link>https://nitschinger.at/a-couchbase-cluster-in-minutes-with-vagrant-and-puppet/</link>
+      <link>https://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet/</link>
       <pubDate>Mon, 27 May 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/a-couchbase-cluster-in-minutes-with-vagrant-and-puppet/</guid>
+      <guid>https://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet/</guid>
       <description>Motivation Since I work as part of the engineering team at Couchbase, I need to run my code against a variety of server deployments. We run a multitude of operating systems and software versions, and so do our customers. In order to fix bugs reliably and build new features, it is critical to get a cluster up and running that resembles these deployments as good as possible. I know that I can run all of these combinations on EC2, but the cost for this would be very high and most of the time its overkill.</description>
     </item>
     

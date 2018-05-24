@@ -13,48 +13,48 @@
     
     <item>
       <title>First Steps with Rust and JNI</title>
-      <link>https://nitschinger.at/first-steps-with-rust-and-jni/</link>
+      <link>https://nitschinger.at/First-Steps-with-Rust-and-JNI/</link>
       <pubDate>Fri, 19 Feb 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/first-steps-with-rust-and-jni/</guid>
+      <guid>https://nitschinger.at/First-Steps-with-Rust-and-JNI/</guid>
       <description>The first steps are always the hardest, at least thats how the saying goes. But it turns out that calling into Rust from Java is easier than I originally thought.
 The following blog post shows you how to setup and compile a Rust library which can be called from Java userland. Note that everything you see in this post, while being functional, is very simplistic. Real world JNI has lots of nitty gritty details and pitfalls, but we need to start somewhere right?</description>
     </item>
     
     <item>
       <title>Debugging Concurrency Issues with OpenJDK Jcstress</title>
-      <link>https://nitschinger.at/debugging-concurrency-issues-with-open-jdk-jcstress/</link>
+      <link>https://nitschinger.at/Debugging-Concurrency-Issues-with-Open-JDK-Jcstress/</link>
       <pubDate>Tue, 27 May 2014 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/debugging-concurrency-issues-with-open-jdk-jcstress/</guid>
+      <guid>https://nitschinger.at/Debugging-Concurrency-Issues-with-Open-JDK-Jcstress/</guid>
       <description>I fell in love with the Java Microbenchmarking Harness (JMH) a few months ago since (in my opinion) it is the only sane way to do microbenchmarks of JVM code right now. I also poked around on their website for other tools they provide, and found that there is another very interesting tool called jcstress. It stands for Java Concurrency Stress tests and is used mainly by the OpenJDK people itself to make sure their code works correctly with regards to concurrency.</description>
     </item>
     
     <item>
       <title>Bootstrapping from DNS SRV records in Java</title>
-      <link>https://nitschinger.at/bootstrapping-from-dns-srv-records-in-java/</link>
+      <link>https://nitschinger.at/Bootstrapping-from-DNS-SRV-records-in-Java/</link>
       <pubDate>Wed, 29 Jan 2014 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/bootstrapping-from-dns-srv-records-in-java/</guid>
+      <guid>https://nitschinger.at/Bootstrapping-from-DNS-SRV-records-in-Java/</guid>
       <description>I know this topic has a very narrow audience, but I hope that one or two people out there scratching their heads will benefit from it.
 Here&amp;rsquo;s the itch we&amp;rsquo;re trying to scratch: is there an easy way to determine hostnames for - let&amp;rsquo;s say - a database connection? There are many ways to do this, like hardcoding it, providing them through a properties file and so on. All this techniques (maybe aside from fetching it over the network from a central storage) require some modifications on the server once one of the hostnames changes.</description>
     </item>
     
     <item>
       <title>Using JMH for Java Microbenchmarking</title>
-      <link>https://nitschinger.at/using-jmh-for-java-microbenchmarking/</link>
+      <link>https://nitschinger.at/Using-JMH-for-Java-Microbenchmarking/</link>
       <pubDate>Fri, 22 Nov 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/using-jmh-for-java-microbenchmarking/</guid>
+      <guid>https://nitschinger.at/Using-JMH-for-Java-Microbenchmarking/</guid>
       <description>So before we dive in, let&amp;rsquo;s rule two things out. First, I&amp;rsquo;m not a JVM expert and second, microbenchmarking is hard. The bigger problem is that it isn&amp;rsquo;t only hard but also looks very easy if you start. You put your test code in a loop, use System.nanoTime or something similar to measure the total time of the run and divide it by the number of runs. Doing it that way, you could very well let your cat estimate the results (mine would do it for proper catnip).</description>
     </item>
     
     <item>
       <title>What&#39;s new in the Couchbase Java SDK 1.2</title>
-      <link>https://nitschinger.at/what-s-new-in-the-couchbase-java-sdk-1-2/</link>
+      <link>https://nitschinger.at/What-s-new-in-the-Couchbase-Java-SDK-1-2/</link>
       <pubDate>Fri, 11 Oct 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/what-s-new-in-the-couchbase-java-sdk-1-2/</guid>
+      <guid>https://nitschinger.at/What-s-new-in-the-Couchbase-Java-SDK-1-2/</guid>
       <description>For all users of our Java SDK, we prepared some nice additions for you. This post covers them in detail and shows how you can get more productive.
 Note that this blog post assumes you are running the 1.2.1 release, because there have been some slight changes between 1.2.0 and 1.2.1 that affect for example the listener support and metrics collection.
 Maven Central Distribution From the 1.2.0 release forward, the Java SDK is distributed directly from Maven Central.</description>
@@ -62,78 +62,78 @@ Maven Central Distribution From the 1.2.0 release forward, the Java SDK is distr
     
     <item>
       <title>Using the Reactor Processor for High-Performance TCP</title>
-      <link>https://nitschinger.at/using-the-reactor-processor-for-high-performance-tcp/</link>
+      <link>https://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP/</link>
       <pubDate>Tue, 13 Aug 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/using-the-reactor-processor-for-high-performance-tcp/</guid>
+      <guid>https://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP/</guid>
       <description>First, a disclaimer: the all-new Reactor framework is still under heavy development, but it already provides a very promising basement for applications and libraries that need high throughput and low latency. We at Couchbase aim to provide the highest throughput at the lowest latency, so it is very critical to build upon an infrastructure that can provide it. Current, we are performing early investigations for a possible &amp;ldquo;next generation Java SDK&amp;rdquo; and Reactor seems very promising so far.</description>
     </item>
     
     <item>
       <title>Useful Couchbase Resources &amp; Blog Posts</title>
-      <link>https://nitschinger.at/useful-couchbase-resources-blog-posts/</link>
+      <link>https://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts/</link>
       <pubDate>Tue, 06 Aug 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/useful-couchbase-resources-blog-posts/</guid>
+      <guid>https://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts/</guid>
       <description>The following list is a convenient way to get access to lots of resources, blog posts and material that have been shared throughout the past months. I tried to separate them by area, but of course lots of them overlap to some extent.
 They are sorted by date (so you&amp;rsquo;ll find the most recent ones on top) and include the author where possible. Be aware that some of the older articles may already be outdated or not 100% accurate.</description>
     </item>
     
     <item>
       <title>Printing JVM generated Assembler on Mac OS X</title>
-      <link>https://nitschinger.at/printing-jvm-generated-assembler-on-mac-os-x/</link>
+      <link>https://nitschinger.at/Printing-JVM-generated-Assembler-on-Mac-OS-X/</link>
       <pubDate>Mon, 24 Jun 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/printing-jvm-generated-assembler-on-mac-os-x/</guid>
+      <guid>https://nitschinger.at/Printing-JVM-generated-Assembler-on-Mac-OS-X/</guid>
       <description>Thankfully, the JVM abstracts all of the nitty gritty details from us. Sometimes though, we need to peel off the first layers and see what&amp;rsquo;s going on underneath. If you are curious (and here may be dragons) and want to learn about the actual assembler that your code is generating, the JVM provides mechanisms to inspect it.
 Since I wanted to make it work on my development machine and didn&amp;rsquo;t find something comprehensive for Mac, here is how to do it.</description>
     </item>
     
     <item>
       <title>Logging with the Couchbase Java Client</title>
-      <link>https://nitschinger.at/logging-with-the-couchbase-java-client/</link>
+      <link>https://nitschinger.at/Logging-with-the-Couchbase-Java-Client/</link>
       <pubDate>Thu, 16 May 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/logging-with-the-couchbase-java-client/</guid>
+      <guid>https://nitschinger.at/Logging-with-the-Couchbase-Java-Client/</guid>
       <description>Introduction There is a huge variety in logging frameworks for Java, and its hard to please everyone. To understand how logging is currently handled in the SDK, we have to go back a few years. As you may know, the SDK depends on the spymemcached library and therefore also inherits its logging mechanisms. Back in the days when @dustin wrote spy, there was no good abstraction for logging available (like SLF4J), so he wrote his own.</description>
     </item>
     
     <item>
       <title>Couchbase Java SDK Internals</title>
-      <link>https://nitschinger.at/couchbase-java-sdk-internals/</link>
+      <link>https://nitschinger.at/Couchbase-Java-SDK-Internals/</link>
       <pubDate>Wed, 17 Apr 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/couchbase-java-sdk-internals/</guid>
+      <guid>https://nitschinger.at/Couchbase-Java-SDK-Internals/</guid>
       <description>Motivation This blog post is intended to be a very detailed and informative article for those who already have used the Couchbase Java SDK and want to know how the internals work. This is not a introduction on how to use the Java SDK and we&amp;rsquo;ll cover some fairly advanced topics on the way.
 Normally, when talking about the SDK we mean everything that is needed to get you going (Client library, documentation, release notes,&amp;hellip;).</description>
     </item>
     
     <item>
       <title>Never awaitUninterruptibly() on Netty Channels</title>
-      <link>https://nitschinger.at/never-await-uninterruptibly-on-netty-channels/</link>
+      <link>https://nitschinger.at/Never-await-Uninterruptibly-on-Netty-Channels/</link>
       <pubDate>Tue, 05 Mar 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/never-await-uninterruptibly-on-netty-channels/</guid>
+      <guid>https://nitschinger.at/Never-await-Uninterruptibly-on-Netty-Channels/</guid>
       <description>TL:DR; When acquiring Channels in Netty, always use a ChannelFutureListener and never awaitUninterruptibly(). Curious why? Read on.
 In the Java SDK for Couchbase, we use Netty to establish and maintain a streaming connection to one of the cluster nodes in order to get notified when topology changes happen. This streaming connection needs to be established during the bootstrap process of the client and we need to block until the connection is established (actually we don&amp;rsquo;t need to, but the current implementation works that way).</description>
     </item>
     
     <item>
       <title>New Features in the Couchbase Java Client 1.1-dp4</title>
-      <link>https://nitschinger.at/new-features-in-the-couchbase-java-client-1-1-dp4/</link>
+      <link>https://nitschinger.at/New-Features-in-the-Couchbase-Java-Client-1-1-dp4/</link>
       <pubDate>Wed, 07 Nov 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/new-features-in-the-couchbase-java-client-1-1-dp4/</guid>
+      <guid>https://nitschinger.at/New-Features-in-the-Couchbase-Java-Client-1-1-dp4/</guid>
       <description>Introduction The latest Java Developer Preview (dp4) is hot off the press, and therefore I thought it would be a good idea to show you how to use some of the brand-new features that are now available. This post will show you how to use the new ComplexKey class for view queries and also how to create and delete buckets directly from your SDK.
 First, we added a very flexible way of providing parameters to view queries.</description>
     </item>
     
     <item>
       <title>A Real-Time chat with Play, Java and Couchbase - Part 1</title>
-      <link>https://nitschinger.at/a-real-time-chat-with-play-java-and-couchbase-part-1/</link>
+      <link>https://nitschinger.at/A-Real-Time-chat-with-Play-Java-and-Couchbase-Part-1/</link>
       <pubDate>Tue, 17 Jul 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/a-real-time-chat-with-play-java-and-couchbase-part-1/</guid>
+      <guid>https://nitschinger.at/A-Real-Time-chat-with-Play-Java-and-Couchbase-Part-1/</guid>
       <description>Introduction I&amp;rsquo;ve been mostly blogging about PHP and Lithium, but recently I&amp;rsquo;ve also been looking into a very promising framework on the JVM - the play! framework. The current version (2.0) brings lots of enhancements and features and is (at least to me) the first framework that really boosts developer productivity on the JVM (and that I would work with in my free time).
 In this project, we&amp;rsquo;ll develop a chat application (called couchplay) that allows people to login with a username and then talk to others in real-time.</description>
     </item>

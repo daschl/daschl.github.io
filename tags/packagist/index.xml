@@ -13,10 +13,10 @@
     
     <item>
       <title>Playing with Composer and Lithium</title>
-      <link>https://nitschinger.at/playing-with-composer-and-lithium/</link>
+      <link>https://nitschinger.at/Playing-with-Composer-and-Lithium/</link>
       <pubDate>Mon, 23 Jan 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/playing-with-composer-and-lithium/</guid>
+      <guid>https://nitschinger.at/Playing-with-Composer-and-Lithium/</guid>
       <description>About Composer Composer is a command-line tool that helps you manage your application dependencies. It automatically fetches packages, resolves dependencies and is easy to configure. The really good thing about Composer is that it isn&amp;rsquo;t bound to a specific framework and can be used with every kind of repository. Composer is similar to package managers like npm, so you may feel at home quickly.
 The default repository of Composer is Packagist.</description>
     </item>

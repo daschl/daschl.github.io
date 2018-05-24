@@ -13,20 +13,20 @@
     
     <item>
       <title>Using Couchbase as a flexible session store</title>
-      <link>https://nitschinger.at/using-couchbase-as-a-flexible-session-store/</link>
+      <link>https://nitschinger.at/Using-Couchbase-as-a-flexible-session-store/</link>
       <pubDate>Thu, 21 Jun 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/using-couchbase-as-a-flexible-session-store/</guid>
+      <guid>https://nitschinger.at/Using-Couchbase-as-a-flexible-session-store/</guid>
       <description>This post shows you how you can use the Couchbase 2.0 server as a flexible session store. What do I mean by flexible? Well, the combination of a highly scalable key-value store and the possibility to query your data through views allows you to gain unique insight inside your data in near realtime.
 Let&amp;rsquo;s look at some obstacles that we as application developers face and then see how we may solve them through Couchbase and its functionality.</description>
     </item>
     
     <item>
       <title>Session Encryption with Lithium</title>
-      <link>https://nitschinger.at/session-encryption-with-lithium/</link>
+      <link>https://nitschinger.at/Session-Encryption-with-Lithium/</link>
       <pubDate>Fri, 20 Jan 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/session-encryption-with-lithium/</guid>
+      <guid>https://nitschinger.at/Session-Encryption-with-Lithium/</guid>
       <description>The Basics If you check out the master branch, you can use the new Encrypt strategy to encrypt your session data automatically. This means that you can read and write session data in cleartext and they will be encrypted on the fly before getting stored (in a cookie, for example). You can read my post about &amp;ldquo;baking cookies like a chef&amp;rdquo; for PHPAdvent 2011 here. The article covers both HMAC signatures and encryption, and is a good place to start.</description>
     </item>
     

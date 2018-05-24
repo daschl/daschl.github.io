@@ -13,10 +13,10 @@
     
     <item>
       <title>How to store PHP sessions in Couchbase</title>
-      <link>https://nitschinger.at/how-to-store-php-sessions-in-couchbase/</link>
+      <link>https://nitschinger.at/How-to-store-PHP-sessions-in-Couchbase/</link>
       <pubDate>Mon, 25 Jun 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/how-to-store-php-sessions-in-couchbase/</guid>
+      <guid>https://nitschinger.at/How-to-store-PHP-sessions-in-Couchbase/</guid>
       <description>My last post about storing sessions in Couchbase was more of a general overview on what&amp;rsquo;s possible. This post builds on the foundations and principles discussed and shows you various ways to store PHP sessions in Couchbase. We start out simple by using the built-in session ini -directives, then head over to the brand new SessionHandlerInterface introduced in PHP 5.4 and finally implement it completely on our own. We&amp;rsquo;ll see how both the complexity and flexibility increase during each of our approaches.</description>
     </item>
     

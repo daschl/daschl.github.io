@@ -13,10 +13,10 @@
     
     <item>
       <title>Bootstrapping from DNS SRV records in Java</title>
-      <link>https://nitschinger.at/bootstrapping-from-dns-srv-records-in-java/</link>
+      <link>https://nitschinger.at/Bootstrapping-from-DNS-SRV-records-in-Java/</link>
       <pubDate>Wed, 29 Jan 2014 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/bootstrapping-from-dns-srv-records-in-java/</guid>
+      <guid>https://nitschinger.at/Bootstrapping-from-DNS-SRV-records-in-Java/</guid>
       <description>I know this topic has a very narrow audience, but I hope that one or two people out there scratching their heads will benefit from it.
 Here&amp;rsquo;s the itch we&amp;rsquo;re trying to scratch: is there an easy way to determine hostnames for - let&amp;rsquo;s say - a database connection? There are many ways to do this, like hardcoding it, providing them through a properties file and so on. All this techniques (maybe aside from fetching it over the network from a central storage) require some modifications on the server once one of the hostnames changes.</description>
     </item>

@@ -3,267 +3,267 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://nitschinger.at/rust-on-the-wifi-pineapple-and-openwrt/</loc>
+    <loc>https://nitschinger.at/Rust-on-the-Wifi-Pineapple-and-OpenWRT/</loc>
     <lastmod>2017-01-02T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/text-analysis-in-rust-tokenization/</loc>
+    <loc>https://nitschinger.at/Text-Analysis-in-Rust-Tokenization/</loc>
     <lastmod>2016-10-28T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/scheduling-timers-on-os-x-with-rust-and-kqueue/</loc>
+    <loc>https://nitschinger.at/Scheduling-Timers-on-OS-X-with-Rust-and-Kqueue/</loc>
     <lastmod>2016-06-15T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/first-steps-with-rust-and-jni/</loc>
+    <loc>https://nitschinger.at/First-Steps-with-Rust-and-JNI/</loc>
     <lastmod>2016-02-19T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/binding-threads-and-processes-to-cpus-in-rust/</loc>
+    <loc>https://nitschinger.at/Binding-Threads-And-Processes-to-CPUs-in-Rust/</loc>
     <lastmod>2016-02-11T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/discovering-hardware-topology-in-rust/</loc>
+    <loc>https://nitschinger.at/Discovering-Hardware-Topology-in-Rust/</loc>
     <lastmod>2016-01-08T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/debugging-concurrency-issues-with-open-jdk-jcstress/</loc>
+    <loc>https://nitschinger.at/Debugging-Concurrency-Issues-with-Open-JDK-Jcstress/</loc>
     <lastmod>2014-05-27T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/bootstrapping-from-dns-srv-records-in-java/</loc>
+    <loc>https://nitschinger.at/Bootstrapping-from-DNS-SRV-records-in-Java/</loc>
     <lastmod>2014-01-29T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/using-jmh-for-java-microbenchmarking/</loc>
+    <loc>https://nitschinger.at/Using-JMH-for-Java-Microbenchmarking/</loc>
     <lastmod>2013-11-22T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/what-s-new-in-the-couchbase-java-sdk-1-2/</loc>
+    <loc>https://nitschinger.at/What-s-new-in-the-Couchbase-Java-SDK-1-2/</loc>
     <lastmod>2013-10-11T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/using-the-reactor-processor-for-high-performance-tcp/</loc>
+    <loc>https://nitschinger.at/Using-the-Reactor-Processor-for-High-Performance-TCP/</loc>
     <lastmod>2013-08-13T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/useful-couchbase-resources-blog-posts/</loc>
+    <loc>https://nitschinger.at/Useful-Couchbase-Resources-Blog-Posts/</loc>
     <lastmod>2013-08-06T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/printing-jvm-generated-assembler-on-mac-os-x/</loc>
+    <loc>https://nitschinger.at/Printing-JVM-generated-Assembler-on-Mac-OS-X/</loc>
     <lastmod>2013-06-24T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/fun-with-couchbase-views-and-message-pack/</loc>
+    <loc>https://nitschinger.at/Fun-with-Couchbase-Views-and-Message-Pack/</loc>
     <lastmod>2013-06-18T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/a-couchbase-cluster-in-minutes-with-vagrant-and-puppet/</loc>
+    <loc>https://nitschinger.at/A-Couchbase-Cluster-in-Minutes-with-Vagrant-and-Puppet/</loc>
     <lastmod>2013-05-27T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/logging-with-the-couchbase-java-client/</loc>
+    <loc>https://nitschinger.at/Logging-with-the-Couchbase-Java-Client/</loc>
     <lastmod>2013-05-16T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/couchbase-java-sdk-internals/</loc>
+    <loc>https://nitschinger.at/Couchbase-Java-SDK-Internals/</loc>
     <lastmod>2013-04-17T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/never-await-uninterruptibly-on-netty-channels/</loc>
+    <loc>https://nitschinger.at/Never-await-Uninterruptibly-on-Netty-Channels/</loc>
     <lastmod>2013-03-05T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/a-journey-on-avoiding-nulls-in-php/</loc>
+    <loc>https://nitschinger.at/A-Journey-on-Avoiding-Nulls-in-PHP/</loc>
     <lastmod>2013-02-19T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/benchmarking-cache-transcoders-in-php/</loc>
+    <loc>https://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP/</loc>
     <lastmod>2013-01-30T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/caching-doctrine-entities-with-couchbase/</loc>
+    <loc>https://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase/</loc>
     <lastmod>2013-01-08T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/new-features-in-the-couchbase-java-client-1-1-dp4/</loc>
+    <loc>https://nitschinger.at/New-Features-in-the-Couchbase-Java-Client-1-1-dp4/</loc>
     <lastmod>2012-11-07T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/new-job-couchbase-server-2-0-and-couch-conf-berlin/</loc>
+    <loc>https://nitschinger.at/New-Job-Couchbase-Server-2-0-and-Couch-Conf-Berlin/</loc>
     <lastmod>2012-10-22T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/elastic-search-and-sql-server-are-sitting-in-a-tree/</loc>
+    <loc>https://nitschinger.at/Elastic-Search-and-SQL-Server-are-sitting-in-a-tree/</loc>
     <lastmod>2012-08-20T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/a-real-time-chat-with-play-java-and-couchbase-part-1/</loc>
+    <loc>https://nitschinger.at/A-Real-Time-chat-with-Play-Java-and-Couchbase-Part-1/</loc>
     <lastmod>2012-07-17T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/announcing-the-vienna-php-user-group/</loc>
+    <loc>https://nitschinger.at/Announcing-the-Vienna-PHP-User-Group/</loc>
     <lastmod>2012-07-07T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/how-to-store-php-sessions-in-couchbase/</loc>
+    <loc>https://nitschinger.at/How-to-store-PHP-sessions-in-Couchbase/</loc>
     <lastmod>2012-06-25T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/using-couchbase-as-a-flexible-session-store/</loc>
+    <loc>https://nitschinger.at/Using-Couchbase-as-a-flexible-session-store/</loc>
     <lastmod>2012-06-21T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/handling-json-like-a-boss-in-php/</loc>
+    <loc>https://nitschinger.at/Handling-JSON-like-a-boss-in-PHP/</loc>
     <lastmod>2012-06-06T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/a-primer-on-php-exceptions/</loc>
+    <loc>https://nitschinger.at/A-primer-on-PHP-exceptions/</loc>
     <lastmod>2012-05-22T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/writing-a-simple-lexer-in-php/</loc>
+    <loc>https://nitschinger.at/Writing-a-simple-lexer-in-PHP/</loc>
     <lastmod>2012-05-10T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/accessing-couchbase-from-scala/</loc>
+    <loc>https://nitschinger.at/Accessing-Couchbase-from-Scala/</loc>
     <lastmod>2012-04-26T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/getting-started-with-couchbase-and-php/</loc>
+    <loc>https://nitschinger.at/Getting-Started-with-Couchbase-and-PHP/</loc>
     <lastmod>2012-03-12T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/introducing-relationships-in-lithium/</loc>
+    <loc>https://nitschinger.at/Introducing-Relationships-in-Lithium/</loc>
     <lastmod>2012-03-03T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/rfc-li3_fixtures-rewrite/</loc>
+    <loc>https://nitschinger.at/RFC-li3_fixtures-Rewrite/</loc>
     <lastmod>2012-02-24T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/playing-with-composer-and-lithium/</loc>
+    <loc>https://nitschinger.at/Playing-with-Composer-and-Lithium/</loc>
     <lastmod>2012-01-23T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/session-encryption-with-lithium/</loc>
+    <loc>https://nitschinger.at/Session-Encryption-with-Lithium/</loc>
     <lastmod>2012-01-20T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/quick-tip-lithium-redirect/</loc>
+    <loc>https://nitschinger.at/Quick-Tip-Lithium-Redirect/</loc>
     <lastmod>2011-09-16T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/letters-from-lithium-2/</loc>
+    <loc>https://nitschinger.at/Letters-from-Lithium-2/</loc>
     <lastmod>2011-09-05T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/letters-from-lithium-1/</loc>
+    <loc>https://nitschinger.at/Letters-from-Lithium-1/</loc>
     <lastmod>2011-08-02T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/using-environments-in-lithium/</loc>
+    <loc>https://nitschinger.at/Using-Environments-in-Lithium/</loc>
     <lastmod>2011-07-19T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/testing-the-lithium-core-for-fun-and-profit/</loc>
+    <loc>https://nitschinger.at/Testing-the-Lithium-core-for-fun-and-profit/</loc>
     <lastmod>2011-07-09T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/lithium-plugin-roundup/</loc>
+    <loc>https://nitschinger.at/Lithium-plugin-roundup/</loc>
     <lastmod>2011-06-22T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/securing-lithium-forms/</loc>
+    <loc>https://nitschinger.at/Securing-Lithium-Forms/</loc>
     <lastmod>2011-06-08T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/custom-finders-with-lithium/</loc>
+    <loc>https://nitschinger.at/Custom-Finders-with-Lithium/</loc>
     <lastmod>2011-06-03T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/caching-responses-in-lithium/</loc>
+    <loc>https://nitschinger.at/Caching-responses-in-Lithium/</loc>
     <lastmod>2011-05-30T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/understanding-the-lithium-router-part-2/</loc>
+    <loc>https://nitschinger.at/Understanding-the-Lithium-Router-Part-2/</loc>
     <lastmod>2011-02-24T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/understanding-the-lithium-router-part-1/</loc>
+    <loc>https://nitschinger.at/Understanding-the-Lithium-Router-Part-1/</loc>
     <lastmod>2011-02-05T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/understanding-the-inflector/</loc>
+    <loc>https://nitschinger.at/Understanding-the-Inflector/</loc>
     <lastmod>2010-12-16T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/introducing-fixtures-for-lithium/</loc>
+    <loc>https://nitschinger.at/Introducing-Fixtures-for-Lithium/</loc>
     <lastmod>2010-12-04T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/write-your-own-helper-with-lithium/</loc>
+    <loc>https://nitschinger.at/Write-your-own-Helper-with-Lithium/</loc>
     <lastmod>2010-11-23T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/add-an-rss-feed-to-your-blog-with-lithium/</loc>
+    <loc>https://nitschinger.at/Add-an-RSS-Feed-to-your-blog-with-Lithium/</loc>
     <lastmod>2010-11-20T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://nitschinger.at/lithium-routes-and-mongo-db/</loc>
+    <loc>https://nitschinger.at/Lithium-Routes-And-Mongo-DB/</loc>
     <lastmod>2010-11-19T00:00:00+00:00</lastmod>
   </url>
   

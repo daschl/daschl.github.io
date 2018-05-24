@@ -13,20 +13,20 @@
     
     <item>
       <title>Binding Threads And Processes to CPUs in Rust</title>
-      <link>https://nitschinger.at/binding-threads-and-processes-to-cpus-in-rust/</link>
+      <link>https://nitschinger.at/Binding-Threads-And-Processes-to-CPUs-in-Rust/</link>
       <pubDate>Thu, 11 Feb 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/binding-threads-and-processes-to-cpus-in-rust/</guid>
+      <guid>https://nitschinger.at/Binding-Threads-And-Processes-to-CPUs-in-Rust/</guid>
       <description>In the previous post I&amp;rsquo;ve introduced the hwloc-rs library, which allows you to discover and manage hardware topologies. Discovering the capabilities of a machine is insightful, but it gets more interesting if you can perform certain actions based on those insights.
 Binding threads or processes to distinct CPU cores is very important in high performance applications to isolate workloads, keep inter-core messaging latency to a minimum and also to prevent the operating system from relocating your threads between cores as it sees fit.</description>
     </item>
     
     <item>
       <title>Discovering Hardware Topology in Rust</title>
-      <link>https://nitschinger.at/discovering-hardware-topology-in-rust/</link>
+      <link>https://nitschinger.at/Discovering-Hardware-Topology-in-Rust/</link>
       <pubDate>Fri, 08 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/discovering-hardware-topology-in-rust/</guid>
+      <guid>https://nitschinger.at/Discovering-Hardware-Topology-in-Rust/</guid>
       <description>Todays programming languages and operation systems provide a bunch of abstraction layers over our hardware. Most of the time this is great, since we can write code quickly and make it run on lots of different machines. The opportunity cost with abstraction is (most of the time) performance and a lack of understanding.
 To get the best performance out of hour hardware, it is important to understand it. Concepts like cache locality matter a lot, especially in modern NUMA architectures.</description>
     </item>

@@ -13,10 +13,10 @@
     
     <item>
       <title>Text Analysis in Rust - Tokenization</title>
-      <link>https://nitschinger.at/text-analysis-in-rust-tokenization/</link>
+      <link>https://nitschinger.at/Text-Analysis-in-Rust-Tokenization/</link>
       <pubDate>Fri, 28 Oct 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/text-analysis-in-rust-tokenization/</guid>
+      <guid>https://nitschinger.at/Text-Analysis-in-Rust-Tokenization/</guid>
       <description>I work for Couchbase where we are currently developing full text search capabilities based on bleve. Bleve is implemented in go and inspired by Apache Lucene, the reference implementation when it comes to full text search. While I am not directly involved in developing bleve I was curious about how it works internally and did take a look at the analyzers it provides.
 Analyzers take your free form text and turn it into tokens which can then be used for indexing or queries.</description>
     </item>

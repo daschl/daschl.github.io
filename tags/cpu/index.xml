@@ -13,10 +13,10 @@
     
     <item>
       <title>Binding Threads And Processes to CPUs in Rust</title>
-      <link>https://nitschinger.at/binding-threads-and-processes-to-cpus-in-rust/</link>
+      <link>https://nitschinger.at/Binding-Threads-And-Processes-to-CPUs-in-Rust/</link>
       <pubDate>Thu, 11 Feb 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/binding-threads-and-processes-to-cpus-in-rust/</guid>
+      <guid>https://nitschinger.at/Binding-Threads-And-Processes-to-CPUs-in-Rust/</guid>
       <description>In the previous post I&amp;rsquo;ve introduced the hwloc-rs library, which allows you to discover and manage hardware topologies. Discovering the capabilities of a machine is insightful, but it gets more interesting if you can perform certain actions based on those insights.
 Binding threads or processes to distinct CPU cores is very important in high performance applications to isolate workloads, keep inter-core messaging latency to a minimum and also to prevent the operating system from relocating your threads between cores as it sees fit.</description>
     </item>

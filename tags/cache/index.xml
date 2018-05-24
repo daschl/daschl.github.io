@@ -13,29 +13,29 @@
     
     <item>
       <title>Benchmarking Cache Transcoders in PHP</title>
-      <link>https://nitschinger.at/benchmarking-cache-transcoders-in-php/</link>
+      <link>https://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP/</link>
       <pubDate>Wed, 30 Jan 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/benchmarking-cache-transcoders-in-php/</guid>
+      <guid>https://nitschinger.at/Benchmarking-Cache-Transcoders-in-PHP/</guid>
       <description>Motivation Storing PHP objects (or simpler data types like arrays) in caches always requires some kind of transformation. You need a way of encoding/decoding data so that it can be stored and loaded properly. In most languages, this process is known as object serialization. PHP provides a mechanism for this out of the box, but in this article we&amp;rsquo;ll also look at igbinary as a drop-in replacement for the default serializer.</description>
     </item>
     
     <item>
       <title>Caching Doctrine Entities with Couchbase</title>
-      <link>https://nitschinger.at/caching-doctrine-entities-with-couchbase/</link>
+      <link>https://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase/</link>
       <pubDate>Tue, 08 Jan 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/caching-doctrine-entities-with-couchbase/</guid>
+      <guid>https://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase/</guid>
       <description>Motivation As part of our ongoing efforts to make Couchbase more integrated with frameworks and libraries, we added caching support for the Doctrine ORM. Recently, the pull request has been merged into the master branch and is scheduled to be published along with the 2.4 release.
 Caching can either be used standalone (through the API provided by doctrine/common) or integrated with the ORM functionality. We&amp;rsquo;ll look at both variants through simple examples, a good documentation can also be found here.</description>
     </item>
     
     <item>
       <title>Caching responses in Lithium</title>
-      <link>https://nitschinger.at/caching-responses-in-lithium/</link>
+      <link>https://nitschinger.at/Caching-responses-in-Lithium/</link>
       <pubDate>Mon, 30 May 2011 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/caching-responses-in-lithium/</guid>
+      <guid>https://nitschinger.at/Caching-responses-in-Lithium/</guid>
       <description>If you need to cache full Response objects in Lithium (which means that your controllers don&amp;rsquo;t even get called when there&amp;rsquo;s a cache hit), you can place this in your app/config/bootstrap/cache.php file (note that this is certainly not &amp;ldquo;production ready&amp;rdquo;, but it should give you a starting point):
 /** * Cache full Responses */ Dispatcher::applyFilter(&#39;run&#39;, function($self, $params, $chain) { $key = md5(LITHIUM_APP_PATH) . &#39;.app.cache.&#39;.md5($params[&#39;request&#39;]-&amp;gt;url); if($cache = Cache::read(&#39;default&#39;, $key)) { return $cache; } $result = $chain-&amp;gt;next($self, $params, $chain); Cache::write(&#39;default&#39;, $key, $result, &#39;+1 day&#39;); return $result; });  It filters the Dispatcher and first checks if the Response object is already stored in the cache.</description>
     </item>

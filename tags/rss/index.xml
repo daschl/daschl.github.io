@@ -13,10 +13,10 @@
     
     <item>
       <title>Add an RSS-Feed to your blog with Lithium</title>
-      <link>https://nitschinger.at/add-an-rss-feed-to-your-blog-with-lithium/</link>
+      <link>https://nitschinger.at/Add-an-RSS-Feed-to-your-blog-with-Lithium/</link>
       <pubDate>Sat, 20 Nov 2010 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/add-an-rss-feed-to-your-blog-with-lithium/</guid>
+      <guid>https://nitschinger.at/Add-an-RSS-Feed-to-your-blog-with-Lithium/</guid>
       <description>Adding an RSS-Feed to your blog with li3 is really straightforward, because all the infrastructure you need is already at your fingertips. I assume that you already have some posts stored in your database, you serve them to your users via /posts and the new RSS-File should be accessible via /posts.rss.
 First, we need to tell Lithium that we want to add another Media-Type to our application. Add the following to your app/config/bootstrap/media.</description>
     </item>

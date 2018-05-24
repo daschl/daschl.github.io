@@ -13,10 +13,10 @@
     
     <item>
       <title>Debugging Concurrency Issues with OpenJDK Jcstress</title>
-      <link>https://nitschinger.at/debugging-concurrency-issues-with-open-jdk-jcstress/</link>
+      <link>https://nitschinger.at/Debugging-Concurrency-Issues-with-Open-JDK-Jcstress/</link>
       <pubDate>Tue, 27 May 2014 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/debugging-concurrency-issues-with-open-jdk-jcstress/</guid>
+      <guid>https://nitschinger.at/Debugging-Concurrency-Issues-with-Open-JDK-Jcstress/</guid>
       <description>I fell in love with the Java Microbenchmarking Harness (JMH) a few months ago since (in my opinion) it is the only sane way to do microbenchmarks of JVM code right now. I also poked around on their website for other tools they provide, and found that there is another very interesting tool called jcstress. It stands for Java Concurrency Stress tests and is used mainly by the OpenJDK people itself to make sure their code works correctly with regards to concurrency.</description>
     </item>
     

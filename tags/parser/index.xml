@@ -13,10 +13,10 @@
     
     <item>
       <title>Writing a simple lexer in PHP</title>
-      <link>https://nitschinger.at/writing-a-simple-lexer-in-php/</link>
+      <link>https://nitschinger.at/Writing-a-simple-lexer-in-PHP/</link>
       <pubDate>Thu, 10 May 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/writing-a-simple-lexer-in-php/</guid>
+      <guid>https://nitschinger.at/Writing-a-simple-lexer-in-PHP/</guid>
       <description>Introduction A lot of developers avoid writing parsers because they think it&amp;rsquo;s pretty hard to do so. Writing an efficient parser for a general purpose language (like PHP, Ruby, Java,&amp;hellip;) is hard, but fortunately, most of the time we don&amp;rsquo;t need that much complexity. Typically we just want to parse input coming from config files or from a specific problem domain (expressed through DSLs). DSLs (Domain Specific Languages) are pretty cool, because they allow you to express logic and flow in a very specific and convenient way for a limited set of tasks.</description>
     </item>
     

@@ -13,10 +13,10 @@
     
     <item>
       <title>Caching Doctrine Entities with Couchbase</title>
-      <link>https://nitschinger.at/caching-doctrine-entities-with-couchbase/</link>
+      <link>https://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase/</link>
       <pubDate>Tue, 08 Jan 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/caching-doctrine-entities-with-couchbase/</guid>
+      <guid>https://nitschinger.at/Caching-Doctrine-Entities-with-Couchbase/</guid>
       <description>Motivation As part of our ongoing efforts to make Couchbase more integrated with frameworks and libraries, we added caching support for the Doctrine ORM. Recently, the pull request has been merged into the master branch and is scheduled to be published along with the 2.4 release.
 Caching can either be used standalone (through the API provided by doctrine/common) or integrated with the ORM functionality. We&amp;rsquo;ll look at both variants through simple examples, a good documentation can also be found here.</description>
     </item>

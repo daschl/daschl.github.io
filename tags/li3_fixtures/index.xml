@@ -13,10 +13,10 @@
     
     <item>
       <title>RFC: li3_fixtures Rewrite</title>
-      <link>https://nitschinger.at/rfc-li3_fixtures-rewrite/</link>
+      <link>https://nitschinger.at/RFC-li3_fixtures-Rewrite/</link>
       <pubDate>Fri, 24 Feb 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/rfc-li3_fixtures-rewrite/</guid>
+      <guid>https://nitschinger.at/RFC-li3_fixtures-Rewrite/</guid>
       <description>The li3_fixtures plugin was my first Lithium plugin ever, and while it works okay, I feel there is a lot I can do to make it better and more flexible. In this post I want to share my ideas for a new fixture plugin and also want to gather feedback from the community to make it even more awesome.
 As far as I can see, there are three big use cases for fixtures:</description>
     </item>

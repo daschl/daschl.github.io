@@ -13,10 +13,10 @@
     
     <item>
       <title>Session Encryption with Lithium</title>
-      <link>https://nitschinger.at/session-encryption-with-lithium/</link>
+      <link>https://nitschinger.at/Session-Encryption-with-Lithium/</link>
       <pubDate>Fri, 20 Jan 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/session-encryption-with-lithium/</guid>
+      <guid>https://nitschinger.at/Session-Encryption-with-Lithium/</guid>
       <description>The Basics If you check out the master branch, you can use the new Encrypt strategy to encrypt your session data automatically. This means that you can read and write session data in cleartext and they will be encrypted on the fly before getting stored (in a cookie, for example). You can read my post about &amp;ldquo;baking cookies like a chef&amp;rdquo; for PHPAdvent 2011 here. The article covers both HMAC signatures and encryption, and is a good place to start.</description>
     </item>
     

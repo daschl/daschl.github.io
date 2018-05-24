@@ -13,10 +13,10 @@
     
     <item>
       <title>Lithium plugin roundup</title>
-      <link>https://nitschinger.at/lithium-plugin-roundup/</link>
+      <link>https://nitschinger.at/Lithium-plugin-roundup/</link>
       <pubDate>Wed, 22 Jun 2011 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/lithium-plugin-roundup/</guid>
+      <guid>https://nitschinger.at/Lithium-plugin-roundup/</guid>
       <description>Note that this list is by no means complete. If you don&amp;rsquo;t find your own mentioned here, feel free to comment below. I&amp;rsquo;ve also tried to roughly group them so you can find them later more easily.
 Authentication &amp;amp; Security li3_access: Access control library by tmaiaroto.
 li3_ids: Intrusion detection integration (phpids) by weluse.

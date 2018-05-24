@@ -13,10 +13,10 @@
     
     <item>
       <title>Testing the Lithium core for fun and profit</title>
-      <link>https://nitschinger.at/testing-the-lithium-core-for-fun-and-profit/</link>
+      <link>https://nitschinger.at/Testing-the-Lithium-core-for-fun-and-profit/</link>
       <pubDate>Sat, 09 Jul 2011 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/testing-the-lithium-core-for-fun-and-profit/</guid>
+      <guid>https://nitschinger.at/Testing-the-Lithium-core-for-fun-and-profit/</guid>
       <description>In modern web frameworks, testing is one of the most important pillars that ensure a clean, stable and extendable codebase. Testing support in Lithium was built in from the beginning and therefore it already features a great code coverage. The Lithium project aims to work out of the box on many platforms, including Microsoft Windows and its IIS, which was often neglected in the past.
 The main purpose of this post is to show you how core tests work and were the core team needs help to improve things further.</description>
     </item>

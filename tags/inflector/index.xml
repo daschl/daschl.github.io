@@ -13,10 +13,10 @@
     
     <item>
       <title>Understanding the Inflector</title>
-      <link>https://nitschinger.at/understanding-the-inflector/</link>
+      <link>https://nitschinger.at/Understanding-the-Inflector/</link>
       <pubDate>Thu, 16 Dec 2010 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/understanding-the-inflector/</guid>
+      <guid>https://nitschinger.at/Understanding-the-Inflector/</guid>
       <description>Introduction The Inflector is one of many utility classes that ship with Lithium out of the box. Those classes are designed to assist you with common tasks that need to be done.
 One of those tasks may be to pluralize, singularize, camel-case or humanize strings, database keys or other dynamic content. Let&amp;rsquo;s see how the class itself is described:
  Utility for modifying format of words. Change singular to plural and vice versa.</description>
@@ -24,10 +24,10 @@ One of those tasks may be to pluralize, singularize, camel-case or humanize stri
     
     <item>
       <title>Write your own Helper with Lithium</title>
-      <link>https://nitschinger.at/write-your-own-helper-with-lithium/</link>
+      <link>https://nitschinger.at/Write-your-own-Helper-with-Lithium/</link>
       <pubDate>Tue, 23 Nov 2010 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/write-your-own-helper-with-lithium/</guid>
+      <guid>https://nitschinger.at/Write-your-own-Helper-with-Lithium/</guid>
       <description>Lithium comes with two helpers out of the box. The Form-Helper and the Html-Helper. Both are great and help you to make your View-Code more flexible, maintainable and easier to read.
 But what do you do when you need a functionality that they don&amp;rsquo;t provide? Right, you write your own. Let&amp;rsquo;s imagine you want to tell your blog-readers how many posts you have stored in your database. In our first iteration our code might look like this:</description>
     </item>

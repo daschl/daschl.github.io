@@ -13,10 +13,10 @@
     
     <item>
       <title>Using JMH for Java Microbenchmarking</title>
-      <link>https://nitschinger.at/using-jmh-for-java-microbenchmarking/</link>
+      <link>https://nitschinger.at/Using-JMH-for-Java-Microbenchmarking/</link>
       <pubDate>Fri, 22 Nov 2013 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/using-jmh-for-java-microbenchmarking/</guid>
+      <guid>https://nitschinger.at/Using-JMH-for-Java-Microbenchmarking/</guid>
       <description>So before we dive in, let&amp;rsquo;s rule two things out. First, I&amp;rsquo;m not a JVM expert and second, microbenchmarking is hard. The bigger problem is that it isn&amp;rsquo;t only hard but also looks very easy if you start. You put your test code in a loop, use System.nanoTime or something similar to measure the total time of the run and divide it by the number of runs. Doing it that way, you could very well let your cat estimate the results (mine would do it for proper catnip).</description>
     </item>
     

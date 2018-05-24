@@ -13,10 +13,10 @@
     
     <item>
       <title>A primer on PHP exceptions</title>
-      <link>https://nitschinger.at/a-primer-on-php-exceptions/</link>
+      <link>https://nitschinger.at/A-primer-on-PHP-exceptions/</link>
       <pubDate>Tue, 22 May 2012 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/a-primer-on-php-exceptions/</guid>
+      <guid>https://nitschinger.at/A-primer-on-PHP-exceptions/</guid>
       <description>Preface Exceptions are and should be an integral part of any general purpose programming language. PHP introduced them long ago (with the release of PHP 5 or 5.1), but it still seems that many of the concepts are not fully understood or ignored by the community. This post aims to be a solid introduction to exception architecture, handling and testing. At the end of the post you should be able to know when to raise an exception and how it should look like.</description>
     </item>
     

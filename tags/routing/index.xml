@@ -13,29 +13,29 @@
     
     <item>
       <title>Understanding the Lithium Router - Part 2</title>
-      <link>https://nitschinger.at/understanding-the-lithium-router-part-2/</link>
+      <link>https://nitschinger.at/Understanding-the-Lithium-Router-Part-2/</link>
       <pubDate>Thu, 24 Feb 2011 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/understanding-the-lithium-router-part-2/</guid>
+      <guid>https://nitschinger.at/Understanding-the-Lithium-Router-Part-2/</guid>
       <description>Introduction Routes play an essential role in your request/response-cycle and therefore should also be tested like any other component that you develop. As the Lithium routing infrastructure also consists of classes and methods, we can run unit and integration tests against them.
 If we follow the testing conventions, we need to differentiate two distinct methods of testing. The first one (the so called &amp;ldquo;Unit Test&amp;rdquo;), is used to test your routes one by one, isolated from your application and ideally all dependencies are mocked away.</description>
     </item>
     
     <item>
       <title>Understanding the Lithium Router - Part 1</title>
-      <link>https://nitschinger.at/understanding-the-lithium-router-part-1/</link>
+      <link>https://nitschinger.at/Understanding-the-Lithium-Router-Part-1/</link>
       <pubDate>Sat, 05 Feb 2011 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/understanding-the-lithium-router-part-1/</guid>
+      <guid>https://nitschinger.at/Understanding-the-Lithium-Router-Part-1/</guid>
       <description>Introduction The router is an integral part of the framework and has two main purposes. The first one is to match a URL against a set of previously connected routes, the second one is to generate a URL from a set of arguments (reverse routing). The router itself is very flexible as we&amp;rsquo;ll see later on, but getting started is pretty easy. Lithium comes with a set of sensible default routes that help you to get on track immediately.</description>
     </item>
     
     <item>
       <title>Lithium Routes And MongoDB</title>
-      <link>https://nitschinger.at/lithium-routes-and-mongo-db/</link>
+      <link>https://nitschinger.at/Lithium-Routes-And-Mongo-DB/</link>
       <pubDate>Fri, 19 Nov 2010 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/lithium-routes-and-mongo-db/</guid>
+      <guid>https://nitschinger.at/Lithium-Routes-And-Mongo-DB/</guid>
       <description>Lithium comes with a powerful and flexible routing system. However, in its default configuration, you may encounter some problems with MongoDB-ObjectIDs and reverse routing. ObjectIDs are usually the &amp;ldquo;primary keys&amp;rdquo; of your Document in MongoDB, are 12 bytes long and consist of numbers and characters from &amp;lsquo;a&amp;rsquo; to &amp;lsquo;f&amp;rsquo;. A typical ObjectID would look similar to 4ce2d9f99436485e05000000.
 If you take a closer look at the default routes that ship with Lithium, you&amp;rsquo;ll maybe notice that the :id part only matches numbers (and not characters).</description>
     </item>
