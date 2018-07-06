@@ -597,13 +597,36 @@ $ ./gradlew install
 <p>This was a very quick introduction into the Processor, just one piece in the very promising Reactor framework. There is so much more to blog about in the future, so stay tuned!</p>
 
     </div>
- 
-    <ul class="article-taxonomy">
-      
+
+    <div id="disqus_thread"></div>
+<script>
+    var disqus_config = function () {
     
-      
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "daschl" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+    <ul class="article-taxonomy">
+       
       <li>
-        <i class="fa fa-tags"></i><a href="/tags/java">java</a><a href="/tags/couchbase">couchbase</a><a href="/tags/reactor">reactor</a><a href="/tags/tcp">tcp</a>
+        <i class="fa fa-tags"></i>
+        <a href="/%20tags/%20java">java</a>
+        <a href="/%20tags/%20couchbase">couchbase</a>
+        <a href="/%20tags/%20reactor">reactor</a>
+        <a href="/%20tags/%20tcp">tcp</a>
       </li>
       
   </article>
@@ -625,6 +648,18 @@ $ ./gradlew install
 
 </div>
 
+<script>
+  (function (i, s, o, g, r, a, m) {
+    i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+      (i[r].q = i[r].q || []).push(arguments)
+    }, i[r].l = 1 * new Date(); a = s.createElement(o),
+      m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+  })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+
+  ga('create', 'UA-19686689-1', 'auto');
+  ga('send', 'pageview');
+  ga('set', 'anonymizeIp', true);
+</script>
 </body>
 
 </html>
