@@ -7,7 +7,7 @@
 
     <meta name="description" content="">
 
-    <meta name="generator" content="Hugo 0.40.3" />
+    <meta name="generator" content="Hugo 0.42.1" />
     <meta name="twitter:card" content="summary">
     
     <meta name="twitter:title" content="Jmh &middot; daschl writes. sometimes.">
@@ -100,26 +100,66 @@
 </code></pre>
 
 <p>Let&rsquo;s start a maven project in our IDE and add the following dependency (mad props to <a href="https://twitter.com/_godin_/status/403668134206242817">Evgeny Mandrikov</a> for putting it on maven central recently):</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#000">&lt;dependency&gt;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#000">&lt;dependency&gt;</span>
   <span style="color:#000">&lt;groupId&gt;</span>org.openjdk.jmh<span style="color:#000">&lt;/groupId&gt;</span>
   <span style="color:#000">&lt;artifactId&gt;</span>jmh-core<span style="color:#000">&lt;/artifactId&gt;</span>
   <span style="color:#000">&lt;version&gt;</span>0.1<span style="color:#000">&lt;/version&gt;</span>
-<span style="color:#000">&lt;/dependency&gt;</span></code></pre></div>
+<span style="color:#000">&lt;/dependency&gt;</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Now let&rsquo;s write a main method that calls the underlying method of JMH so we can run it easily form our IDE:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">import</span> <span style="color:#000">org.openjdk.jmh.Main</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">import</span> <span style="color:#000">org.openjdk.jmh.Main</span><span style="color:#000">;</span>
 
 <span style="color:#a90d91">public</span> <span style="color:#a90d91">class</span> <span style="color:#3f6e75">Start</span> <span style="color:#000">{</span>
   <span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">void</span> <span style="color:#000">main</span><span style="color:#000">(</span><span style="color:#000">String</span><span style="color:#000">...</span> <span style="color:#000">args</span><span style="color:#000">)</span> <span style="color:#000">{</span>
     <span style="color:#000">Main</span><span style="color:#000">.</span><span style="color:#836c28">main</span><span style="color:#000">(</span><span style="color:#000">args</span><span style="color:#000">);</span>
   <span style="color:#000">}</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>If we hit run, all we&rsquo;ll see is:</p>
 
 <pre><code>No matching benchmarks. Miss-spelled regexp? Use -v for verbose output.
 </code></pre>
 
 <p>Which is good, because we know JMH is working and looking for our benchmarks. Let&rsquo;s write an empty one to get a feeling of how it works.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">benchmarks</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">benchmarks</span><span style="color:#000">;</span>
 
 <span style="color:#a90d91">import</span> <span style="color:#000">org.openjdk.jmh.annotations.GenerateMicroBenchmark</span><span style="color:#000">;</span>
 
@@ -130,7 +170,9 @@
 
   <span style="color:#000">}</span>
 
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>JMH will automatically pick it up from the CLASSPATH and start to run our benchmark. You will see lots of output (forks, warmup runs), but be patient until the end and you&rsquo;ll see something like this:</p>
 
 <pre><code># Fork: 1 of 1
@@ -165,7 +207,31 @@ b.HelloWorld.helloWorld    thrpt   1        10    1  3073969.337    65631.592   
 <h2 id="benchmarking-real-code">Benchmarking real code</h2>
 
 <p>Now all is fun, but let&rsquo;s test some real code. In Spymemcached, before we put a document on the wire we check that the key is not longer than allowed and - for ascii based operations - also check if they do not contain whitespace and so on. The code in question currently looks like this:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">void</span> <span style="color:#000">validateKey</span><span style="color:#000">(</span><span style="color:#000">String</span> <span style="color:#000">key</span><span style="color:#000">,</span> <span style="color:#a90d91">boolean</span> <span style="color:#000">binary</span><span style="color:#000">)</span> <span style="color:#000">{</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">void</span> <span style="color:#000">validateKey</span><span style="color:#000">(</span><span style="color:#000">String</span> <span style="color:#000">key</span><span style="color:#000">,</span> <span style="color:#a90d91">boolean</span> <span style="color:#000">binary</span><span style="color:#000">)</span> <span style="color:#000">{</span>
   <span style="color:#a90d91">byte</span><span style="color:#000">[]</span> <span style="color:#000">keyBytes</span> <span style="color:#000">=</span> <span style="color:#000">KeyUtil</span><span style="color:#000">.</span><span style="color:#836c28">getKeyBytes</span><span style="color:#000">(</span><span style="color:#000">key</span><span style="color:#000">);</span>
   <span style="color:#a90d91">if</span> <span style="color:#000">(</span><span style="color:#000">keyBytes</span><span style="color:#000">.</span><span style="color:#836c28">length</span> <span style="color:#000">&gt;</span> <span style="color:#000">MemcachedClientIF</span><span style="color:#000">.</span><span style="color:#836c28">MAX_KEY_LENGTH</span><span style="color:#000">)</span> <span style="color:#000">{</span>
     <span style="color:#a90d91">throw</span> <span style="color:#a90d91">new</span> <span style="color:#000">IllegalArgumentException</span><span style="color:#000">(</span><span style="color:#c41a16">&#34;Key is too long (maxlen = &#34;</span>
@@ -184,15 +250,72 @@ b.HelloWorld.helloWorld    thrpt   1        10    1  3073969.337    65631.592   
       <span style="color:#000">}</span>
     <span style="color:#000">}</span>
   <span style="color:#000">}</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Let&rsquo;s say we don&rsquo;t care about optimizing it yet, but we want to see how it performs if the &ldquo;binary&rdquo; flag is applied or not. Obviously less work is done but we want to see how that turns out in practice. Let&rsquo;s add the dependency so we can use the static method directly from the code:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#000">&lt;dependency&gt;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#000">&lt;dependency&gt;</span>
   <span style="color:#000">&lt;groupId&gt;</span>net.spy<span style="color:#000">&lt;/groupId&gt;</span>
   <span style="color:#000">&lt;artifactId&gt;</span>spymemcached<span style="color:#000">&lt;/artifactId&gt;</span>
   <span style="color:#000">&lt;version&gt;</span>2.10.2<span style="color:#000">&lt;/version&gt;</span>
-<span style="color:#000">&lt;/dependency&gt;</span></code></pre></div>
+<span style="color:#000">&lt;/dependency&gt;</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>And write a new benchmark that compares both approaches with variation.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">benchmarks</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">benchmarks</span><span style="color:#000">;</span>
 
 <span style="color:#a90d91">import</span> <span style="color:#000">net.spy.memcached.util.StringUtils</span><span style="color:#000">;</span>
 <span style="color:#a90d91">import</span> <span style="color:#000">org.openjdk.jmh.annotations.GenerateMicroBenchmark</span><span style="color:#000">;</span>
@@ -231,7 +354,9 @@ b.HelloWorld.helloWorld    thrpt   1        10    1  3073969.337    65631.592   
   <span style="color:#a90d91">public</span> <span style="color:#a90d91">void</span> <span style="color:#000">validateLongKeyAscii</span><span style="color:#000">()</span> <span style="color:#000">{</span>
     <span style="color:#000">StringUtils</span><span style="color:#000">.</span><span style="color:#836c28">validateKey</span><span style="color:#000">(</span><span style="color:#000">LONG_KEY</span><span style="color:#000">,</span> <span style="color:#a90d91">false</span><span style="color:#000">);</span>
   <span style="color:#000">}</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>We also see how the performance differs for long and short keys. The first run we do is with 10 iterations and 1 fork:</p>
 
 <p>Result : 18093.561 ±(95%) 65.824 ±(99%) 94.575 ops/ms
@@ -273,7 +398,30 @@ b.HelloWorld.helloWorld    thrpt   1        10    1  3073969.337    65631.592   
 <h2 id="additional-information">Additional Information</h2>
 
 <p>As <a href="https://twitter.com/shipilev">Aleksey Shipilёv</a> points out in the comments, there is also a nice Java API that you can use, instead of just proxying &ldquo;main&rdquo; and emulating the command line. Here is an example that shows how to use it. Note that iterating the MAP is optional, but it gives you a code-readable way of the results. If you just call <code>new Runner(opts).run();</code>, you will see the identical output as above.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">void</span> <span style="color:#000">main</span><span style="color:#000">(</span><span style="color:#000">String</span><span style="color:#000">...</span> <span style="color:#000">args</span><span style="color:#000">)</span> <span style="color:#a90d91">throws</span> <span style="color:#000">Exception</span> <span style="color:#000">{</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">void</span> <span style="color:#000">main</span><span style="color:#000">(</span><span style="color:#000">String</span><span style="color:#000">...</span> <span style="color:#000">args</span><span style="color:#000">)</span> <span style="color:#a90d91">throws</span> <span style="color:#000">Exception</span> <span style="color:#000">{</span>
   <span style="color:#000">Options</span> <span style="color:#000">opts</span> <span style="color:#000">=</span> <span style="color:#a90d91">new</span> <span style="color:#000">OptionsBuilder</span><span style="color:#000">()</span>
       <span style="color:#000">.</span><span style="color:#836c28">include</span><span style="color:#000">(</span><span style="color:#c41a16">&#34;.*&#34;</span><span style="color:#000">)</span>
       <span style="color:#000">.</span><span style="color:#836c28">warmupIterations</span><span style="color:#000">(</span><span style="color:#000">10</span><span style="color:#000">)</span>
@@ -291,9 +439,57 @@ b.HelloWorld.helloWorld    thrpt   1        10    1  3073969.337    65631.592   
       <span style="color:#000">+</span> <span style="color:#000">r</span><span style="color:#000">.</span><span style="color:#836c28">getScoreUnit</span><span style="color:#000">()</span> <span style="color:#000">+</span> <span style="color:#c41a16">&#34; over &#34;</span>
       <span style="color:#000">+</span> <span style="color:#000">r</span><span style="color:#000">.</span><span style="color:#836c28">getStatistics</span><span style="color:#000">().</span><span style="color:#836c28">getN</span><span style="color:#000">()</span> <span style="color:#000">+</span> <span style="color:#c41a16">&#34; iterations&#34;</span><span style="color:#000">);</span>
   <span style="color:#000">}</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Also, the constant keys used in the above example are subject to constant optimizations. To work around that, there is the @State annotation for the class and the static fields need to be instance variables. Here is the updated code sample for clarity, the numbers don&rsquo;t change for the purpose of this post.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">benchmarks</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">41
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">42
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">benchmarks</span><span style="color:#000">;</span>
 
 <span style="color:#a90d91">import</span> <span style="color:#000">net.spy.memcached.util.StringUtils</span><span style="color:#000">;</span>
 <span style="color:#a90d91">import</span> <span style="color:#000">org.openjdk.jmh.annotations.GenerateMicroBenchmark</span><span style="color:#000">;</span>
@@ -334,7 +530,9 @@ b.HelloWorld.helloWorld    thrpt   1        10    1  3073969.337    65631.592   
   <span style="color:#a90d91">public</span> <span style="color:#a90d91">void</span> <span style="color:#000">validateLongKeyAscii</span><span style="color:#000">()</span> <span style="color:#000">{</span>
     <span style="color:#000">StringUtils</span><span style="color:#000">.</span><span style="color:#836c28">validateKey</span><span style="color:#000">(</span><span style="color:#000">LONG_KEY</span><span style="color:#000">,</span> <span style="color:#a90d91">false</span><span style="color:#000">);</span>
   <span style="color:#000">}</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Thanks for pointing it out Aleksey!</p>
 
                     </div>

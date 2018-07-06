@@ -7,7 +7,7 @@
 
     <meta name="description" content="">
 
-    <meta name="generator" content="Hugo 0.40.3" />
+    <meta name="generator" content="Hugo 0.42.1" />
     <meta name="twitter:card" content="summary">
     
     <meta name="twitter:title" content="Java &middot; daschl writes. sometimes.">
@@ -120,7 +120,28 @@ Compiling highperf-adder v0.1.0 (file:///Users/michael/rust/highperf-adder)
 </code></pre>
 
 <p>Instead of diving straight into Rust code, let&rsquo;s work on the Java code first. To keep it simple, create a <code>Adder.java</code> file in the root of the project directory and add the following code:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">import</span> <span style="color:#000">java.nio.file.Path</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">import</span> <span style="color:#000">java.nio.file.Path</span><span style="color:#000">;</span>
 <span style="color:#a90d91">import</span> <span style="color:#000">java.nio.file.Paths</span><span style="color:#000">;</span>
 
 <span style="color:#a90d91">class</span> <span style="color:#3f6e75">Adder</span> <span style="color:#000">{</span>
@@ -136,20 +157,48 @@ Compiling highperf-adder v0.1.0 (file:///Users/michael/rust/highperf-adder)
     <span style="color:#000">System</span><span style="color:#000">.</span><span style="color:#836c28">out</span><span style="color:#000">.</span><span style="color:#836c28">println</span><span style="color:#000">(</span><span style="color:#c41a16">&#34;2 + 3 = &#34;</span> <span style="color:#000">+</span> <span style="color:#000">Adder</span><span style="color:#000">.</span><span style="color:#836c28">add</span><span style="color:#000">(</span><span style="color:#000">2</span><span style="color:#000">,</span> <span style="color:#000">3</span><span style="color:#000">));</span>
   <span style="color:#000">}</span>
 
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Let&rsquo;s break the code up into digestible chunks.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">static</span> <span style="color:#000">{</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">static</span> <span style="color:#000">{</span>
     <span style="color:#000">Path</span> <span style="color:#000">p</span> <span style="color:#000">=</span> <span style="color:#000">Paths</span><span style="color:#000">.</span><span style="color:#836c28">get</span><span style="color:#000">(</span><span style="color:#c41a16">&#34;target/debug/libhpa.dylib&#34;</span><span style="color:#000">);</span>
     <span style="color:#000">System</span><span style="color:#000">.</span><span style="color:#836c28">load</span><span style="color:#000">(</span><span style="color:#000">p</span><span style="color:#000">.</span><span style="color:#836c28">toAbsolutePath</span><span style="color:#000">().</span><span style="color:#836c28">toString</span><span style="color:#000">());</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>We need to tell the JVM to pick up our shared library that got built by Rust. If you are running <code>cargo build</code> with the <code>--release</code> flag to optimize, make sure to point it towards <code>target/release/libhpa.dylib</code> instead.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">native</span> <span style="color:#a90d91">int</span> <span style="color:#000">add</span><span style="color:#000">(</span><span style="color:#a90d91">int</span> <span style="color:#000">v1</span><span style="color:#000">,</span> <span style="color:#a90d91">int</span> <span style="color:#000">v2</span><span style="color:#000">);</span></code></pre></div>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">native</span> <span style="color:#a90d91">int</span> <span style="color:#000">add</span><span style="color:#000">(</span><span style="color:#a90d91">int</span> <span style="color:#000">v1</span><span style="color:#000">,</span> <span style="color:#a90d91">int</span> <span style="color:#000">v2</span><span style="color:#000">);</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Next up we define all our native methods that we want to call through JNI. It works a little bit like implementing an abstract class, but you are implementing the actual code in Rust intead of Java userland. The name of the method and its calling class will become important in a bit, so if you want to follow along make sure you keep the same names.</p>
 
 <p>In our case we define one <code>add</code> method which takes two integers as arguments and returns the result as an integer.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">void</span> <span style="color:#000">main</span><span style="color:#000">(</span><span style="color:#000">String</span><span style="color:#000">...</span> <span style="color:#000">args</span><span style="color:#000">)</span> <span style="color:#000">{</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">void</span> <span style="color:#000">main</span><span style="color:#000">(</span><span style="color:#000">String</span><span style="color:#000">...</span> <span style="color:#000">args</span><span style="color:#000">)</span> <span style="color:#000">{</span>
     <span style="color:#000">System</span><span style="color:#000">.</span><span style="color:#836c28">out</span><span style="color:#000">.</span><span style="color:#836c28">println</span><span style="color:#000">(</span><span style="color:#c41a16">&#34;2 + 3 = &#34;</span> <span style="color:#000">+</span> <span style="color:#000">Adder</span><span style="color:#000">.</span><span style="color:#836c28">add</span><span style="color:#000">(</span><span style="color:#000">2</span><span style="color:#000">,</span> <span style="color:#000">3</span><span style="color:#000">));</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>The <code>main</code> method calls our static JNI method and prints the result to <code>stdout</code>.</p>
 
 <p>Let&rsquo;s run it straight away:</p>
@@ -164,7 +213,32 @@ Exception in thread &quot;main&quot; java.lang.UnsatisfiedLinkError: Adder.add(I
 <p>It compiles without errors, but at runtime it breaks apart. This doesn&rsquo;t come as a huge surprise since we didn&rsquo;t write a single line of Rust code yet. The JVM just tells us it can&rsquo;t link the method we&rsquo;re looking for.</p>
 
 <p>To fix that, open the <code>src/lib.rs</code> file and insert the following Rust code:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#a90d91">extern</span> <span style="color:#a90d91">crate</span> <span style="color:#000">libc</span>;
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#a90d91">extern</span> <span style="color:#a90d91">crate</span> <span style="color:#000">libc</span>;
 
 <span style="color:#a90d91">use</span> <span style="color:#000">libc</span>::{<span style="color:#000">c_void</span>, <span style="color:#000">c_int</span>};
 
@@ -183,9 +257,27 @@ Exception in thread &quot;main&quot; java.lang.UnsatisfiedLinkError: Adder.add(I
 <span style="color:#633820">#[no_mangle]</span>
 <span style="color:#a90d91">pub</span> <span style="color:#a90d91">extern</span> <span style="color:#a90d91">fn</span> <span style="color:#000">Java_Adder_add</span>(<span style="color:#000">jre</span>: <span style="color:#000">*</span><span style="color:#a90d91">mut</span> <span style="color:#000">JNIEnv</span>, <span style="color:#000">class</span>: <span style="color:#000">*</span><span style="color:#a90d91">const</span> <span style="color:#000">c_void</span>, <span style="color:#000">v1</span>: <span style="color:#3f6e75">c_int</span>, <span style="color:#000">v2</span>: <span style="color:#3f6e75">c_int</span>) -&gt; <span style="color:#3f6e75">c_int</span> {
     <span style="color:#000">v1</span> <span style="color:#000">+</span> <span style="color:#000">v2</span>
-}</code></pre></div>
+}
+</code></pre></td></tr></table>
+</div>
+</div>
 <p>Alright, so what&rsquo;s going on here?</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#633820">#[repr(C)]</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#633820">#[repr(C)]</span>
 <span style="color:#a90d91">pub</span> <span style="color:#a90d91">struct</span> <span style="color:#3f6e75">JNINativeInterface</span> {
     <span style="color:#000">reserved0</span>: <span style="color:#000">*</span><span style="color:#a90d91">mut</span> <span style="color:#000">c_void</span>,
     <span style="color:#000">reserved1</span>: <span style="color:#000">*</span><span style="color:#a90d91">mut</span> <span style="color:#000">c_void</span>,
@@ -194,11 +286,39 @@ Exception in thread &quot;main&quot; java.lang.UnsatisfiedLinkError: Adder.add(I
     <span style="color:#177500">// ...
 </span><span style="color:#177500"></span>}
 
-<span style="color:#a90d91">pub</span> <span style="color:#a90d91">type</span> <span style="color:#3f6e75">JNIEnv</span> <span style="color:#000">=</span> <span style="color:#000">*</span><span style="color:#a90d91">const</span> <span style="color:#000">JNINativeInterface</span>;</code></pre></div>
+<span style="color:#a90d91">pub</span> <span style="color:#a90d91">type</span> <span style="color:#3f6e75">JNIEnv</span> <span style="color:#000">=</span> <span style="color:#000">*</span><span style="color:#a90d91">const</span> <span style="color:#000">JNINativeInterface</span>;
+</code></pre></td></tr></table>
+</div>
+</div>
 <p>The JVM exports a <code>jni.h</code> header file which contains its primary interfaces when interacting through JNI. Normally we&rsquo;d write a proper Rust C FFI binding here and keep our code idiomatic, but for now all we need is a pointer to the <code>JNIEnv</code> (even if we don&rsquo;t actually use it, it gets passed in to our <code>add</code> method as an argument). If you take a look at the <a href="http://hg.openjdk.java.net/jdk8/jdk8/jdk/file/687fd7c7986d/src/share/javavm/export/jni.h#l214">actual jni.h</a> you can see that we get away with lots of handwaving for now.</p>
 
 <p>Btw, how on earth did we know that the JVM expects a method with the signature of <code>fn Java_Adder_add(jre: *mut JNIEnv, class: *const c_void, v1: c_int, v2: c_int) -&gt; c_int</code>? The answer lies in the <code>javah</code> command and some conversion of C to Rust. If you run <code>javah Adder</code> you get a <code>Adder.h</code> file which looks like:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#177500">/* DO NOT EDIT THIS FILE - it is machine generated */</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#177500">/* DO NOT EDIT THIS FILE - it is machine generated */</span>
 <span style="color:#633820">#include</span> <span style="color:#633820">&lt;jni.h&gt;</span><span style="color:#633820">
 </span><span style="color:#633820"></span><span style="color:#177500">/* Header for class Adder */</span>
 
@@ -218,16 +338,37 @@ Exception in thread &quot;main&quot; java.lang.UnsatisfiedLinkError: Adder.add(I
 <span style="color:#633820">#ifdef __cplusplus
 </span><span style="color:#633820"></span>}
 <span style="color:#633820">#endif
-</span><span style="color:#633820">#endif</span></code></pre></div>
+</span><span style="color:#633820">#endif</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>The important part is this:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#000">JNIEXPORT</span> <span style="color:#000">jint</span> <span style="color:#000">JNICALL</span> <span style="color:#000">Java_Adder_add</span>(<span style="color:#000">JNIEnv</span> <span style="color:#000">*</span>, <span style="color:#000">jclass</span>, <span style="color:#000">jint</span>, <span style="color:#000">jint</span>);</code></pre></div>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#000">JNIEXPORT</span> <span style="color:#000">jint</span> <span style="color:#000">JNICALL</span> <span style="color:#000">Java_Adder_add</span>(<span style="color:#000">JNIEnv</span> <span style="color:#000">*</span>, <span style="color:#000">jclass</span>, <span style="color:#000">jint</span>, <span style="color:#000">jint</span>);</code></pre></td></tr></table>
+</div>
+</div>
 <p>The type <code>jint</code> is defined per plattform. For OSX you can find it <a href="http://hg.openjdk.java.net/jdk8/jdk8/jdk/file/687fd7c7986d/src/macosx/javavm/export/jni_md.h#l33">here</a> and it maps to an <code>int</code>. The rust <code>libc</code> exports this type through <code>libc::c_int</code>, which we can utilize in our code. <code>jclass</code> is a reference type which we ignore for now, since we don&rsquo;t need it.</p>
 
 <p>All we need to do is add the two numbers and return the result:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#633820">#[no_mangle]</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#633820">#[no_mangle]</span>
 <span style="color:#a90d91">pub</span> <span style="color:#a90d91">extern</span> <span style="color:#a90d91">fn</span> <span style="color:#000">Java_Adder_add</span>(<span style="color:#000">jre</span>: <span style="color:#000">*</span><span style="color:#a90d91">mut</span> <span style="color:#000">JNIEnv</span>, <span style="color:#000">class</span>: <span style="color:#000">*</span><span style="color:#a90d91">const</span> <span style="color:#000">c_void</span>, <span style="color:#000">v1</span>: <span style="color:#3f6e75">c_int</span>, <span style="color:#000">v2</span>: <span style="color:#3f6e75">c_int</span>) -&gt; <span style="color:#3f6e75">c_int</span> {
     <span style="color:#000">v1</span> <span style="color:#000">+</span> <span style="color:#000">v2</span>
-}</code></pre></div>
+}
+</code></pre></td></tr></table>
+</div>
+</div>
 <p>Make sure you don&rsquo;t forget the <code>#[no_mangle]</code> which tells Rust to turn off its name mangling so that there are no issues while linking (try it out and you&rsquo;ll see the <code>UnsatisfiedLinkError</code> again). Finally its time to compile the <code>crate</code> once more and run the Java class again. Note that you don&rsquo;t need to recompile the Java code every time you make a change to the Rust code. Just rebuild with cargo and run the Java file again, it will pick up the freshly created <code>dylib</code>.</p>
 
 <pre><code>$ cargo build
@@ -288,7 +429,85 @@ $ cd jcstress/
 </code></pre>
 
 <p>Now, go import the maven project in your favorite IDE (<a href="http://www.jetbrains.com/idea/">IntelliJ, what else?</a>). We need to add our own code and tests so that it can be picked up later. You can either add your code under test as a dependency into the <code>pom.xml</code> file or just copy it over to the project if it is self contained (so it&rsquo;s easier to play and poke around). If you want to follow along, add the <code>StringUtils.java</code> and the <code>StringUtilsTest.java</code> files to the <code>com.couchbase.client.tests.util</code> package:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">com.couchbase.client.tests.util</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">41
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">42
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">43
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">44
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">45
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">46
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">47
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">48
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">49
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">50
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">51
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">52
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">53
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">54
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">55
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">56
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">57
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">58
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">59
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">60
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">61
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">62
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">63
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">64
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">65
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">66
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">67
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">68
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">69
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">70
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">71
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">72
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">73
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">74
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">com.couchbase.client.tests.util</span><span style="color:#000">;</span>
 
 <span style="color:#a90d91">import</span> <span style="color:#000">java.util.regex.Matcher</span><span style="color:#000">;</span>
 <span style="color:#a90d91">import</span> <span style="color:#000">java.util.regex.Pattern</span><span style="color:#000">;</span>
@@ -361,9 +580,44 @@ $ cd jcstress/
         <span style="color:#a90d91">return</span> <span style="color:#a90d91">false</span><span style="color:#000">;</span>
     <span style="color:#000">}</span>
 
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>And the test:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">com.couchbase.client.tests.util</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">com.couchbase.client.tests.util</span><span style="color:#000">;</span>
 
 <span style="color:#a90d91">import</span> <span style="color:#000">org.openjdk.jcstress.annotations.Actor</span><span style="color:#000">;</span>
 <span style="color:#a90d91">import</span> <span style="color:#000">org.openjdk.jcstress.annotations.JCStressTest</span><span style="color:#000">;</span>
@@ -391,12 +645,37 @@ $ cd jcstress/
             <span style="color:#000">result</span><span style="color:#000">.</span><span style="color:#836c28">r2</span> <span style="color:#000">=</span> <span style="color:#000">-</span><span style="color:#000">1</span><span style="color:#000">;</span>
         <span style="color:#000">}</span>
     <span style="color:#000">}</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>The test uses <code>@Actor</code> annotations to define the different actors of the system. You can see that both actors access the same static method and put the result (which is abbreviated to a simple true (1) / false (0) pattern) in the <code>IntResult2</code> object. Both actors share their results and if an exception
 is raised we store -1. Now what is that good for?</p>
 
 <p>We also need to add a description file for our test which sets the expecations on allowed and disallowed value combinations. Note that I tried to add my own .xml file, but somehow it didn&rsquo;t get picked up, so I modified an existing xml (to be specific the <code>resources/org/openjdk/jcstress/desc/atomic-boolean.xml</code>) and added the following:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#000">&lt;test</span> <span style="color:#836c28">name=</span><span style="color:#c41a16">&#34;com.couchbase.client.tests.util.StringUtilsTest&#34;</span><span style="color:#000">&gt;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#000">&lt;test</span> <span style="color:#836c28">name=</span><span style="color:#c41a16">&#34;com.couchbase.client.tests.util.StringUtilsTest&#34;</span><span style="color:#000">&gt;</span>
     <span style="color:#000">&lt;contributed-by&gt;</span>Michael Nitschinger<span style="color:#000">&lt;/contributed-by&gt;</span>
     <span style="color:#000">&lt;description&gt;</span>
         Tests the thread-safeness of the StringUtil class.
@@ -414,7 +693,9 @@ is raised we store -1. Now what is that good for?</p>
             Other cases are not expected. -1 would mean an exception raised.
         <span style="color:#000">&lt;/description&gt;</span>
     <span style="color:#000">&lt;/unmatched&gt;</span>
-<span style="color:#000">&lt;/test&gt;</span></code></pre></div>
+<span style="color:#000">&lt;/test&gt;</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>You can see that the only thing which is acceptable is that both actors always get <code>true</code> returned, all other combinations are simply forbidden (that is, marked as failure).</p>
 
 <p>Now that we&rsquo;ve got that set up, we need to compile the thing on the command line through maven:</p>
@@ -545,7 +826,70 @@ _cbnodes._tcp.example.com.  0  IN  SRV  30  0  8091  node3.example.com.
 <p>Here, based on the &ldquo;_cbnodes._tcp.example.com.&rdquo; service information we get to know that there are three nodes configured that belong to this service. They all listen on port <code>8091</code>, but have priorities associated with them (10, 20, 30). Lower priorities are considered more important, so you can use that to your advantage. The <code>0</code> between the priority and the port is the weight. You can use different weights (which are probabilities) to generate some kind of load-balancing behaviour.</p>
 
 <p>Once this is configured on the DNS server, we can make use of that in our application. Say we want to infer the seed nodes to bootstrap from in our <code>CouchbaseClient</code>. To make this happen, we need to make use of <a href="http://en.wikipedia.org/wiki/Java_Naming_and_Directory_Interface">JNDI</a>. Let&rsquo;s first create a simple class that will hold those records shown above:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">static</span> <span style="color:#a90d91">class</span> <span style="color:#3f6e75">DnsRecord</span> <span style="color:#a90d91">implements</span> <span style="color:#000">Comparable</span><span style="color:#000">&lt;</span><span style="color:#000">DnsRecord</span><span style="color:#000">&gt;</span> <span style="color:#000">{</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">41
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">42
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">43
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">44
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">45
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">46
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">47
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">48
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">49
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">50
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">51
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">52
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">53
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">54
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">55
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">56
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">57
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">58
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">59
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">static</span> <span style="color:#a90d91">class</span> <span style="color:#3f6e75">DnsRecord</span> <span style="color:#a90d91">implements</span> <span style="color:#000">Comparable</span><span style="color:#000">&lt;</span><span style="color:#000">DnsRecord</span><span style="color:#000">&gt;</span> <span style="color:#000">{</span>
     <span style="color:#a90d91">private</span> <span style="color:#a90d91">final</span> <span style="color:#a90d91">int</span> <span style="color:#000">priority</span><span style="color:#000">;</span>
     <span style="color:#a90d91">private</span> <span style="color:#a90d91">final</span> <span style="color:#a90d91">int</span> <span style="color:#000">weight</span><span style="color:#000">;</span>
     <span style="color:#a90d91">private</span> <span style="color:#a90d91">final</span> <span style="color:#a90d91">int</span> <span style="color:#000">port</span><span style="color:#000">;</span>
@@ -603,9 +947,29 @@ _cbnodes._tcp.example.com.  0  IN  SRV  30  0  8091  node3.example.com.
       <span style="color:#000">}</span>
     <span style="color:#000">}</span>
 
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>We provide a custom <code>compareTo</code> method in order to automatically sort each <code>DnsRecord</code> by priority. The next step is to write a method that allows us to fetch the actual information:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#000">String</span> <span style="color:#000">service</span> <span style="color:#000">=</span> <span style="color:#c41a16">&#34;_cbnodes._tcp.example.com&#34;</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#000">String</span> <span style="color:#000">service</span> <span style="color:#000">=</span> <span style="color:#c41a16">&#34;_cbnodes._tcp.example.com&#34;</span><span style="color:#000">;</span>
 
 <span style="color:#000">Hashtable</span><span style="color:#000">&lt;</span><span style="color:#000">String</span><span style="color:#000">,</span> <span style="color:#000">String</span><span style="color:#000">&gt;</span> <span style="color:#000">env</span> <span style="color:#000">=</span> <span style="color:#a90d91">new</span> <span style="color:#000">Hashtable</span><span style="color:#000">&lt;</span><span style="color:#000">String</span><span style="color:#000">,</span> <span style="color:#000">String</span><span style="color:#000">&gt;();</span>
 <span style="color:#000">env</span><span style="color:#000">.</span><span style="color:#836c28">put</span><span style="color:#000">(</span><span style="color:#c41a16">&#34;java.naming.factory.initial&#34;</span><span style="color:#000">,</span> <span style="color:#c41a16">&#34;com.sun.jndi.dns.DnsContextFactory&#34;</span><span style="color:#000">);</span>
@@ -618,15 +982,44 @@ _cbnodes._tcp.example.com.  0  IN  SRV  30  0  8091  node3.example.com.
   <span style="color:#a90d91">while</span> <span style="color:#000">(</span><span style="color:#000">servers</span><span style="color:#000">.</span><span style="color:#836c28">hasMore</span><span style="color:#000">())</span> <span style="color:#000">{</span>
     <span style="color:#000">DnsRecord</span> <span style="color:#000">record</span> <span style="color:#000">=</span> <span style="color:#000">DnsRecord</span><span style="color:#000">.</span><span style="color:#836c28">fromString</span><span style="color:#000">((</span><span style="color:#000">String</span><span style="color:#000">)</span> <span style="color:#000">servers</span><span style="color:#000">.</span><span style="color:#836c28">next</span><span style="color:#000">());</span>
     <span style="color:#000">sortedRecords</span><span style="color:#000">.</span><span style="color:#836c28">add</span><span style="color:#000">(</span><span style="color:#000">record</span><span style="color:#000">);</span>
-  <span style="color:#000">}</span></code></pre></div>
+  <span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Now we have a <code>Set</code> of sorted <code>DnsRecords</code>, which we can use however we want to. For example, with <a href="http://couchbase.com">Couchbase</a> we can turn them into <code>URI</code>s:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#000">List</span><span style="color:#000">&lt;</span><span style="color:#000">URI</span><span style="color:#000">&gt;</span> <span style="color:#000">uris</span> <span style="color:#000">=</span> <span style="color:#a90d91">new</span> <span style="color:#000">ArrayList</span><span style="color:#000">&lt;</span><span style="color:#000">URI</span><span style="color:#000">&gt;();</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#000">List</span><span style="color:#000">&lt;</span><span style="color:#000">URI</span><span style="color:#000">&gt;</span> <span style="color:#000">uris</span> <span style="color:#000">=</span> <span style="color:#a90d91">new</span> <span style="color:#000">ArrayList</span><span style="color:#000">&lt;</span><span style="color:#000">URI</span><span style="color:#000">&gt;();</span>
 <span style="color:#a90d91">for</span><span style="color:#000">(</span><span style="color:#000">DnsRecord</span> <span style="color:#000">record</span> <span style="color:#000">:</span> <span style="color:#000">sortedRecords</span><span style="color:#000">)</span> <span style="color:#000">{</span>
 	<span style="color:#000">uris</span><span style="color:#000">.</span><span style="color:#836c28">add</span><span style="color:#000">(</span><span style="color:#a90d91">new</span> <span style="color:#000">URI</span><span style="color:#000">(</span><span style="color:#c41a16">&#34;http://&#34;</span> <span style="color:#000">+</span> <span style="color:#000">record</span><span style="color:#000">.</span><span style="color:#836c28">getHost</span><span style="color:#000">()</span> <span style="color:#000">+</span> <span style="color:#c41a16">&#34;:&#34;</span> <span style="color:#000">+</span> <span style="color:#000">record</span><span style="color:#000">.</span><span style="color:#836c28">getPort</span><span style="color:#000">()</span> <span style="color:#000">+</span> <span style="color:#c41a16">&#34;/pools&#34;</span><span style="color:#000">));</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>If you want to play around with the code and don&rsquo;t have DNS SRV records set up, I recommend you to use <code>_xmpp-server._tcp.gmail.com</code>. It exposes Googles GMail XMPP servers and lets
 you try the code without much effort. In case you wonder how to mock that thing correctly, I recommend you to mock the <code>DirContext</code> like so:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#000">String</span> <span style="color:#000">service</span> <span style="color:#000">=</span> <span style="color:#c41a16">&#34;_seeds._tcp.couchbase.com&#34;</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#000">String</span> <span style="color:#000">service</span> <span style="color:#000">=</span> <span style="color:#c41a16">&#34;_seeds._tcp.couchbase.com&#34;</span><span style="color:#000">;</span>
 
 <span style="color:#000">BasicAttributes</span> <span style="color:#000">basicAttributes</span> <span style="color:#000">=</span> <span style="color:#a90d91">new</span> <span style="color:#000">BasicAttributes</span><span style="color:#000">(</span><span style="color:#a90d91">true</span><span style="color:#000">);</span>
 <span style="color:#000">BasicAttribute</span> <span style="color:#000">basicAttribute</span> <span style="color:#000">=</span> <span style="color:#a90d91">new</span> <span style="color:#000">BasicAttribute</span><span style="color:#000">(</span><span style="color:#c41a16">&#34;SRV&#34;</span><span style="color:#000">);</span>
@@ -638,7 +1031,9 @@ you try the code without much effort. In case you wonder how to mock that thing 
 
 <span style="color:#000">DirContext</span> <span style="color:#000">mockedContext</span> <span style="color:#000">=</span> <span style="color:#000">mock</span><span style="color:#000">(</span><span style="color:#000">DirContext</span><span style="color:#000">.</span><span style="color:#836c28">class</span><span style="color:#000">);</span>
 <span style="color:#000">when</span><span style="color:#000">(</span><span style="color:#000">mockedContext</span><span style="color:#000">.</span><span style="color:#836c28">getAttributes</span><span style="color:#000">(</span><span style="color:#000">service</span><span style="color:#000">,</span> <span style="color:#a90d91">new</span> <span style="color:#000">String</span><span style="color:#000">[]</span> <span style="color:#000">{</span> <span style="color:#c41a16">&#34;SRV&#34;</span> <span style="color:#000">}))</span>
-  <span style="color:#000">.</span><span style="color:#836c28">thenReturn</span><span style="color:#000">(</span><span style="color:#000">basicAttributes</span><span style="color:#000">);</span></code></pre></div>
+  <span style="color:#000">.</span><span style="color:#836c28">thenReturn</span><span style="color:#000">(</span><span style="color:#000">basicAttributes</span><span style="color:#000">);</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>The code shown here (and more advanced features) are part of the official Couchbase SDK, so check out the <a href="https://github.com/couchbase/couchbase-java-client">codebase</a> if you want to learn more!</p>
 
                     </div>
@@ -673,26 +1068,66 @@ you try the code without much effort. In case you wonder how to mock that thing 
 </code></pre>
 
 <p>Let&rsquo;s start a maven project in our IDE and add the following dependency (mad props to <a href="https://twitter.com/_godin_/status/403668134206242817">Evgeny Mandrikov</a> for putting it on maven central recently):</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#000">&lt;dependency&gt;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#000">&lt;dependency&gt;</span>
   <span style="color:#000">&lt;groupId&gt;</span>org.openjdk.jmh<span style="color:#000">&lt;/groupId&gt;</span>
   <span style="color:#000">&lt;artifactId&gt;</span>jmh-core<span style="color:#000">&lt;/artifactId&gt;</span>
   <span style="color:#000">&lt;version&gt;</span>0.1<span style="color:#000">&lt;/version&gt;</span>
-<span style="color:#000">&lt;/dependency&gt;</span></code></pre></div>
+<span style="color:#000">&lt;/dependency&gt;</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Now let&rsquo;s write a main method that calls the underlying method of JMH so we can run it easily form our IDE:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">import</span> <span style="color:#000">org.openjdk.jmh.Main</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">import</span> <span style="color:#000">org.openjdk.jmh.Main</span><span style="color:#000">;</span>
 
 <span style="color:#a90d91">public</span> <span style="color:#a90d91">class</span> <span style="color:#3f6e75">Start</span> <span style="color:#000">{</span>
   <span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">void</span> <span style="color:#000">main</span><span style="color:#000">(</span><span style="color:#000">String</span><span style="color:#000">...</span> <span style="color:#000">args</span><span style="color:#000">)</span> <span style="color:#000">{</span>
     <span style="color:#000">Main</span><span style="color:#000">.</span><span style="color:#836c28">main</span><span style="color:#000">(</span><span style="color:#000">args</span><span style="color:#000">);</span>
   <span style="color:#000">}</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>If we hit run, all we&rsquo;ll see is:</p>
 
 <pre><code>No matching benchmarks. Miss-spelled regexp? Use -v for verbose output.
 </code></pre>
 
 <p>Which is good, because we know JMH is working and looking for our benchmarks. Let&rsquo;s write an empty one to get a feeling of how it works.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">benchmarks</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">benchmarks</span><span style="color:#000">;</span>
 
 <span style="color:#a90d91">import</span> <span style="color:#000">org.openjdk.jmh.annotations.GenerateMicroBenchmark</span><span style="color:#000">;</span>
 
@@ -703,7 +1138,9 @@ you try the code without much effort. In case you wonder how to mock that thing 
 
   <span style="color:#000">}</span>
 
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>JMH will automatically pick it up from the CLASSPATH and start to run our benchmark. You will see lots of output (forks, warmup runs), but be patient until the end and you&rsquo;ll see something like this:</p>
 
 <pre><code># Fork: 1 of 1
@@ -738,7 +1175,31 @@ b.HelloWorld.helloWorld    thrpt   1        10    1  3073969.337    65631.592   
 <h2 id="benchmarking-real-code">Benchmarking real code</h2>
 
 <p>Now all is fun, but let&rsquo;s test some real code. In Spymemcached, before we put a document on the wire we check that the key is not longer than allowed and - for ascii based operations - also check if they do not contain whitespace and so on. The code in question currently looks like this:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">void</span> <span style="color:#000">validateKey</span><span style="color:#000">(</span><span style="color:#000">String</span> <span style="color:#000">key</span><span style="color:#000">,</span> <span style="color:#a90d91">boolean</span> <span style="color:#000">binary</span><span style="color:#000">)</span> <span style="color:#000">{</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">void</span> <span style="color:#000">validateKey</span><span style="color:#000">(</span><span style="color:#000">String</span> <span style="color:#000">key</span><span style="color:#000">,</span> <span style="color:#a90d91">boolean</span> <span style="color:#000">binary</span><span style="color:#000">)</span> <span style="color:#000">{</span>
   <span style="color:#a90d91">byte</span><span style="color:#000">[]</span> <span style="color:#000">keyBytes</span> <span style="color:#000">=</span> <span style="color:#000">KeyUtil</span><span style="color:#000">.</span><span style="color:#836c28">getKeyBytes</span><span style="color:#000">(</span><span style="color:#000">key</span><span style="color:#000">);</span>
   <span style="color:#a90d91">if</span> <span style="color:#000">(</span><span style="color:#000">keyBytes</span><span style="color:#000">.</span><span style="color:#836c28">length</span> <span style="color:#000">&gt;</span> <span style="color:#000">MemcachedClientIF</span><span style="color:#000">.</span><span style="color:#836c28">MAX_KEY_LENGTH</span><span style="color:#000">)</span> <span style="color:#000">{</span>
     <span style="color:#a90d91">throw</span> <span style="color:#a90d91">new</span> <span style="color:#000">IllegalArgumentException</span><span style="color:#000">(</span><span style="color:#c41a16">&#34;Key is too long (maxlen = &#34;</span>
@@ -757,15 +1218,72 @@ b.HelloWorld.helloWorld    thrpt   1        10    1  3073969.337    65631.592   
       <span style="color:#000">}</span>
     <span style="color:#000">}</span>
   <span style="color:#000">}</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Let&rsquo;s say we don&rsquo;t care about optimizing it yet, but we want to see how it performs if the &ldquo;binary&rdquo; flag is applied or not. Obviously less work is done but we want to see how that turns out in practice. Let&rsquo;s add the dependency so we can use the static method directly from the code:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#000">&lt;dependency&gt;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#000">&lt;dependency&gt;</span>
   <span style="color:#000">&lt;groupId&gt;</span>net.spy<span style="color:#000">&lt;/groupId&gt;</span>
   <span style="color:#000">&lt;artifactId&gt;</span>spymemcached<span style="color:#000">&lt;/artifactId&gt;</span>
   <span style="color:#000">&lt;version&gt;</span>2.10.2<span style="color:#000">&lt;/version&gt;</span>
-<span style="color:#000">&lt;/dependency&gt;</span></code></pre></div>
+<span style="color:#000">&lt;/dependency&gt;</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>And write a new benchmark that compares both approaches with variation.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">benchmarks</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">benchmarks</span><span style="color:#000">;</span>
 
 <span style="color:#a90d91">import</span> <span style="color:#000">net.spy.memcached.util.StringUtils</span><span style="color:#000">;</span>
 <span style="color:#a90d91">import</span> <span style="color:#000">org.openjdk.jmh.annotations.GenerateMicroBenchmark</span><span style="color:#000">;</span>
@@ -804,7 +1322,9 @@ b.HelloWorld.helloWorld    thrpt   1        10    1  3073969.337    65631.592   
   <span style="color:#a90d91">public</span> <span style="color:#a90d91">void</span> <span style="color:#000">validateLongKeyAscii</span><span style="color:#000">()</span> <span style="color:#000">{</span>
     <span style="color:#000">StringUtils</span><span style="color:#000">.</span><span style="color:#836c28">validateKey</span><span style="color:#000">(</span><span style="color:#000">LONG_KEY</span><span style="color:#000">,</span> <span style="color:#a90d91">false</span><span style="color:#000">);</span>
   <span style="color:#000">}</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>We also see how the performance differs for long and short keys. The first run we do is with 10 iterations and 1 fork:</p>
 
 <p>Result : 18093.561 ±(95%) 65.824 ±(99%) 94.575 ops/ms
@@ -846,7 +1366,30 @@ b.HelloWorld.helloWorld    thrpt   1        10    1  3073969.337    65631.592   
 <h2 id="additional-information">Additional Information</h2>
 
 <p>As <a href="https://twitter.com/shipilev">Aleksey Shipilёv</a> points out in the comments, there is also a nice Java API that you can use, instead of just proxying &ldquo;main&rdquo; and emulating the command line. Here is an example that shows how to use it. Note that iterating the MAP is optional, but it gives you a code-readable way of the results. If you just call <code>new Runner(opts).run();</code>, you will see the identical output as above.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">void</span> <span style="color:#000">main</span><span style="color:#000">(</span><span style="color:#000">String</span><span style="color:#000">...</span> <span style="color:#000">args</span><span style="color:#000">)</span> <span style="color:#a90d91">throws</span> <span style="color:#000">Exception</span> <span style="color:#000">{</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">static</span> <span style="color:#a90d91">void</span> <span style="color:#000">main</span><span style="color:#000">(</span><span style="color:#000">String</span><span style="color:#000">...</span> <span style="color:#000">args</span><span style="color:#000">)</span> <span style="color:#a90d91">throws</span> <span style="color:#000">Exception</span> <span style="color:#000">{</span>
   <span style="color:#000">Options</span> <span style="color:#000">opts</span> <span style="color:#000">=</span> <span style="color:#a90d91">new</span> <span style="color:#000">OptionsBuilder</span><span style="color:#000">()</span>
       <span style="color:#000">.</span><span style="color:#836c28">include</span><span style="color:#000">(</span><span style="color:#c41a16">&#34;.*&#34;</span><span style="color:#000">)</span>
       <span style="color:#000">.</span><span style="color:#836c28">warmupIterations</span><span style="color:#000">(</span><span style="color:#000">10</span><span style="color:#000">)</span>
@@ -864,9 +1407,57 @@ b.HelloWorld.helloWorld    thrpt   1        10    1  3073969.337    65631.592   
       <span style="color:#000">+</span> <span style="color:#000">r</span><span style="color:#000">.</span><span style="color:#836c28">getScoreUnit</span><span style="color:#000">()</span> <span style="color:#000">+</span> <span style="color:#c41a16">&#34; over &#34;</span>
       <span style="color:#000">+</span> <span style="color:#000">r</span><span style="color:#000">.</span><span style="color:#836c28">getStatistics</span><span style="color:#000">().</span><span style="color:#836c28">getN</span><span style="color:#000">()</span> <span style="color:#000">+</span> <span style="color:#c41a16">&#34; iterations&#34;</span><span style="color:#000">);</span>
   <span style="color:#000">}</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Also, the constant keys used in the above example are subject to constant optimizations. To work around that, there is the @State annotation for the class and the static fields need to be instance variables. Here is the updated code sample for clarity, the numbers don&rsquo;t change for the purpose of this post.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">benchmarks</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">41
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">42
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">package</span> <span style="color:#000">benchmarks</span><span style="color:#000">;</span>
 
 <span style="color:#a90d91">import</span> <span style="color:#000">net.spy.memcached.util.StringUtils</span><span style="color:#000">;</span>
 <span style="color:#a90d91">import</span> <span style="color:#000">org.openjdk.jmh.annotations.GenerateMicroBenchmark</span><span style="color:#000">;</span>
@@ -907,7 +1498,9 @@ b.HelloWorld.helloWorld    thrpt   1        10    1  3073969.337    65631.592   
   <span style="color:#a90d91">public</span> <span style="color:#a90d91">void</span> <span style="color:#000">validateLongKeyAscii</span><span style="color:#000">()</span> <span style="color:#000">{</span>
     <span style="color:#000">StringUtils</span><span style="color:#000">.</span><span style="color:#836c28">validateKey</span><span style="color:#000">(</span><span style="color:#000">LONG_KEY</span><span style="color:#000">,</span> <span style="color:#a90d91">false</span><span style="color:#000">);</span>
   <span style="color:#000">}</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Thanks for pointing it out Aleksey!</p>
 
                     </div>
@@ -1216,7 +1809,20 @@ $ ./gradlew install
 <p>The basic idea is that we decouple consumers from producers, so that each of them can work on their own pace (not blocking each other) and also benefiting from batching if the producers are faster than the consumers. We&rsquo;ll see why this is particularly important with TCP in a second.</p>
 
 <p>A <code>Processor</code> can be created by instantiating a <code>ProcessorSpec</code> and defining some mandatory options. Then, the <code>Processor</code> is built for us.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#000">ProcessorSpec</span><span style="color:#000">&lt;</span><span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;&gt;</span> <span style="color:#000">writeProcessor</span> <span style="color:#000">=</span> <span style="color:#a90d91">new</span> <span style="color:#000">ProcessorSpec</span><span style="color:#000">&lt;</span><span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;&gt;()</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">9
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#000">ProcessorSpec</span><span style="color:#000">&lt;</span><span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;&gt;</span> <span style="color:#000">writeProcessor</span> <span style="color:#000">=</span> <span style="color:#a90d91">new</span> <span style="color:#000">ProcessorSpec</span><span style="color:#000">&lt;</span><span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;&gt;()</span>
 	<span style="color:#000">.</span><span style="color:#836c28">dataSupplier</span><span style="color:#000">(</span><span style="color:#a90d91">new</span> <span style="color:#000">Supplier</span><span style="color:#000">&lt;</span><span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;&gt;()</span> <span style="color:#000">{</span>
 		<span style="color:#000">@Override</span>
 		<span style="color:#a90d91">public</span> <span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;</span> <span style="color:#000">get</span><span style="color:#000">()</span> <span style="color:#000">{</span>
@@ -1224,7 +1830,9 @@ $ ./gradlew install
 		<span style="color:#000">}</span>
 	<span style="color:#000">})</span>
 	<span style="color:#000">.</span><span style="color:#836c28">consume</span><span style="color:#000">(</span><span style="color:#a90d91">new</span> <span style="color:#000">Node</span><span style="color:#000">(</span><span style="color:#c41a16">&#34;127.0.0.1&#34;</span><span style="color:#000">,</span> <span style="color:#000">environment</span><span style="color:#000">))</span>
-	<span style="color:#000">.</span><span style="color:#836c28">get</span><span style="color:#000">();</span></code></pre></div>
+	<span style="color:#000">.</span><span style="color:#836c28">get</span><span style="color:#000">();</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Note that this <code>Spec</code> pattern is very common in reactor, as it allows for very easy and yet flexible object creation. There are a few things that we need to cover.</p>
 
 <p>First, the generic type here is <code>Event&lt;Buffer&gt;</code>. The producers will wrap the payload (here we use raw <code>Buffers</code>) in an <code>Event</code> and the consumers will unwrap and use it properly. The <code>Event</code> type also allows for headers that can be used for custom routing, but we won&rsquo;t cover that here.</p>
@@ -1234,15 +1842,70 @@ $ ./gradlew install
 <p>Third, through the <code>consume</code> method we can tell the <code>Processor</code> who will be notified when new data is added to the RingBuffer. In our case, the <code>Node</code> represents the TCP client which we&rsquo;ll build in a second.</p>
 
 <p>Now, how do we write to the Processor? Let&rsquo;s add a simple method that does it for us:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">void</span> <span style="color:#000">write</span><span style="color:#000">(</span><span style="color:#a90d91">final</span> <span style="color:#000">Buffer</span> <span style="color:#000">data</span><span style="color:#000">)</span> <span style="color:#000">{</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">void</span> <span style="color:#000">write</span><span style="color:#000">(</span><span style="color:#a90d91">final</span> <span style="color:#000">Buffer</span> <span style="color:#000">data</span><span style="color:#000">)</span> <span style="color:#000">{</span>
 	<span style="color:#a90d91">final</span> <span style="color:#000">Operation</span><span style="color:#000">&lt;</span><span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;&gt;</span> <span style="color:#000">op</span> <span style="color:#000">=</span> <span style="color:#000">writeProcessor</span><span style="color:#000">.</span><span style="color:#836c28">get</span><span style="color:#000">();</span>
 	<span style="color:#000">op</span><span style="color:#000">.</span><span style="color:#836c28">get</span><span style="color:#000">().</span><span style="color:#836c28">setData</span><span style="color:#000">(</span><span style="color:#000">data</span><span style="color:#000">);</span>
 	<span style="color:#000">op</span><span style="color:#000">.</span><span style="color:#836c28">commit</span><span style="color:#000">();</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Here, we get a <code>Operation</code> out of the processor (that wraps our data) and override it with the data that we actually want to store this time. You can see that we are not allocating new objects in the RingBuffer, we just use the old one that has been provided for us. With the <code>commit</code> method we put it back into the RingBuffer. Actually, behind the scenes, it makes use of Sequences and Barriers inside the RingBuffer, but this is completely hidden from us.</p>
 
 <p>Here is the full code for the lazy reader:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">import</span> <span style="color:#000">reactor.core.Environment</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">import</span> <span style="color:#000">reactor.core.Environment</span><span style="color:#000">;</span>
 <span style="color:#a90d91">import</span> <span style="color:#000">reactor.core.processor.Operation</span><span style="color:#000">;</span>
 <span style="color:#a90d91">import</span> <span style="color:#000">reactor.core.processor.Processor</span><span style="color:#000">;</span>
 <span style="color:#a90d91">import</span> <span style="color:#000">reactor.core.processor.spec.ProcessorSpec</span><span style="color:#000">;</span>
@@ -1281,22 +1944,54 @@ $ ./gradlew install
     <span style="color:#000">op</span><span style="color:#000">.</span><span style="color:#836c28">commit</span><span style="color:#000">();</span>
   <span style="color:#000">}</span>
 
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>One final note before we move on: did you spot the <code>Environment</code> here? This is also a common theme in the Reactor framework. The <code>Environment</code> is used in many places to signal information about - who would have thought that - the JVM environment. The general recommendation is to create only one <code>Environment</code> instance per JVM, so we happily pass it around in our small application.</p>
 
 <h1 id="the-consumer">The Consumer</h1>
 
 <p>Before we get into the nitty-gritty network details, let&rsquo;s add a consumer that just prints out the data that he &ldquo;sees&rdquo;. If you want to try this sample, make sure to change the previous code temporarily from <code>.consume(new Node(...))</code> to <code>.consume(new EchoConsumer())</code>.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">class</span> <span style="color:#3f6e75">EchoConsumer</span> <span style="color:#a90d91">implements</span> <span style="color:#000">Consumer</span><span style="color:#000">&lt;</span><span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;&gt;</span> <span style="color:#000">{</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">class</span> <span style="color:#3f6e75">EchoConsumer</span> <span style="color:#a90d91">implements</span> <span style="color:#000">Consumer</span><span style="color:#000">&lt;</span><span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;&gt;</span> <span style="color:#000">{</span>
 
   <span style="color:#000">@Override</span>
   <span style="color:#a90d91">public</span> <span style="color:#a90d91">void</span> <span style="color:#000">accept</span><span style="color:#000">(</span><span style="color:#a90d91">final</span> <span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;</span> <span style="color:#000">bufferEvent</span><span style="color:#000">)</span> <span style="color:#000">{</span>
     <span style="color:#000">System</span><span style="color:#000">.</span><span style="color:#836c28">out</span><span style="color:#000">.</span><span style="color:#836c28">println</span><span style="color:#000">(</span><span style="color:#000">Arrays</span><span style="color:#000">.</span><span style="color:#836c28">toString</span><span style="color:#000">(</span><span style="color:#000">bufferEvent</span><span style="color:#000">.</span><span style="color:#836c28">getData</span><span style="color:#000">().</span><span style="color:#836c28">asBytes</span><span style="color:#000">()));</span>
   <span style="color:#000">}</span>
 
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>The <code>accept</code> method is always called once there is information available on the Processor. Let&rsquo;s add a simple test case to verify that this works:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">import</span> <span style="color:#000">org.junit.Test</span><span style="color:#000">;</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">import</span> <span style="color:#000">org.junit.Test</span><span style="color:#000">;</span>
 <span style="color:#a90d91">import</span> <span style="color:#000">reactor.io.Buffer</span><span style="color:#000">;</span>
 
 <span style="color:#a90d91">public</span> <span style="color:#a90d91">class</span> <span style="color:#3f6e75">MessageDispatcherTest</span> <span style="color:#000">{</span>
@@ -1307,11 +2002,56 @@ $ ./gradlew install
     <span style="color:#000">dispatcher</span><span style="color:#000">.</span><span style="color:#836c28">write</span><span style="color:#000">(</span><span style="color:#000">Buffer</span><span style="color:#000">.</span><span style="color:#836c28">wrap</span><span style="color:#000">(</span><span style="color:#c41a16">&#34;Hello World!&#34;</span><span style="color:#000">));</span>
   <span style="color:#000">}</span>
 
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>Now if we run this test, we should see <code>[72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33]</code> printed on the console - great! This is the byte array representation of our wrapped buffer. Of course we could make our lives easier and use <code>Strings</code> instead of <code>Buffer</code> in our implementation, but the <code>Buffer</code> works much better with network communication.</p>
 
 <p>The next step would be to send the data over the network. Let&rsquo;s replace our Consumer with a more intelligent one. Be aware that the <code>TcpClient</code> that you&rsquo;ll see doesn&rsquo;t communicate with Java NIO directly - it makes use of the excellent <a href="http://netty.io/">Netty</a> project which provides a convenient and performant wrapper around NIO and OIO (we use NIO here).</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">class</span> <span style="color:#3f6e75">Node</span> <span style="color:#a90d91">implements</span> <span style="color:#000">Consumer</span><span style="color:#000">&lt;</span><span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;&gt;</span> <span style="color:#000">{</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">class</span> <span style="color:#3f6e75">Node</span> <span style="color:#a90d91">implements</span> <span style="color:#000">Consumer</span><span style="color:#000">&lt;</span><span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;&gt;</span> <span style="color:#000">{</span>
 
   <span style="color:#a90d91">private</span> <span style="color:#a90d91">final</span> <span style="color:#000">TcpClient</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">,</span> <span style="color:#000">Buffer</span><span style="color:#000">&gt;</span> <span style="color:#000">client</span><span style="color:#000">;</span>
   <span style="color:#a90d91">private</span> <span style="color:#000">TcpConnection</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">,</span> <span style="color:#000">Buffer</span><span style="color:#000">&gt;</span> <span style="color:#000">conn</span> <span style="color:#000">=</span> <span style="color:#a90d91">null</span><span style="color:#000">;</span>
@@ -1349,13 +2089,48 @@ $ ./gradlew install
 
   <span style="color:#000">}</span>
 
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>While this might seem like a lot of code, it&rsquo;s not so bad. We do two things here. During object construction, we create a new <code>TcpClient</code> through the <code>TcpClientSpec</code> (see the Spec again?) and pass it the environment and the socket to connect to. The next thing we need to do is actually open the connection and wait until finished.</p>
 
 <p>Now that we have an open connection, we can write to it. Since everything is non-blocking in Reactor, so is socket writing. In order to not overwhelm the underlying infrastructure, we have to wait until it is actually finished before moving on to handle the next <code>Event</code> in the Processor. We do this by using a <code>CountDownLatch</code>, which will be counted down once the writing has finished. In our simple example we just fail if it took longer than one second. In a real application, one could report errors or retry with Backoff.</p>
 
 <p>Before we can run that code, we need to add a test case to make it all work.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#000">Buffer</span><span style="color:#000">[]</span> <span style="color:#000">buffers</span> <span style="color:#000">=</span> <span style="color:#a90d91">new</span> <span style="color:#000">Buffer</span><span style="color:#000">[</span><span style="color:#000">10</span><span style="color:#000">];</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#000">Buffer</span><span style="color:#000">[]</span> <span style="color:#000">buffers</span> <span style="color:#000">=</span> <span style="color:#a90d91">new</span> <span style="color:#000">Buffer</span><span style="color:#000">[</span><span style="color:#000">10</span><span style="color:#000">];</span>
 
 <span style="color:#000">@Before</span>
 <span style="color:#a90d91">public</span> <span style="color:#a90d91">void</span> <span style="color:#000">initBuffers</span><span style="color:#000">()</span> <span style="color:#000">{</span>
@@ -1383,7 +2158,9 @@ $ ./gradlew install
 	<span style="color:#a90d91">for</span> <span style="color:#000">(</span><span style="color:#a90d91">long</span> <span style="color:#000">i</span> <span style="color:#000">=</span> <span style="color:#000">0</span><span style="color:#000">;</span> <span style="color:#000">i</span> <span style="color:#000">&lt;</span> <span style="color:#000">amountOfOps</span><span style="color:#000">;</span> <span style="color:#000">i</span><span style="color:#000">++)</span> <span style="color:#000">{</span>
 		<span style="color:#000">dispatcher</span><span style="color:#000">.</span><span style="color:#836c28">write</span><span style="color:#000">(</span><span style="color:#a90d91">new</span> <span style="color:#000">Buffer</span><span style="color:#000">(</span><span style="color:#000">buffers</span><span style="color:#000">[(</span><span style="color:#a90d91">int</span><span style="color:#000">)(</span><span style="color:#000">i</span> <span style="color:#000">%</span> <span style="color:#000">9</span><span style="color:#000">)]).</span><span style="color:#836c28">flip</span><span style="color:#000">());</span>
 	<span style="color:#000">}</span>
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>To actually simulate something real, this test creates ten buffer instances with Couchbase messages. Those familiar with the memcached binary protocol can identify it as a GETQ request. This means it does not return anything when the key is not found (which is what we want, because in this case we want to benchmark the upper limit for write throughput and not concern us with parsing of error responses). Once the data is created, we run a given amount of operations and call the <code>write</code> method on the <code>MessageDispatcher</code>.</p>
 
 <h1 id="batch-all-the-things">Batch all the things!</h1>
@@ -1391,7 +2168,71 @@ $ ./gradlew install
 <p>If we run this, we get a - very disappointing - number of only 50K ops/s. In addition, we get lots of CPU usage on the Java process (100% and more on a quad core processor here). Why is it so slow? The answer is: network overhead. In our case, we send out 27 byte chunks over the network. With all the TCP, IP and Ethernet headers, there is lots of unnecessary overhead involved that puts down our performance. The answer to that is batching! If our producers are faster than the consumers, we can batch the intermediate data up into a buffer and send it over the wire in one chunk. This will give us a much better goodput ratio.</p>
 
 <p>To help us with batching the Disruptor and the Processor expose the start end end of a batching phase to our consumer. To get this information, we need to extend from the <code>BatchConsumer</code> instead of the regular <code>Consumer</code>. Let&rsquo;s refactor our node and add some batching characteristics:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">class</span> <span style="color:#3f6e75">BatchingNode</span> <span style="color:#a90d91">implements</span> <span style="color:#000">BatchConsumer</span><span style="color:#000">&lt;</span><span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;&gt;</span> <span style="color:#000">{</span>
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">41
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">42
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">43
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">44
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">45
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">46
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">47
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">48
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">49
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">50
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">51
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">52
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">53
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">54
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">55
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">56
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">57
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">58
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">59
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">60
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a90d91">public</span> <span style="color:#a90d91">class</span> <span style="color:#3f6e75">BatchingNode</span> <span style="color:#a90d91">implements</span> <span style="color:#000">BatchConsumer</span><span style="color:#000">&lt;</span><span style="color:#000">Event</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">&gt;&gt;</span> <span style="color:#000">{</span>
 
   <span style="color:#a90d91">private</span> <span style="color:#a90d91">final</span> <span style="color:#000">TcpClient</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">,</span> <span style="color:#000">Buffer</span><span style="color:#000">&gt;</span> <span style="color:#000">client</span><span style="color:#000">;</span>
   <span style="color:#a90d91">private</span> <span style="color:#000">TcpConnection</span><span style="color:#000">&lt;</span><span style="color:#000">Buffer</span><span style="color:#000">,</span> <span style="color:#000">Buffer</span><span style="color:#000">&gt;</span> <span style="color:#000">conn</span> <span style="color:#000">=</span> <span style="color:#a90d91">null</span><span style="color:#000">;</span>
@@ -1450,7 +2291,9 @@ $ ./gradlew install
     <span style="color:#000">writeBuffer</span><span style="color:#000">.</span><span style="color:#836c28">clear</span><span style="color:#000">();</span>
   <span style="color:#000">}</span>
 
-<span style="color:#000">}</span></code></pre></div>
+<span style="color:#000">}</span></code></pre></td></tr></table>
+</div>
+</div>
 <p>The code here is not much different. Note that we refactored the writing part out into the <code>flush</code> method. In the <code>accept</code> method, we write to the network if the buffer is full, otherwise we just add it to our write buffer. Note that we also need to <code>flush</code> if the batching is over (notified through the <code>end</code> method), otherwise we would potentially keep data around for a longer time than needed (and latency is still important to us).</p>
 
 <p>Let&rsquo;s run the test case again&hellip; now we get 500k ops/s with only 40% CPU load on the java process! Now that&rsquo;s what I call an improvement!</p>

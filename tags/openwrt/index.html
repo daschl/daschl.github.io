@@ -7,7 +7,7 @@
 
     <meta name="description" content="">
 
-    <meta name="generator" content="Hugo 0.40.3" />
+    <meta name="generator" content="Hugo 0.42.1" />
     <meta name="twitter:card" content="summary">
     
     <meta name="twitter:title" content="Openwrt &middot; daschl writes. sometimes.">
@@ -133,11 +133,22 @@ export STAGING_DIR=~/openwrt/staging_dir/
 <p>We are adding the SDK <code>gcc</code> binaries to our <code>PATH</code> and also provide the <code>STAGING_DIR</code> environment variable that the SDK needs while building. Note that I&rsquo;ve renamed the <code>OpenWrt-SDK-15.05.1-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64</code> (wow&hellip;) directory after extraction simply to <code>openwrt</code> so its easier to read the command line. Note: make sure to reload/source your <code>.bashrc</code> file if you want to stay in the current terminal or open a new one so the changes take effect.</p>
 
 <p>Here is a very simple hello world in C (<code>hello.c</code>):</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#633820">#include</span><span style="color:#633820">&lt;stdio.h&gt;</span><span style="color:#633820">
+<div class="highlight"><div style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#633820">#include</span><span style="color:#633820">&lt;stdio.h&gt;</span><span style="color:#633820">
 </span><span style="color:#633820"></span>
 <span style="color:#000">main</span>() {
         <span style="color:#000">printf</span>(<span style="color:#c41a16">&#34;Hello, World!</span><span style="color:#c41a16">\n</span><span style="color:#c41a16">&#34;</span>);
-}</code></pre></div>
+}</code></pre></td></tr></table>
+</div>
+</div>
 <p>You can compile it with:</p>
 
 <pre><code>$ mips-openwrt-linux-gcc hello.c -o hello
