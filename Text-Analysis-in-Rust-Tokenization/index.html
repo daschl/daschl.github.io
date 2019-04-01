@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.42.2" />
+<meta name="generator" content="Hugo 0.54.0" />
 
 
 <title>Text Analysis in Rust - Tokenization - daschl writes. sometimes.</title>
@@ -87,17 +87,16 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">8
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rs" data-lang="rs"><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">trait</span><span style="color:#666"> </span>Tokenizer&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span>{<span style="color:#666">
 </span><span style="color:#666">    </span><span style="color:#ed9d13">/// A Tokenizer always needs to produce an Iterator of Tokens.
-</span><span style="color:#ed9d13"></span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">type</span> <span style="color:#447fcf">TokenIter</span>: <span style="color:#24909d">Iterator</span>&lt;Item<span style="color:#666"> </span>=<span style="color:#666"> </span>Token&gt;;<span style="color:#666">
+</span><span style="color:#ed9d13"></span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">type</span> <span style="color:#447fcf;text-decoration:underline">TokenIter</span>: <span style="color:#24909d">Iterator</span>&lt;Item<span style="color:#666"> </span>=<span style="color:#666"> </span>Token&gt;;<span style="color:#666">
 </span><span style="color:#666">
 </span><span style="color:#666">    </span><span style="color:#ed9d13">/// Takes the input string and tokenizes it based on the implementations rules.
-</span><span style="color:#ed9d13"></span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">tokenize</span>(&amp;self,<span style="color:#666"> </span>input: <span style="color:#6ab825">&amp;</span><span style="color:#bbb">&#39;a</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">str</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf">Self</span>::TokenIter;<span style="color:#666">
+</span><span style="color:#ed9d13"></span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">tokenize</span>(&amp;self,<span style="color:#666"> </span>input: <span style="color:#6ab825">&amp;</span><span style="color:#bbb">&#39;a</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">str</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf;text-decoration:underline">Self</span>::TokenIter;<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>Note: I can&rsquo;t wait for <a href="https://github.com/rust-lang/rust/issues/34511">impl Traits</a> to land when it also supports trait functions, then this would clean up the declarations even further.</p>
@@ -111,15 +110,14 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf">Token</span><span style="color:#666"> </span>{<span style="color:#666">
+<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">Token</span><span style="color:#666"> </span>{<span style="color:#666">
 </span><span style="color:#666">    </span>term: <span style="color:#24909d">String</span>,<span style="color:#666">
 </span><span style="color:#666">    </span>start_offset: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
 </span><span style="color:#666">    </span>position: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 
@@ -144,22 +142,21 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">10
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">11
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">12
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">13
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>MAX_STACK_TERM_LEN: <span style="color:#6ab825;font-weight:bold">usize</span> =<span style="color:#666"> </span><span style="color:#3677a9">15</span>;<span style="color:#666">
 </span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">enum</span> <span style="color:#447fcf">Term</span><span style="color:#666"> </span>{<span style="color:#666">
+</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">enum</span> <span style="color:#447fcf;text-decoration:underline">Term</span><span style="color:#666"> </span>{<span style="color:#666">
 </span><span style="color:#666">    </span>Stack(ArrayString&lt;[<span style="color:#6ab825;font-weight:bold">u8</span>;<span style="color:#666"> </span>MAX_STACK_TERM_LEN]&gt;),<span style="color:#666">
 </span><span style="color:#666">    </span>Heap(<span style="color:#24909d">String</span>),<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
 </span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf">Token</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span>term: <span style="color:#447fcf">Term</span>,<span style="color:#666">
+</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">Token</span><span style="color:#666"> </span>{<span style="color:#666">
+</span><span style="color:#666">    </span>term: <span style="color:#447fcf;text-decoration:underline">Term</span>,<span style="color:#666">
 </span><span style="color:#666">    </span>start_offset: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
 </span><span style="color:#666">    </span>position: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>Woops, our <code>Token</code> just got a little more complex. Our term is now an <a href="https://doc.rust-lang.org/book/enums.html">Enum</a> which is either a stack allocated <a href="https://docs.rs/arrayvec/0.3.20/arrayvec/struct.ArrayString.html">ArrayString</a> or a heap allocated <a href="https://doc.rust-lang.org/std/string/struct.String.html">String</a>. Note that the <code>ArrayString</code> implementation comes from the <a href="https://crates.io/crates/arrayvec">arrayvec</a> crate and basically provides string functionality on top of a stack allocated array.</p>
@@ -194,21 +191,20 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">25
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">26
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">27
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">28
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">impl</span><span style="color:#666"> </span>Token<span style="color:#666"> </span>{<span style="color:#666">
 </span><span style="color:#666">    </span><span style="color:#cd2828;font-weight:bold">#[inline]</span><span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">from_str</span>(term: <span style="color:#6ab825">&amp;</span><span style="color:#6ab825;font-weight:bold">str</span>,<span style="color:#666"> </span>start_offset: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>position: <span style="color:#6ab825;font-weight:bold">usize</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf">Self</span><span style="color:#666"> </span>{<span style="color:#666">
+</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">from_str</span>(term: <span style="color:#6ab825">&amp;</span><span style="color:#6ab825;font-weight:bold">str</span>,<span style="color:#666"> </span>start_offset: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>position: <span style="color:#6ab825;font-weight:bold">usize</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf;text-decoration:underline">Self</span><span style="color:#666"> </span>{<span style="color:#666">
 </span><span style="color:#666">        </span>Token<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">            </span>term: <span style="color:#447fcf">Token</span>::convert_term(term),<span style="color:#666">
-</span><span style="color:#666">            </span>start_offset: <span style="color:#447fcf">start_offset</span>,<span style="color:#666">
-</span><span style="color:#666">            </span>position: <span style="color:#447fcf">position</span>,<span style="color:#666">
+</span><span style="color:#666">            </span>term: <span style="color:#447fcf;text-decoration:underline">Token</span>::convert_term(term),<span style="color:#666">
+</span><span style="color:#666">            </span>start_offset: <span style="color:#447fcf;text-decoration:underline">start_offset</span>,<span style="color:#666">
+</span><span style="color:#666">            </span>position: <span style="color:#447fcf;text-decoration:underline">position</span>,<span style="color:#666">
 </span><span style="color:#666">        </span>}<span style="color:#666">
 </span><span style="color:#666">    </span>}<span style="color:#666">
 </span><span style="color:#666">
 </span><span style="color:#666">    </span><span style="color:#cd2828;font-weight:bold">#[inline]</span><span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">convert_term</span>(term: <span style="color:#6ab825">&amp;</span><span style="color:#6ab825;font-weight:bold">str</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf">Term</span><span style="color:#666"> </span>{<span style="color:#666">
+</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">convert_term</span>(term: <span style="color:#6ab825">&amp;</span><span style="color:#6ab825;font-weight:bold">str</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf;text-decoration:underline">Term</span><span style="color:#666"> </span>{<span style="color:#666">
 </span><span style="color:#666">        </span><span style="color:#6ab825;font-weight:bold">if</span><span style="color:#666"> </span>term.len()<span style="color:#666"> </span>&lt;=<span style="color:#666"> </span>MAX_STACK_TERM_LEN<span style="color:#666"> </span>{<span style="color:#666">
 </span><span style="color:#666">            </span>Term::Stack(ArrayString::&lt;[_;<span style="color:#666"> </span>MAX_STACK_TERM_LEN]&gt;::from(term).unwrap())<span style="color:#666">
 </span><span style="color:#666">        </span>}<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">else</span><span style="color:#666"> </span>{<span style="color:#666">
@@ -224,7 +220,7 @@
 </span><span style="color:#666">        </span>}<span style="color:#666">
 </span><span style="color:#666">    </span>}<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>At this point we&rsquo;ve departed from our go counterpart in two significant ways: we are using an iterator instead of <a href="https://github.com/blevesearch/bleve/blob/master/analysis/type.go#L61-L67">operating on a heap allocated array of tokens</a> and we are using stack allocations for small tokens instead of heap allocating a <a href="https://github.com/blevesearch/bleve/blob/master/analysis/type.go#L41">Token</a> and its term. I don&rsquo;t know if go is doing escape analysis and optimizations in this case, but based on the benchmarks (read on) I don&rsquo;t think so.</p>
@@ -249,17 +245,16 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">8
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf">CharTokenIter</span>&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span>filter: <span style="color:#447fcf">fn</span>(&amp;(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>char)))<span style="color:#666"> </span>-&gt; <span style="color:#6ab825;font-weight:bold">bool</span>,<span style="color:#666">
+<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">CharTokenIter</span>&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span>{<span style="color:#666">
+</span><span style="color:#666">    </span>filter: <span style="color:#447fcf;text-decoration:underline">fn</span>(&amp;(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>char)))<span style="color:#666"> </span>-&gt; <span style="color:#6ab825;font-weight:bold">bool</span>,<span style="color:#666">
 </span><span style="color:#666">    </span>input: <span style="color:#6ab825">&amp;</span><span style="color:#bbb">&#39;a</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">str</span>,<span style="color:#666">
 </span><span style="color:#666">    </span>byte_offset: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
 </span><span style="color:#666">    </span>char_offset: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
 </span><span style="color:#666">    </span>position: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>It takes a <code>filter</code> which is the function the implementations set when the <code>CharTokenIter</code> is created. Naturally it also stores a reference to the original <code>input</code> since it needs to create the tokens from it. Finally three variables are used to keep internal state that we&rsquo;ll see getting populated in a second. <code>byte_offset</code> stores the absolute offset in bytes of the token term, the <code>char_offset</code> does the same but it only counts full characters. Finally the <code>position</code> stores the relative position of the tokens in the stream. If you wonder why we are handling characters and bytes separately, welcome to the world of <a href="https://en.wikipedia.org/wiki/Unicode">Unicode</a>.</p>
@@ -272,15 +267,14 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">impl</span>&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span>CharTokenIter&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">new</span>(filter: <span style="color:#447fcf">fn</span>(&amp;(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>char)))<span style="color:#666"> </span>-&gt; <span style="color:#6ab825;font-weight:bold">bool</span>,<span style="color:#666"> </span>input: <span style="color:#6ab825">&amp;</span><span style="color:#bbb">&#39;a</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">str</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf">Self</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">        </span>CharTokenIter<span style="color:#666"> </span>{<span style="color:#666"> </span>filter: <span style="color:#447fcf">filter</span>,<span style="color:#666"> </span>input: <span style="color:#447fcf">input</span>,<span style="color:#666"> </span>byte_offset: <span style="color:#3677a9">0</span>,<span style="color:#666"> </span>char_offset: <span style="color:#3677a9">0</span>,<span style="color:#666"> </span>position: <span style="color:#3677a9">0</span><span style="color:#666"> </span>}<span style="color:#666">
+</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">new</span>(filter: <span style="color:#447fcf;text-decoration:underline">fn</span>(&amp;(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>char)))<span style="color:#666"> </span>-&gt; <span style="color:#6ab825;font-weight:bold">bool</span>,<span style="color:#666"> </span>input: <span style="color:#6ab825">&amp;</span><span style="color:#bbb">&#39;a</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">str</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf;text-decoration:underline">Self</span><span style="color:#666"> </span>{<span style="color:#666">
+</span><span style="color:#666">        </span>CharTokenIter<span style="color:#666"> </span>{<span style="color:#666"> </span>filter: <span style="color:#447fcf;text-decoration:underline">filter</span>,<span style="color:#666"> </span>input: <span style="color:#447fcf;text-decoration:underline">input</span>,<span style="color:#666"> </span>byte_offset: <span style="color:#3677a9">0</span>,<span style="color:#666"> </span>char_offset: <span style="color:#3677a9">0</span>,<span style="color:#666"> </span>position: <span style="color:#3677a9">0</span><span style="color:#666"> </span>}<span style="color:#666">
 </span><span style="color:#666">    </span>}<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>Now, lets get to where the rubber meets the road. We need to implement the <code>Iterator</code> as specified in the contract, so our function looks like this:</p>
@@ -293,17 +287,16 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">8
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">impl</span>&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span><span style="color:#24909d">Iterator</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">for</span><span style="color:#666"> </span>CharTokenIter&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">type</span> <span style="color:#447fcf">Item</span><span style="color:#666"> </span>=<span style="color:#666"> </span>Token;<span style="color:#666">
+</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">type</span> <span style="color:#447fcf;text-decoration:underline">Item</span><span style="color:#666"> </span>=<span style="color:#666"> </span>Token;<span style="color:#666">
 </span><span style="color:#666">
 </span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">next</span>(&amp;<span style="color:#6ab825;font-weight:bold">mut</span><span style="color:#666"> </span>self)<span style="color:#666"> </span>-&gt; <span style="color:#24909d">Option</span>&lt;Token&gt;<span style="color:#666"> </span>{<span style="color:#666">
 </span><span style="color:#666">    	</span><span style="color:#999;font-style:italic">// ponies and fairy dust in here...
 </span><span style="color:#999;font-style:italic"></span><span style="color:#666">    </span>}<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>The rest of the code snippets that follow go inside the <code>next</code> function. If we want to satisfy the Iterator semantics, we need to emit a token every time the predicate provided by our <code>filter</code> matches:</p>
@@ -314,7 +307,6 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">for</span><span style="color:#666"> </span>(cidx,<span style="color:#666"> </span>(bidx,<span style="color:#666"> </span>c))<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">in</span><span style="color:#666"> </span>self.input[self.byte_offset..]<span style="color:#666">
@@ -322,7 +314,7 @@
 </span><span style="color:#666">            </span>.enumerate()<span style="color:#666">
 </span><span style="color:#666">            </span>.filter(&amp;self.filter)<span style="color:#666"> </span>{<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>We are slicing the input string starting at the current <code>byte_offset</code>, then use <code>char_indices()</code> on the iterator to also get the character index and then use <code>enumerate()</code> to get the byte index. Equipped with the actual character and all kinds of offsets, we apply our filter function and if allowed to pass through craft our token and emit it:</p>
@@ -334,7 +326,6 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">7
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>slice<span style="color:#666"> </span>=<span style="color:#666"> </span>&amp;self.input[self.byte_offset..self.byte_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>bidx<span style="color:#666"> </span>-<span style="color:#666"> </span>skipped_bytes];<span style="color:#666">
@@ -343,7 +334,7 @@
 </span><span style="color:#666"></span>self.position<span style="color:#666"> </span>+=<span style="color:#666"> </span><span style="color:#3677a9">1</span>;<span style="color:#666">
 </span><span style="color:#666"></span>self.byte_offset<span style="color:#666"> </span>=<span style="color:#666"> </span>self.byte_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>bidx<span style="color:#666"> </span>+<span style="color:#666"> </span>char_len<span style="color:#666"> </span>-<span style="color:#666"> </span>skipped_bytes;<span style="color:#666">
 </span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">return</span><span style="color:#666"> </span><span style="color:#24909d">Some</span>(token);<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>You can see that we are not only slicing out the token term but also adjusting the character and byte offsets properly. Now, what is this <code>skipped_bytes</code> variable about? We&rsquo;ll get to that in a second, but before that we need to cover another case: what happens if no split character is found or there are characters left after the last split character? To handle this, after our loop we need to handle the remainder:</p>
@@ -357,7 +348,6 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">7
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">8
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">9
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">if</span><span style="color:#666"> </span>self.byte_offset<span style="color:#666"> </span>&lt;<span style="color:#666"> </span>self.input.len()<span style="color:#666"> </span>{<span style="color:#666">
@@ -368,7 +358,7 @@
 </span><span style="color:#666"></span>}<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">else</span><span style="color:#666"> </span>{<span style="color:#666">
 </span><span style="color:#666">    </span><span style="color:#24909d">None</span><span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>If our byte offset is equal to the length of the input string we are done (signaled by returning <code>None</code> to the iterator consumer), but in the other case we need to slice out the remaining bytes and return them as a final token.</p>
@@ -404,7 +394,6 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">24
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">25
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">26
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">27
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#999;font-style:italic">// Temp variables to account skipping
@@ -433,7 +422,7 @@
 </span><span style="color:#666">        </span>self.byte_offset<span style="color:#666"> </span>=<span style="color:#666"> </span>self.byte_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>bidx<span style="color:#666"> </span>+<span style="color:#666"> </span>char_len<span style="color:#666"> </span>-<span style="color:#666"> </span>skipped_bytes;<span style="color:#666">
 </span><span style="color:#666">        </span><span style="color:#6ab825;font-weight:bold">return</span><span style="color:#666"> </span><span style="color:#24909d">Some</span>(token);<span style="color:#666">
 </span><span style="color:#666">    </span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>Here is the <code>next</code> function in its full glory:</p>
@@ -473,7 +462,6 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">32
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">33
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">34
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">35
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">next</span>(&amp;<span style="color:#6ab825;font-weight:bold">mut</span><span style="color:#666"> </span>self)<span style="color:#666"> </span>-&gt; <span style="color:#24909d">Option</span>&lt;Token&gt;<span style="color:#666"> </span>{<span style="color:#666">
@@ -510,7 +498,7 @@
 </span><span style="color:#666">        </span><span style="color:#24909d">None</span><span style="color:#666">
 </span><span style="color:#666">    </span>}<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>How would we implement a <code>Whitespace</code> tokenizer with this? One might be tempted to match against <code>' '</code>, but keep in mind that whitespace, when dealing with unicode, can be many more different characters so its best to not hardcode them in a gigantic match clause and instead use a built-in function.</p>
@@ -533,15 +521,14 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">13
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">14
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">15
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">16
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf">WhitespaceTokenizer</span>;<span style="color:#666">
+<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">WhitespaceTokenizer</span>;<span style="color:#666">
 </span><span style="color:#666">
 </span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">impl</span>&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span>Tokenizer&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">for</span><span style="color:#666"> </span>WhitespaceTokenizer<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">type</span> <span style="color:#447fcf">TokenIter</span><span style="color:#666"> </span>=<span style="color:#666"> </span>CharTokenIter&lt;<span style="color:#bbb">&#39;a</span>&gt;;<span style="color:#666">
+</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">type</span> <span style="color:#447fcf;text-decoration:underline">TokenIter</span><span style="color:#666"> </span>=<span style="color:#666"> </span>CharTokenIter&lt;<span style="color:#bbb">&#39;a</span>&gt;;<span style="color:#666">
 </span><span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">tokenize</span>(&amp;self,<span style="color:#666"> </span>input: <span style="color:#6ab825">&amp;</span><span style="color:#bbb">&#39;a</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">str</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf">Self</span>::TokenIter<span style="color:#666"> </span>{<span style="color:#666">
+</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">tokenize</span>(&amp;self,<span style="color:#666"> </span>input: <span style="color:#6ab825">&amp;</span><span style="color:#bbb">&#39;a</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">str</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf;text-decoration:underline">Self</span>::TokenIter<span style="color:#666"> </span>{<span style="color:#666">
 </span><span style="color:#666">        </span>CharTokenIter::new(is_whitespace,<span style="color:#666"> </span>input)<span style="color:#666">
 </span><span style="color:#666">    </span>}<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
@@ -551,7 +538,7 @@
 </span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>(_,<span style="color:#666"> </span>(_,<span style="color:#666"> </span>c))<span style="color:#666"> </span>=<span style="color:#666"> </span>*input;<span style="color:#666">
 </span><span style="color:#666">    </span>c.is_whitespace()<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>We initialize the <code>CharTokenIter</code> and in use the <a href="https://doc.rust-lang.org/std/primitive.char.html#method.is_whitespace">char::is_whitespace()</a> method to check for a unicode whitespace character. Using it is now pretty simple, consider this test case:</p>
@@ -563,7 +550,6 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">7
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#cd2828;font-weight:bold">#[test]</span><span style="color:#666">
@@ -572,7 +558,7 @@
 </span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>actually<span style="color:#666"> </span>=<span style="color:#666"> </span>WhitespaceTokenizer.tokenize(<span style="color:#ed9d13">&#34;hello world&#34;</span>).collect::&lt;<span style="color:#24909d">Vec</span>&lt;Token&gt;&gt;();<span style="color:#666">
 </span><span style="color:#666">    </span>assert_eq!(expected,<span style="color:#666"> </span>actually);<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>This implementation also works with all kinds of unicode characters that may have different byte lengths (and this is where our different tracking of character and byte offsets becomes important):</p>
@@ -584,7 +570,6 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">7
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#cd2828;font-weight:bold">#[test]</span><span style="color:#666">
@@ -593,7 +578,7 @@
 </span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>actually<span style="color:#666"> </span>=<span style="color:#666"> </span>WhitespaceTokenizer.tokenize(<span style="color:#ed9d13">&#34;abc界 abc界&#34;</span>).collect::&lt;<span style="color:#24909d">Vec</span>&lt;Token&gt;&gt;();<span style="color:#666">
 </span><span style="color:#666">    </span>assert_eq!(expected,<span style="color:#666"> </span>actually);<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>Before we move on to benchmarks, lets take a quick look at the corresponding <a href="https://github.com/blevesearch/bleve/blob/master/analysis/tokenizer/character/character.go">go implementation</a>.</p>
@@ -626,7 +611,6 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">13
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">14
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">15
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">16
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">static</span><span style="color:#666"> </span>INPUT: <span style="color:#6ab825">&amp;</span><span style="color:#24909d">&#39;static</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">str</span><span style="color:#666"> </span>=<span style="color:#666">
@@ -644,7 +628,7 @@
 </span><span style="color:#ed9d13">     In Rust 0.4, traits were added as a means to provide inheritance; In January 2014, the \
 </span><span style="color:#ed9d13">     editor-in-chief of Dr Dobb&#39;s, Andrew Binstock, commented on Rust&#39;s chances to become a \
 </span><span style="color:#ed9d13">     competitor to C++.&#34;</span>;<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>If we split on unicode whitespace, there are exactly 159 tokens.</p>
@@ -657,15 +641,14 @@
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
 </span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#cd2828;font-weight:bold">#[bench]</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">bench_whitespace_tokenizer</span>(b: <span style="color:#6ab825">&amp;</span><span style="color:#447fcf">mut</span><span style="color:#666"> </span>Bencher)<span style="color:#666"> </span>{<span style="color:#666">
+</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">bench_whitespace_tokenizer</span>(b: <span style="color:#6ab825">&amp;</span><span style="color:#447fcf;text-decoration:underline">mut</span><span style="color:#666"> </span>Bencher)<span style="color:#666"> </span>{<span style="color:#666">
 </span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>t<span style="color:#666"> </span>=<span style="color:#666"> </span>WhitespaceTokenizer;<span style="color:#666">
 </span><span style="color:#666">   </span>b.iter(||<span style="color:#666"> </span>t.tokenize(INPUT).last());<span style="color:#666">
 </span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666"></span></code></pre></td></tr></table>
+</span></code></pre></td></tr></table>
 </div>
 </div>
 <p>Running with <code>cargo +nightly bench</code> on my machine (a 2,5GHz i7, OSX, 16GB RAM), rust reports:</p>
@@ -720,13 +703,13 @@
 </span><span style="color:#ed9d13">     editor-in-chief of Dr Dobb&#39;s, Andrew Binstock, commented on Rust&#39;s chances to become a \
 </span><span style="color:#ed9d13">     competitor to C++.`</span>)
 
-<span style="color:#6ab825;font-weight:bold">func</span> BenchmarkTokenizeEnglishText(b *testing.B) {
+<span style="color:#6ab825;font-weight:bold">func</span> <span style="color:#447fcf">BenchmarkTokenizeEnglishText</span>(b *testing.B) {
 
-	tokenizer := character.NewCharacterTokenizer(notSpace)
-	b.ResetTimer()
+	tokenizer := character.<span style="color:#447fcf">NewCharacterTokenizer</span>(notSpace)
+	b.<span style="color:#447fcf">ResetTimer</span>()
 
 	<span style="color:#6ab825;font-weight:bold">for</span> i := <span style="color:#3677a9">0</span>; i &lt; b.N; i++ {
-		tokenizer.Tokenize(sampleLargeInput)
+		tokenizer.<span style="color:#447fcf">Tokenize</span>(sampleLargeInput)
 	}
 
 }</code></pre></td></tr></table>
@@ -752,7 +735,7 @@ around 7 million tokens per second or 41MB/s per core.</p>
     </div>
 
     <div id="disqus_thread"></div>
-<script>
+<script type="application/javascript">
     var disqus_config = function () {
     
     
