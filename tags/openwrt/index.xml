@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Openwrt on daschl writes. sometimes.</title>
+    <title>openwrt on daschl writes. sometimes.</title>
     <link>https://nitschinger.at/tags/openwrt/</link>
-    <description>Recent content in Openwrt on daschl writes. sometimes.</description>
+    <description>Recent content in openwrt on daschl writes. sometimes.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Mon, 02 Jan 2017 00:00:00 +0000</lastBuildDate>
@@ -17,7 +17,8 @@
       <pubDate>Mon, 02 Jan 2017 00:00:00 +0000</pubDate>
       
       <guid>https://nitschinger.at/Rust-on-the-Wifi-Pineapple-and-OpenWRT/</guid>
-      <description>Over the holidays I wanted to get a very simple Rust application running on my WiFi Pineapple Nano. Since I don&amp;rsquo;t have much experience with embedded systems and cross-compilation, it sounded like something fun to do and I was sure I might learn a thing or two. Many hours later and lots of frustration, I ended up with a simple solution that I&amp;rsquo;d like to share in this post.</description>
+      <description>Over the holidays I wanted to get a very simple Rust application running on my WiFi Pineapple Nano. Since I don&amp;rsquo;t have much experience with embedded systems and cross-compilation, it sounded like something fun to do and I was sure I might learn a thing or two. Many hours later and lots of frustration, I ended up with a simple solution that I&amp;rsquo;d like to share in this post.
+The major obstacle to overcome is building your own standard library, since Rust doesn&amp;rsquo;t ship with one for our target out of the box.</description>
     </item>
     
   </channel>

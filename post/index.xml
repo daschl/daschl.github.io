@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Posts on daschl writes. sometimes.</title>
@@ -6,10 +6,20 @@
     <description>Recent content in Posts on daschl writes. sometimes.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 01 Apr 2019 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 28 Sep 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="https://nitschinger.at/post/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Rusty-PID: Porting the TSic sensor from C to Rust</title>
+      <link>https://nitschinger.at/Rusty-PID-Porting-the-TSic-sensor-from-C-to-Rust/</link>
+      <pubDate>Mon, 28 Sep 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://nitschinger.at/Rusty-PID-Porting-the-TSic-sensor-from-C-to-Rust/</guid>
+      <description>This post is part of my &amp;ldquo;Rusty-PID&amp;rdquo; series, in which you can follow my adventure building a PID Controller for my Rancilio Silvia in Rust.
+In this blog post we&amp;rsquo;ll dive into how to read temperature measurements from the TSic sensor in Rust. It goes pretty deep into the implementation details and the porting process, so if you just want to use it go straight to the tsic-rs repository and don&amp;rsquo;t look back.</description>
+    </item>
     
     <item>
       <title>Reactive Barriers with Reactor</title>
@@ -28,7 +38,8 @@ Here is how the documentation describes it succinctly:
       <pubDate>Mon, 02 Jan 2017 00:00:00 +0000</pubDate>
       
       <guid>https://nitschinger.at/Rust-on-the-Wifi-Pineapple-and-OpenWRT/</guid>
-      <description>Over the holidays I wanted to get a very simple Rust application running on my WiFi Pineapple Nano. Since I don&amp;rsquo;t have much experience with embedded systems and cross-compilation, it sounded like something fun to do and I was sure I might learn a thing or two. Many hours later and lots of frustration, I ended up with a simple solution that I&amp;rsquo;d like to share in this post.</description>
+      <description>Over the holidays I wanted to get a very simple Rust application running on my WiFi Pineapple Nano. Since I don&amp;rsquo;t have much experience with embedded systems and cross-compilation, it sounded like something fun to do and I was sure I might learn a thing or two. Many hours later and lots of frustration, I ended up with a simple solution that I&amp;rsquo;d like to share in this post.
+The major obstacle to overcome is building your own standard library, since Rust doesn&amp;rsquo;t ship with one for our target out of the box.</description>
     </item>
     
     <item>
@@ -98,15 +109,6 @@ To get the best performance out of hour hardware, it is important to understand 
       <guid>https://nitschinger.at/Bootstrapping-from-DNS-SRV-records-in-Java/</guid>
       <description>I know this topic has a very narrow audience, but I hope that one or two people out there scratching their heads will benefit from it.
 Here&amp;rsquo;s the itch we&amp;rsquo;re trying to scratch: is there an easy way to determine hostnames for - let&amp;rsquo;s say - a database connection? There are many ways to do this, like hardcoding it, providing them through a properties file and so on. All this techniques (maybe aside from fetching it over the network from a central storage) require some modifications on the server once one of the hostnames changes.</description>
-    </item>
-    
-    <item>
-      <title>Using JMH for Java Microbenchmarking</title>
-      <link>https://nitschinger.at/Using-JMH-for-Java-Microbenchmarking/</link>
-      <pubDate>Fri, 22 Nov 2013 00:00:00 +0000</pubDate>
-      
-      <guid>https://nitschinger.at/Using-JMH-for-Java-Microbenchmarking/</guid>
-      <description>So before we dive in, let&amp;rsquo;s rule two things out. First, I&amp;rsquo;m not a JVM expert and second, microbenchmarking is hard. The bigger problem is that it isn&amp;rsquo;t only hard but also looks very easy if you start. You put your test code in a loop, use System.nanoTime or something similar to measure the total time of the run and divide it by the number of runs. Doing it that way, you could very well let your cat estimate the results (mine would do it for proper catnip).</description>
     </item>
     
   </channel>

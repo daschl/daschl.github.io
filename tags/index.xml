@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Tags on daschl writes. sometimes.</title>
@@ -6,98 +6,98 @@
     <description>Recent content in Tags on daschl writes. sometimes.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 28 Oct 2016 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 28 Sep 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="https://nitschinger.at/tags/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
-      <title>Analysis</title>
-      <link>https://nitschinger.at/tags/analysis/</link>
-      <pubDate>Fri, 28 Oct 2016 00:00:00 +0000</pubDate>
+      <title>embedded</title>
+      <link>https://nitschinger.at/tags/embedded/</link>
+      <pubDate>Mon, 28 Sep 2020 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/tags/analysis/</guid>
+      <guid>https://nitschinger.at/tags/embedded/</guid>
       <description></description>
     </item>
     
     <item>
-      <title>Assembler</title>
-      <link>https://nitschinger.at/tags/assembler/</link>
-      <pubDate>Mon, 24 Jun 2013 00:00:00 +0000</pubDate>
+      <title>nRF52840</title>
+      <link>https://nitschinger.at/tags/nRF52840/</link>
+      <pubDate>Mon, 28 Sep 2020 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/tags/assembler/</guid>
+      <guid>https://nitschinger.at/tags/nRF52840/</guid>
       <description></description>
     </item>
     
     <item>
-      <title>C</title>
-      <link>https://nitschinger.at/tags/c/</link>
-      <pubDate>Tue, 06 Aug 2013 00:00:00 +0000</pubDate>
+      <title>rust</title>
+      <link>https://nitschinger.at/tags/rust/</link>
+      <pubDate>Mon, 28 Sep 2020 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/tags/c/</guid>
+      <guid>https://nitschinger.at/tags/rust/</guid>
       <description></description>
     </item>
     
     <item>
-      <title>Cache</title>
-      <link>https://nitschinger.at/tags/cache/</link>
-      <pubDate>Wed, 30 Jan 2013 00:00:00 +0000</pubDate>
+      <title>rustypid</title>
+      <link>https://nitschinger.at/tags/rustypid/</link>
+      <pubDate>Mon, 28 Sep 2020 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/tags/cache/</guid>
+      <guid>https://nitschinger.at/tags/rustypid/</guid>
       <description></description>
     </item>
     
     <item>
-      <title>Community</title>
-      <link>https://nitschinger.at/tags/community/</link>
-      <pubDate>Wed, 22 Jun 2011 00:00:00 +0000</pubDate>
+      <title>tsic</title>
+      <link>https://nitschinger.at/tags/tsic/</link>
+      <pubDate>Mon, 28 Sep 2020 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/tags/community/</guid>
+      <guid>https://nitschinger.at/tags/tsic/</guid>
       <description></description>
     </item>
     
     <item>
-      <title>Composer</title>
-      <link>https://nitschinger.at/tags/composer/</link>
-      <pubDate>Mon, 23 Jan 2012 00:00:00 +0000</pubDate>
+      <title>java</title>
+      <link>https://nitschinger.at/tags/java/</link>
+      <pubDate>Mon, 01 Apr 2019 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/tags/composer/</guid>
+      <guid>https://nitschinger.at/tags/java/</guid>
       <description></description>
     </item>
     
     <item>
-      <title>Controller</title>
-      <link>https://nitschinger.at/tags/controller/</link>
-      <pubDate>Wed, 08 Jun 2011 00:00:00 +0000</pubDate>
+      <title>reactive</title>
+      <link>https://nitschinger.at/tags/reactive/</link>
+      <pubDate>Mon, 01 Apr 2019 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/tags/controller/</guid>
+      <guid>https://nitschinger.at/tags/reactive/</guid>
       <description></description>
     </item>
     
     <item>
-      <title>Cookies</title>
-      <link>https://nitschinger.at/tags/cookies/</link>
-      <pubDate>Fri, 20 Jan 2012 00:00:00 +0000</pubDate>
+      <title>reactor</title>
+      <link>https://nitschinger.at/tags/reactor/</link>
+      <pubDate>Mon, 01 Apr 2019 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/tags/cookies/</guid>
+      <guid>https://nitschinger.at/tags/reactor/</guid>
       <description></description>
     </item>
     
     <item>
-      <title>Core</title>
-      <link>https://nitschinger.at/tags/core/</link>
-      <pubDate>Sat, 09 Jul 2011 00:00:00 +0000</pubDate>
+      <title>openwrt</title>
+      <link>https://nitschinger.at/tags/openwrt/</link>
+      <pubDate>Mon, 02 Jan 2017 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/tags/core/</guid>
+      <guid>https://nitschinger.at/tags/openwrt/</guid>
       <description></description>
     </item>
     
     <item>
-      <title>Couchbase</title>
-      <link>https://nitschinger.at/tags/couchbase/</link>
-      <pubDate>Wed, 29 Jan 2014 00:00:00 +0000</pubDate>
+      <title>wifipineapple</title>
+      <link>https://nitschinger.at/tags/wifipineapple/</link>
+      <pubDate>Mon, 02 Jan 2017 00:00:00 +0000</pubDate>
       
-      <guid>https://nitschinger.at/tags/couchbase/</guid>
+      <guid>https://nitschinger.at/tags/wifipineapple/</guid>
       <description></description>
     </item>
     

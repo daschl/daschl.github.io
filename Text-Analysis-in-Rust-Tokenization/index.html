@@ -3,11 +3,10 @@
   <head>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.54.0" />
+<meta name="generator" content="Hugo 0.74.3" />
 
 
-<title>Text Analysis in Rust - Tokenization - daschl writes. sometimes.</title>
-<meta property="og:title" content="Text Analysis in Rust - Tokenization - daschl writes. sometimes.">
+<title>Text Analysis in Rust - Tokenization – daschl writes. sometimes.</title>
 
 
 
@@ -18,6 +17,28 @@
 
 
 
+<link href="/atom.xml" rel="alternate" type="application/atom+xml" title="daschl writes. sometimes." />
+
+<meta property="og:title" content="Text Analysis in Rust - Tokenization" />
+<meta property="og:description" content="This blog post shows you how to tokenize full text strings with rust efficiently." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://nitschinger.at/Text-Analysis-in-Rust-Tokenization/" />
+<meta property="article:published_time" content="2016-10-28T00:00:00+00:00" />
+<meta property="article:modified_time" content="2016-10-28T00:00:00+00:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Text Analysis in Rust - Tokenization"/>
+<meta name="twitter:description" content="This blog post shows you how to tokenize full text strings with rust efficiently."/>
+
+<meta itemprop="name" content="Text Analysis in Rust - Tokenization">
+<meta itemprop="description" content="This blog post shows you how to tokenize full text strings with rust efficiently.">
+<meta itemprop="datePublished" content="2016-10-28T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2016-10-28T00:00:00+00:00" />
+<meta itemprop="wordCount" content="3124">
+
+
+
+<meta itemprop="keywords" content="rust,text,indexing,analysis," />
 
 
 <link rel="stylesheet" href="https://nitschinger.at/css/main.css" media="all">
@@ -28,30 +49,27 @@
     <div class="wrapper">
       <header class="header">
         <nav class="nav">
-  <a href="https://nitschinger.at/" class="nav-title">
-    daschl blogs. sometimes.
+  <a href="https://nitschinger.at/" class="nav-logo">
+    <img src="https://nitschinger.at/images/"
+         width="" 
+         height="" 
+         alt="">
   </a>
+  <a href="https://nitschinger.at/" class="nav-title">daschl writes. sometimes.</a>
 
   <ul class="nav-links">
     
-    <li>
-      <a href="/tags">tags</a>
-    </li>
+    <li><a href="/tags">tags</a></li>
     
-    <li>
-      <a href="/imprint/">imprint</a>
-    </li>
+    <li><a href="/imprint/">imprint</a></li>
     
-    <li>
-      <a href="https://twitter.com/daschl">-&gt; twitter</a>
-    </li>
+    <li><a href="https://twitter.com/daschl">-&gt; twitter</a></li>
     
-    <li>
-      <a href="https://github.com/daschl">-&gt; github</a>
-    </li>
+    <li><a href="https://github.com/daschl">-&gt; github</a></li>
     
   </ul>
 </nav>
+
       </header>
 
 
@@ -59,710 +77,627 @@
   <article class="article">
     <h1 class="article-title">Text Analysis in Rust - Tokenization</h1>
     
-    <span class="article-date">2016-10-28</span>
+    <span class="article-date">28 October 2016</span>
     
 
     <div class="article-content">
-      
-
-<p>I work for <a href="http://www.couchbase.com/">Couchbase</a> where we are currently developing full text search capabilities based on <a href="http://blevesearch.com/">bleve</a>. Bleve is implemented in <a href="http://golang.org/">go</a> and inspired by <a href="http://lucene.apache.org/core/">Apache Lucene</a>, the reference implementation when it comes to full text search. While I am not directly involved in developing bleve I was curious about how it works internally and did take a look at the analyzers it provides.</p>
-
+      <p>I work for <a href="http://www.couchbase.com/">Couchbase</a> where we are currently developing full text search capabilities based on <a href="http://blevesearch.com/">bleve</a>. Bleve is implemented in <a href="http://golang.org/">go</a> and inspired by <a href="http://lucene.apache.org/core/">Apache Lucene</a>, the reference implementation when it comes to full text search. While I am not directly involved in developing bleve I was curious about how it works internally and did take a look at the analyzers it provides.</p>
 <p>Analyzers take your free form text and turn it into tokens which can then be used for indexing or queries. Since I know our team is currently at work doing performance optimizations in all places I wanted to take a stab at implementing similar analyzers in <a href="https://www.rust-lang.org/">Rust</a> and see how they perform in comparison.</p>
-
 <p>Analyzers typically consist of a tokenizer which slices a string into tokens and zero or more transformers which modify them subsequently (changing them, dropping them,&hellip;). A very common use case is to take some text, tokenize (&ldquo;split&rdquo;) it by whitespace and then afterwards lowercase all tokens. This blog post only covers tokenizers, but transformers are planned for another post.</p>
-
 <p>If you are only interested in how Rust is <strong>3 times as fast</strong> as the go equivalent in our microbenchmarks, check out the last section. If you are curious about the implementation details, read on.</p>
-
 <p>When I think about tokenizers and transformers the first thing that comes to mind in Rust are <a href="https://doc.rust-lang.org/book/iterators.html">Iterators</a>. If we let our tokenizer implement the <a href="https://doc.rust-lang.org/beta/std/iter/trait.Iterator.html">Iterator</a> trait we can make use of all the flexibility and high-level programming Rust provides without compromising performance.</p>
-
 <h2 id="tokenizers-and-tokens">Tokenizers and Tokens</h2>
-
 <p>So lets define our <code>Tokenizer</code> as a trait which emits an <code>Iterator</code> of <code>Tokens</code>:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rs" data-lang="rs"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">7
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rs" data-lang="rs"><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">trait</span><span style="color:#666"> </span>Tokenizer&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#ed9d13">/// A Tokenizer always needs to produce an Iterator of Tokens.
-</span><span style="color:#ed9d13"></span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">type</span> <span style="color:#447fcf;text-decoration:underline">TokenIter</span>: <span style="color:#24909d">Iterator</span>&lt;Item<span style="color:#666"> </span>=<span style="color:#666"> </span>Token&gt;;<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#ed9d13">/// Takes the input string and tokenizes it based on the implementations rules.
-</span><span style="color:#ed9d13"></span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">tokenize</span>(&amp;self,<span style="color:#666"> </span>input: <span style="color:#6ab825">&amp;</span><span style="color:#bbb">&#39;a</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">str</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf;text-decoration:underline">Self</span>::TokenIter;<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
-</div>
-</div>
-<p>Note: I can&rsquo;t wait for <a href="https://github.com/rust-lang/rust/issues/34511">impl Traits</a> to land when it also supports trait functions, then this would clean up the declarations even further.</p>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">trait</span> Tokenizer<span style="color:#f92672">&lt;</span><span style="color:#a6e22e">&#39;a</span><span style="color:#f92672">&gt;</span> {
+    <span style="color:#e6db74">/// A Tokenizer always needs to produce an Iterator of Tokens.
+</span><span style="color:#e6db74"></span>    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">TokenIter</span>: Iterator<span style="color:#f92672">&lt;</span>Item <span style="color:#f92672">=</span> Token<span style="color:#f92672">&gt;</span>;
 
+    <span style="color:#e6db74">/// Takes the input string and tokenizes it based on the implementations rules.
+</span><span style="color:#e6db74"></span>    <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">tokenize</span>(<span style="color:#f92672">&amp;</span>self, input: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">&#39;a</span> <span style="color:#66d9ef">str</span>) -&gt; <span style="color:#a6e22e">Self</span>::TokenIter;
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>Note: I can&rsquo;t wait for <a href="https://github.com/rust-lang/rust/issues/34511">impl Traits</a> to land when it also supports trait functions, then this would clean up the declarations even further.</p>
 <p>Lets take a first stab at the <code>Token</code>:</p>
-
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">Token</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span>term: <span style="color:#24909d">String</span>,<span style="color:#666">
-</span><span style="color:#666">    </span>start_offset: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
-</span><span style="color:#666">    </span>position: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">Token</span> {
+    term: String,
+    start_offset: <span style="color:#66d9ef">usize</span>,
+    position: <span style="color:#66d9ef">usize</span>,
+}
+</code></pre></td></tr></table>
 </div>
 </div>
-
 <p>The <code>Token</code> contains the <code>term</code> sliced by the tokenizer and also related metadata like its absolute start offset in bytes as well as the relative position of the token in the stream. We need this information down the road for indexing and querying.</p>
-
 <p>One problem with this approach is that the <code>String</code> implicitly performs a heap allocation, and when we are slicing hundreds or thousands of small tokens we are allocating lots of small chunks on the heap.</p>
-
 <p>The first idea to avoid this is using a <code>&amp;str</code> instead, but we potentially need to modify the term and then we are back at heap allocations (as an exercise for the reader or as a future blog post, using <a href="https://doc.rust-lang.org/std/borrow/enum.Cow.html">Cow</a> could also be an option). So, how can we make this more efficient?</p>
-
 <p>One thing I realized during experimentation and later researching on the web is that when you are tokenizing text you mostly end up with lots of small tokens which maybe are even filtered out in the next step of the process. It would be nice if could stack allocate those small terms and as a fallback perform heap allocation for the rest! It turns out we can do just that, and here is one way:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 8
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 9
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">10
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">11
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">12
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">const</span><span style="color:#666"> </span>MAX_STACK_TERM_LEN: <span style="color:#6ab825;font-weight:bold">usize</span> =<span style="color:#666"> </span><span style="color:#3677a9">15</span>;<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">enum</span> <span style="color:#447fcf;text-decoration:underline">Term</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span>Stack(ArrayString&lt;[<span style="color:#6ab825;font-weight:bold">u8</span>;<span style="color:#666"> </span>MAX_STACK_TERM_LEN]&gt;),<span style="color:#666">
-</span><span style="color:#666">    </span>Heap(<span style="color:#24909d">String</span>),<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">Token</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span>term: <span style="color:#447fcf;text-decoration:underline">Term</span>,<span style="color:#666">
-</span><span style="color:#666">    </span>start_offset: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
-</span><span style="color:#666">    </span>position: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
-</div>
-</div>
-<p>Woops, our <code>Token</code> just got a little more complex. Our term is now an <a href="https://doc.rust-lang.org/book/enums.html">Enum</a> which is either a stack allocated <a href="https://docs.rs/arrayvec/0.3.20/arrayvec/struct.ArrayString.html">ArrayString</a> or a heap allocated <a href="https://doc.rust-lang.org/std/string/struct.String.html">String</a>. Note that the <code>ArrayString</code> implementation comes from the <a href="https://crates.io/crates/arrayvec">arrayvec</a> crate and basically provides string functionality on top of a stack allocated array.</p>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">const</span> MAX_STACK_TERM_LEN: <span style="color:#66d9ef">usize</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">15</span>;
 
+<span style="color:#66d9ef">enum</span> <span style="color:#a6e22e">Term</span> {
+    Stack(ArrayString<span style="color:#f92672">&lt;</span>[<span style="color:#66d9ef">u8</span>; MAX_STACK_TERM_LEN]<span style="color:#f92672">&gt;</span>),
+    Heap(String),
+}
+
+<span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">Token</span> {
+    term: <span style="color:#a6e22e">Term</span>,
+    start_offset: <span style="color:#66d9ef">usize</span>,
+    position: <span style="color:#66d9ef">usize</span>,
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>Woops, our <code>Token</code> just got a little more complex. Our term is now an <a href="https://doc.rust-lang.org/book/enums.html">Enum</a> which is either a stack allocated <a href="https://docs.rs/arrayvec/0.3.20/arrayvec/struct.ArrayString.html">ArrayString</a> or a heap allocated <a href="https://doc.rust-lang.org/std/string/struct.String.html">String</a>. Note that the <code>ArrayString</code> implementation comes from the <a href="https://crates.io/crates/arrayvec">arrayvec</a> crate and basically provides string functionality on top of a stack allocated array.</p>
 <p>The nice thing about this is that we are not leaking this implementation detail to the caller, since we can always work with string slices on creation and access:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 8
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 9
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">10
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">11
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">12
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">13
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">14
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">15
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">16
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">17
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">18
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">19
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">20
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">21
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">22
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">23
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">24
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">25
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">26
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">27
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">impl</span><span style="color:#666"> </span>Token<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#cd2828;font-weight:bold">#[inline]</span><span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">from_str</span>(term: <span style="color:#6ab825">&amp;</span><span style="color:#6ab825;font-weight:bold">str</span>,<span style="color:#666"> </span>start_offset: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>position: <span style="color:#6ab825;font-weight:bold">usize</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf;text-decoration:underline">Self</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">        </span>Token<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">            </span>term: <span style="color:#447fcf;text-decoration:underline">Token</span>::convert_term(term),<span style="color:#666">
-</span><span style="color:#666">            </span>start_offset: <span style="color:#447fcf;text-decoration:underline">start_offset</span>,<span style="color:#666">
-</span><span style="color:#666">            </span>position: <span style="color:#447fcf;text-decoration:underline">position</span>,<span style="color:#666">
-</span><span style="color:#666">        </span>}<span style="color:#666">
-</span><span style="color:#666">    </span>}<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#cd2828;font-weight:bold">#[inline]</span><span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">convert_term</span>(term: <span style="color:#6ab825">&amp;</span><span style="color:#6ab825;font-weight:bold">str</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf;text-decoration:underline">Term</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">        </span><span style="color:#6ab825;font-weight:bold">if</span><span style="color:#666"> </span>term.len()<span style="color:#666"> </span>&lt;=<span style="color:#666"> </span>MAX_STACK_TERM_LEN<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">            </span>Term::Stack(ArrayString::&lt;[_;<span style="color:#666"> </span>MAX_STACK_TERM_LEN]&gt;::from(term).unwrap())<span style="color:#666">
-</span><span style="color:#666">        </span>}<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">else</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">            </span>Term::Heap(term.to_string())<span style="color:#666">
-</span><span style="color:#666">        </span>}<span style="color:#666">
-</span><span style="color:#666">    </span>}<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#cd2828;font-weight:bold">#[inline]</span><span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">term</span>(&amp;self)<span style="color:#666"> </span>-&gt; <span style="color:#6ab825">&amp;</span><span style="color:#6ab825;font-weight:bold">str</span> {<span style="color:#666">
-</span><span style="color:#666">        </span><span style="color:#6ab825;font-weight:bold">match</span><span style="color:#666"> </span>self.term<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">            </span>Term::Heap(<span style="color:#6ab825;font-weight:bold">ref</span><span style="color:#666"> </span>s)<span style="color:#666"> </span>=&gt;<span style="color:#666"> </span>s.as_ref(),<span style="color:#666">
-</span><span style="color:#666">            </span>Term::Stack(<span style="color:#6ab825;font-weight:bold">ref</span><span style="color:#666"> </span>s)<span style="color:#666"> </span>=&gt;<span style="color:#666"> </span>s.as_ref(),<span style="color:#666">
-</span><span style="color:#666">        </span>}<span style="color:#666">
-</span><span style="color:#666">    </span>}<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
-</div>
-</div>
-<p>At this point we&rsquo;ve departed from our go counterpart in two significant ways: we are using an iterator instead of <a href="https://github.com/blevesearch/bleve/blob/master/analysis/type.go#L61-L67">operating on a heap allocated array of tokens</a> and we are using stack allocations for small tokens instead of heap allocating a <a href="https://github.com/blevesearch/bleve/blob/master/analysis/type.go#L41">Token</a> and its term. I don&rsquo;t know if go is doing escape analysis and optimizations in this case, but based on the benchmarks (read on) I don&rsquo;t think so.</p>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">impl</span> Token {
+    <span style="color:#75715e">#[inline]</span>
+    <span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">from_str</span>(term: <span style="color:#66d9ef">&amp;</span><span style="color:#66d9ef">str</span>, start_offset: <span style="color:#66d9ef">usize</span>, position: <span style="color:#66d9ef">usize</span>) -&gt; <span style="color:#a6e22e">Self</span> {
+        Token {
+            term: <span style="color:#a6e22e">Token</span>::convert_term(term),
+            start_offset: <span style="color:#a6e22e">start_offset</span>,
+            position: <span style="color:#a6e22e">position</span>,
+        }
+    }
 
+    <span style="color:#75715e">#[inline]</span>
+    <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">convert_term</span>(term: <span style="color:#66d9ef">&amp;</span><span style="color:#66d9ef">str</span>) -&gt; <span style="color:#a6e22e">Term</span> {
+        <span style="color:#66d9ef">if</span> term.len() <span style="color:#f92672">&lt;=</span> MAX_STACK_TERM_LEN {
+            Term::Stack(ArrayString::<span style="color:#f92672">&lt;</span>[_; MAX_STACK_TERM_LEN]<span style="color:#f92672">&gt;</span>::from(term).unwrap())
+        } <span style="color:#66d9ef">else</span> {
+            Term::Heap(term.to_string())
+        }
+    }
+
+    <span style="color:#75715e">#[inline]</span>
+    <span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">term</span>(<span style="color:#f92672">&amp;</span>self) -&gt; <span style="color:#66d9ef">&amp;</span><span style="color:#66d9ef">str</span> {
+        <span style="color:#66d9ef">match</span> self.term {
+            Term::Heap(<span style="color:#66d9ef">ref</span> s) <span style="color:#f92672">=&gt;</span> s.as_ref(),
+            Term::Stack(<span style="color:#66d9ef">ref</span> s) <span style="color:#f92672">=&gt;</span> s.as_ref(),
+        }
+    }
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>At this point we&rsquo;ve departed from our go counterpart in two significant ways: we are using an iterator instead of <a href="https://github.com/blevesearch/bleve/blob/master/analysis/type.go#L61-L67">operating on a heap allocated array of tokens</a> and we are using stack allocations for small tokens instead of heap allocating a <a href="https://github.com/blevesearch/bleve/blob/master/analysis/type.go#L41">Token</a> and its term. I don&rsquo;t know if go is doing escape analysis and optimizations in this case, but based on the benchmarks (read on) I don&rsquo;t think so.</p>
 <p>You might wonder why I selected a stack term length of 15 as the point where we start to do heap allocations. There is no fancy math behind it, I just tried tokenizing all kinds of text snippets and found this to be the sweet spot. Try it out for yourself, you&rsquo;ll see that when you are increasing the size by a larger number the whole tokenization gets slower since rust needs to move those huge chunks around on the stack. Oh, and I did pick 15 and not 16 since the <code>ArrayString</code> needs one byte for internal storage. If you get different numbers I&rsquo;d love to read about it in the comments!</p>
-
 <p>With all that in place, lets go work on some tokenizers.</p>
-
-<h2 id="the-whitespace-character-tokenizers">The Whitespace &amp; Character Tokenizers</h2>
-
+<h2 id="the-whitespace--character-tokenizers">The Whitespace &amp; Character Tokenizers</h2>
 <p>A common case in text analysis is splitting on whitespace, but thinking about more generally we probably want to split on all kinds of characters. So lets implement a character tokenizer which takes a function that takes the character as input and decides if it should split or not.</p>
-
 <p>A quick warning: from here on it gets a bit more complex, so if you just came here for the benchmarks and you don&rsquo;t care about the actual implementation you can safely skip to the next section.</p>
-
 <p>Here is our <code>CharTokenIter</code> struct:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">7
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">CharTokenIter</span>&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span>filter: <span style="color:#447fcf;text-decoration:underline">fn</span>(&amp;(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>char)))<span style="color:#666"> </span>-&gt; <span style="color:#6ab825;font-weight:bold">bool</span>,<span style="color:#666">
-</span><span style="color:#666">    </span>input: <span style="color:#6ab825">&amp;</span><span style="color:#bbb">&#39;a</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">str</span>,<span style="color:#666">
-</span><span style="color:#666">    </span>byte_offset: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
-</span><span style="color:#666">    </span>char_offset: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
-</span><span style="color:#666">    </span>position: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">CharTokenIter</span><span style="color:#f92672">&lt;</span><span style="color:#a6e22e">&#39;a</span><span style="color:#f92672">&gt;</span> {
+    filter: <span style="color:#a6e22e">fn</span>(<span style="color:#f92672">&amp;</span>(<span style="color:#66d9ef">usize</span>, (<span style="color:#66d9ef">usize</span>, char))) -&gt; <span style="color:#66d9ef">bool</span>,
+    input: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">&#39;a</span> <span style="color:#66d9ef">str</span>,
+    byte_offset: <span style="color:#66d9ef">usize</span>,
+    char_offset: <span style="color:#66d9ef">usize</span>,
+    position: <span style="color:#66d9ef">usize</span>,
+}
+</code></pre></td></tr></table>
 </div>
-</div>
-<p>It takes a <code>filter</code> which is the function the implementations set when the <code>CharTokenIter</code> is created. Naturally it also stores a reference to the original <code>input</code> since it needs to create the tokens from it. Finally three variables are used to keep internal state that we&rsquo;ll see getting populated in a second. <code>byte_offset</code> stores the absolute offset in bytes of the token term, the <code>char_offset</code> does the same but it only counts full characters. Finally the <code>position</code> stores the relative position of the tokens in the stream. If you wonder why we are handling characters and bytes separately, welcome to the world of <a href="https://en.wikipedia.org/wiki/Unicode">Unicode</a>.</p>
-
+</div><p>It takes a <code>filter</code> which is the function the implementations set when the <code>CharTokenIter</code> is created. Naturally it also stores a reference to the original <code>input</code> since it needs to create the tokens from it. Finally three variables are used to keep internal state that we&rsquo;ll see getting populated in a second. <code>byte_offset</code> stores the absolute offset in bytes of the token term, the <code>char_offset</code> does the same but it only counts full characters. Finally the <code>position</code> stores the relative position of the tokens in the stream. If you wonder why we are handling characters and bytes separately, welcome to the world of <a href="https://en.wikipedia.org/wiki/Unicode">Unicode</a>.</p>
 <p>We can make creating our iterator a bit nicer:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">impl</span>&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span>CharTokenIter&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">new</span>(filter: <span style="color:#447fcf;text-decoration:underline">fn</span>(&amp;(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>char)))<span style="color:#666"> </span>-&gt; <span style="color:#6ab825;font-weight:bold">bool</span>,<span style="color:#666"> </span>input: <span style="color:#6ab825">&amp;</span><span style="color:#bbb">&#39;a</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">str</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf;text-decoration:underline">Self</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">        </span>CharTokenIter<span style="color:#666"> </span>{<span style="color:#666"> </span>filter: <span style="color:#447fcf;text-decoration:underline">filter</span>,<span style="color:#666"> </span>input: <span style="color:#447fcf;text-decoration:underline">input</span>,<span style="color:#666"> </span>byte_offset: <span style="color:#3677a9">0</span>,<span style="color:#666"> </span>char_offset: <span style="color:#3677a9">0</span>,<span style="color:#666"> </span>position: <span style="color:#3677a9">0</span><span style="color:#666"> </span>}<span style="color:#666">
-</span><span style="color:#666">    </span>}<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">impl</span><span style="color:#f92672">&lt;</span><span style="color:#a6e22e">&#39;a</span><span style="color:#f92672">&gt;</span> CharTokenIter<span style="color:#f92672">&lt;</span><span style="color:#a6e22e">&#39;a</span><span style="color:#f92672">&gt;</span> {
+    <span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">new</span>(filter: <span style="color:#a6e22e">fn</span>(<span style="color:#f92672">&amp;</span>(<span style="color:#66d9ef">usize</span>, (<span style="color:#66d9ef">usize</span>, char))) -&gt; <span style="color:#66d9ef">bool</span>, input: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">&#39;a</span> <span style="color:#66d9ef">str</span>) -&gt; <span style="color:#a6e22e">Self</span> {
+        CharTokenIter { filter: <span style="color:#a6e22e">filter</span>, input: <span style="color:#a6e22e">input</span>, byte_offset: <span style="color:#ae81ff">0</span>, char_offset: <span style="color:#ae81ff">0</span>, position: <span style="color:#ae81ff">0</span> }
+    }
+}
+</code></pre></td></tr></table>
 </div>
-</div>
-<p>Now, lets get to where the rubber meets the road. We need to implement the <code>Iterator</code> as specified in the contract, so our function looks like this:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+</div><p>Now, lets get to where the rubber meets the road. We need to implement the <code>Iterator</code> as specified in the contract, so our function looks like this:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">7
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">impl</span>&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span><span style="color:#24909d">Iterator</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">for</span><span style="color:#666"> </span>CharTokenIter&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">type</span> <span style="color:#447fcf;text-decoration:underline">Item</span><span style="color:#666"> </span>=<span style="color:#666"> </span>Token;<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">next</span>(&amp;<span style="color:#6ab825;font-weight:bold">mut</span><span style="color:#666"> </span>self)<span style="color:#666"> </span>-&gt; <span style="color:#24909d">Option</span>&lt;Token&gt;<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    	</span><span style="color:#999;font-style:italic">// ponies and fairy dust in here...
-</span><span style="color:#999;font-style:italic"></span><span style="color:#666">    </span>}<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
-</div>
-</div>
-<p>The rest of the code snippets that follow go inside the <code>next</code> function. If we want to satisfy the Iterator semantics, we need to emit a token every time the predicate provided by our <code>filter</code> matches:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
-<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">for</span><span style="color:#666"> </span>(cidx,<span style="color:#666"> </span>(bidx,<span style="color:#666"> </span>c))<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">in</span><span style="color:#666"> </span>self.input[self.byte_offset..]<span style="color:#666">
-</span><span style="color:#666">            </span>.char_indices()<span style="color:#666">
-</span><span style="color:#666">            </span>.enumerate()<span style="color:#666">
-</span><span style="color:#666">            </span>.filter(&amp;self.filter)<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
-</div>
-</div>
-<p>We are slicing the input string starting at the current <code>byte_offset</code>, then use <code>char_indices()</code> on the iterator to also get the character index and then use <code>enumerate()</code> to get the byte index. Equipped with the actual character and all kinds of offsets, we apply our filter function and if allowed to pass through craft our token and emit it:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
-<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
-</span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>slice<span style="color:#666"> </span>=<span style="color:#666"> </span>&amp;self.input[self.byte_offset..self.byte_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>bidx<span style="color:#666"> </span>-<span style="color:#666"> </span>skipped_bytes];<span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>token<span style="color:#666"> </span>=<span style="color:#666"> </span>Token::from_str(slice,<span style="color:#666"> </span>self.char_offset,<span style="color:#666"> </span>self.position);<span style="color:#666">
-</span><span style="color:#666"></span>self.char_offset<span style="color:#666"> </span>=<span style="color:#666"> </span>self.char_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>slice.chars().count()<span style="color:#666"> </span>+<span style="color:#666"> </span><span style="color:#3677a9">1</span>;<span style="color:#666">
-</span><span style="color:#666"></span>self.position<span style="color:#666"> </span>+=<span style="color:#666"> </span><span style="color:#3677a9">1</span>;<span style="color:#666">
-</span><span style="color:#666"></span>self.byte_offset<span style="color:#666"> </span>=<span style="color:#666"> </span>self.byte_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>bidx<span style="color:#666"> </span>+<span style="color:#666"> </span>char_len<span style="color:#666"> </span>-<span style="color:#666"> </span>skipped_bytes;<span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">return</span><span style="color:#666"> </span><span style="color:#24909d">Some</span>(token);<span style="color:#666">
-</span></code></pre></td></tr></table>
-</div>
-</div>
-<p>You can see that we are not only slicing out the token term but also adjusting the character and byte offsets properly. Now, what is this <code>skipped_bytes</code> variable about? We&rsquo;ll get to that in a second, but before that we need to cover another case: what happens if no split character is found or there are characters left after the last split character? To handle this, after our loop we need to handle the remainder:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
-<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">8
-</span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">if</span><span style="color:#666"> </span>self.byte_offset<span style="color:#666"> </span>&lt;<span style="color:#666"> </span>self.input.len()<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>slice<span style="color:#666"> </span>=<span style="color:#666"> </span>&amp;self.input[self.byte_offset..];<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>token<span style="color:#666"> </span>=<span style="color:#666"> </span>Token::from_str(slice,<span style="color:#666"> </span>self.char_offset,<span style="color:#666"> </span>self.position);<span style="color:#666">
-</span><span style="color:#666">    </span>self.byte_offset<span style="color:#666"> </span>=<span style="color:#666"> </span>self.input.len();<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#24909d">Some</span>(token)<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">else</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#24909d">None</span><span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
-</div>
-</div>
-<p>If our byte offset is equal to the length of the input string we are done (signaled by returning <code>None</code> to the iterator consumer), but in the other case we need to slice out the remaining bytes and return them as a final token.</p>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">impl</span><span style="color:#f92672">&lt;</span><span style="color:#a6e22e">&#39;a</span><span style="color:#f92672">&gt;</span> Iterator <span style="color:#66d9ef">for</span> CharTokenIter<span style="color:#f92672">&lt;</span><span style="color:#a6e22e">&#39;a</span><span style="color:#f92672">&gt;</span> {
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Item</span> <span style="color:#f92672">=</span> Token;
 
+    <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">next</span>(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> self) -&gt; Option<span style="color:#f92672">&lt;</span>Token<span style="color:#f92672">&gt;</span> {
+    	<span style="color:#75715e">// ponies and fairy dust in here...
+</span><span style="color:#75715e"></span>    }
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>The rest of the code snippets that follow go inside the <code>next</code> function. If we want to satisfy the Iterator semantics, we need to emit a token every time the predicate provided by our <code>filter</code> matches:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"> <span style="color:#66d9ef">for</span> (cidx, (bidx, c)) <span style="color:#66d9ef">in</span> self.input[self.byte_offset..]
+            .char_indices()
+            .enumerate()
+            .filter(<span style="color:#f92672">&amp;</span>self.filter) {
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>We are slicing the input string starting at the current <code>byte_offset</code>, then use <code>char_indices()</code> on the iterator to also get the character index and then use <code>enumerate()</code> to get the byte index. Equipped with the actual character and all kinds of offsets, we apply our filter function and if allowed to pass through craft our token and emit it:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">let</span> slice <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>self.input[self.byte_offset..self.byte_offset <span style="color:#f92672">+</span> bidx <span style="color:#f92672">-</span> skipped_bytes];
+<span style="color:#66d9ef">let</span> token <span style="color:#f92672">=</span> Token::from_str(slice, self.char_offset, self.position);
+self.char_offset <span style="color:#f92672">=</span> self.char_offset <span style="color:#f92672">+</span> slice.chars().count() <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>;
+self.position <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>;
+self.byte_offset <span style="color:#f92672">=</span> self.byte_offset <span style="color:#f92672">+</span> bidx <span style="color:#f92672">+</span> char_len <span style="color:#f92672">-</span> skipped_bytes;
+<span style="color:#66d9ef">return</span> Some(token);
+</code></pre></td></tr></table>
+</div>
+</div><p>You can see that we are not only slicing out the token term but also adjusting the character and byte offsets properly. Now, what is this <code>skipped_bytes</code> variable about? We&rsquo;ll get to that in a second, but before that we need to cover another case: what happens if no split character is found or there are characters left after the last split character? To handle this, after our loop we need to handle the remainder:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">if</span> self.byte_offset <span style="color:#f92672">&lt;</span> self.input.len() {
+    <span style="color:#66d9ef">let</span> slice <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>self.input[self.byte_offset..];
+    <span style="color:#66d9ef">let</span> token <span style="color:#f92672">=</span> Token::from_str(slice, self.char_offset, self.position);
+    self.byte_offset <span style="color:#f92672">=</span> self.input.len();
+    Some(token)
+} <span style="color:#66d9ef">else</span> {
+    None
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>If our byte offset is equal to the length of the input string we are done (signaled by returning <code>None</code> to the iterator consumer), but in the other case we need to slice out the remaining bytes and return them as a final token.</p>
 <p>Now that we&rsquo;ve covered this lets get back to the <code>skipped_bytes</code> thing from before.</p>
-
-<p>We need to handle one more case: it can happen that more than one filter characters appear right after one another or at the very beginning of the text. Consider splitting on whitespace and the input looks like <code>hello \t\n world!</code>. You want two tokens <code>hello</code> and <code>world!</code> and all the other whitespace should be consumed (accounted for in the byte offset, but not emitted inside an actual token term). To handle this case we keep track of the characters inside our for loop before emitting the token:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<p>We need to handle one more case: it can happen that more than one filter characters appear right after one another or at the very beginning of the text. Consider splitting on whitespace and the input looks like <code> hello \t\n world! </code>. You want two tokens <code>hello</code> and <code>world!</code> and all the other whitespace should be consumed (accounted for in the byte offset, but not emitted inside an actual token term). To handle this case we keep track of the characters inside our for loop before emitting the token:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 8
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 9
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">10
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">11
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">12
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">13
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">14
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">15
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">16
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">17
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">18
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">19
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">20
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">21
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">22
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">23
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">24
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">25
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">26
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#999;font-style:italic">// Temp variables to account skipping
-</span><span style="color:#999;font-style:italic"></span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">mut</span><span style="color:#666"> </span>skipped_bytes<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#3677a9">0</span>;<span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">mut</span><span style="color:#666"> </span>skipped_chars<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#3677a9">0</span>;<span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">for</span><span style="color:#666"> </span>(cidx,<span style="color:#666"> </span>(bidx,<span style="color:#666"> </span>c))<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">in</span><span style="color:#666"> </span>self.input[self.byte_offset..]<span style="color:#666">
-</span><span style="color:#666">    </span>.char_indices()<span style="color:#666">
-</span><span style="color:#666">    </span>.enumerate()<span style="color:#666">
-</span><span style="color:#666">    </span>.filter(&amp;self.filter)<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">        </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>char_len<span style="color:#666"> </span>=<span style="color:#666"> </span>c.len_utf8();<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666">        </span><span style="color:#999;font-style:italic">// Check and skip chars if needed
-</span><span style="color:#999;font-style:italic"></span><span style="color:#666">        </span><span style="color:#6ab825;font-weight:bold">if</span><span style="color:#666"> </span>cidx<span style="color:#666"> </span>-<span style="color:#666"> </span>skipped_chars<span style="color:#666"> </span>==<span style="color:#666"> </span><span style="color:#3677a9">0</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">            </span>self.byte_offset<span style="color:#666"> </span>=<span style="color:#666"> </span>self.byte_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>char_len;<span style="color:#666">
-</span><span style="color:#666">            </span>self.char_offset<span style="color:#666"> </span>+=<span style="color:#666"> </span><span style="color:#3677a9">1</span>;<span style="color:#666">
-</span><span style="color:#666">            </span>skipped_bytes<span style="color:#666"> </span>=<span style="color:#666"> </span>skipped_bytes<span style="color:#666"> </span>+<span style="color:#666"> </span>char_len;<span style="color:#666">
-</span><span style="color:#666">            </span>skipped_chars<span style="color:#666"> </span>+=<span style="color:#666"> </span><span style="color:#3677a9">1</span>;<span style="color:#666">
-</span><span style="color:#666">            </span><span style="color:#6ab825;font-weight:bold">continue</span>;<span style="color:#666">
-</span><span style="color:#666">        </span>}<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666">        </span><span style="color:#999;font-style:italic">// Same as before down here
-</span><span style="color:#999;font-style:italic"></span><span style="color:#666">        </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>slice<span style="color:#666"> </span>=<span style="color:#666"> </span>&amp;self.input[self.byte_offset..self.byte_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>bidx<span style="color:#666"> </span>-<span style="color:#666"> </span>skipped_bytes];<span style="color:#666">
-</span><span style="color:#666">        </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>token<span style="color:#666"> </span>=<span style="color:#666"> </span>Token::from_str(slice,<span style="color:#666"> </span>self.char_offset,<span style="color:#666"> </span>self.position);<span style="color:#666">
-</span><span style="color:#666">        </span>self.char_offset<span style="color:#666"> </span>=<span style="color:#666"> </span>self.char_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>slice.chars().count()<span style="color:#666"> </span>+<span style="color:#666"> </span><span style="color:#3677a9">1</span>;<span style="color:#666">
-</span><span style="color:#666">        </span>self.position<span style="color:#666"> </span>+=<span style="color:#666"> </span><span style="color:#3677a9">1</span>;<span style="color:#666">
-</span><span style="color:#666">        </span>self.byte_offset<span style="color:#666"> </span>=<span style="color:#666"> </span>self.byte_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>bidx<span style="color:#666"> </span>+<span style="color:#666"> </span>char_len<span style="color:#666"> </span>-<span style="color:#666"> </span>skipped_bytes;<span style="color:#666">
-</span><span style="color:#666">        </span><span style="color:#6ab825;font-weight:bold">return</span><span style="color:#666"> </span><span style="color:#24909d">Some</span>(token);<span style="color:#666">
-</span><span style="color:#666">    </span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
-</div>
-</div>
-<p>Here is the <code>next</code> function in its full glory:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
-<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 8
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 9
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">10
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">11
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">12
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">13
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">14
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">15
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">16
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">17
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">18
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">19
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">20
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">21
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">22
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">23
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">24
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">25
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">26
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">27
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">28
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">29
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">30
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">31
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">32
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">33
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">34
-</span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">next</span>(&amp;<span style="color:#6ab825;font-weight:bold">mut</span><span style="color:#666"> </span>self)<span style="color:#666"> </span>-&gt; <span style="color:#24909d">Option</span>&lt;Token&gt;<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">mut</span><span style="color:#666"> </span>skipped_bytes<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#3677a9">0</span>;<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">mut</span><span style="color:#666"> </span>skipped_chars<span style="color:#666"> </span>=<span style="color:#666"> </span><span style="color:#3677a9">0</span>;<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">for</span><span style="color:#666"> </span>(cidx,<span style="color:#666"> </span>(bidx,<span style="color:#666"> </span>c))<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">in</span><span style="color:#666"> </span>self.input[self.byte_offset..]<span style="color:#666">
-</span><span style="color:#666">        </span>.char_indices()<span style="color:#666">
-</span><span style="color:#666">        </span>.enumerate()<span style="color:#666">
-</span><span style="color:#666">        </span>.filter(&amp;self.filter)<span style="color:#666">
-</span><span style="color:#666">        </span>{<span style="color:#666">
-</span><span style="color:#666">            </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>char_len<span style="color:#666"> </span>=<span style="color:#666"> </span>c.len_utf8();<span style="color:#666">
-</span><span style="color:#666">            </span><span style="color:#6ab825;font-weight:bold">if</span><span style="color:#666"> </span>cidx<span style="color:#666"> </span>-<span style="color:#666"> </span>skipped_chars<span style="color:#666"> </span>==<span style="color:#666"> </span><span style="color:#3677a9">0</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">                </span>self.byte_offset<span style="color:#666"> </span>=<span style="color:#666"> </span>self.byte_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>char_len;<span style="color:#666">
-</span><span style="color:#666">                </span>self.char_offset<span style="color:#666"> </span>+=<span style="color:#666"> </span><span style="color:#3677a9">1</span>;<span style="color:#666">
-</span><span style="color:#666">                </span>skipped_bytes<span style="color:#666"> </span>=<span style="color:#666"> </span>skipped_bytes<span style="color:#666"> </span>+<span style="color:#666"> </span>char_len;<span style="color:#666">
-</span><span style="color:#666">                </span>skipped_chars<span style="color:#666"> </span>+=<span style="color:#666"> </span><span style="color:#3677a9">1</span>;<span style="color:#666">
-</span><span style="color:#666">                </span><span style="color:#6ab825;font-weight:bold">continue</span>;<span style="color:#666">
-</span><span style="color:#666">            </span>}<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666">            </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>slice<span style="color:#666"> </span>=<span style="color:#666"> </span>&amp;self.input[self.byte_offset..self.byte_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>bidx<span style="color:#666"> </span>-<span style="color:#666"> </span>skipped_bytes];<span style="color:#666">
-</span><span style="color:#666">            </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>token<span style="color:#666"> </span>=<span style="color:#666"> </span>Token::from_str(slice,<span style="color:#666"> </span>self.char_offset,<span style="color:#666"> </span>self.position);<span style="color:#666">
-</span><span style="color:#666">            </span>self.char_offset<span style="color:#666"> </span>=<span style="color:#666"> </span>self.char_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>slice.chars().count()<span style="color:#666"> </span>+<span style="color:#666"> </span><span style="color:#3677a9">1</span>;<span style="color:#666">
-</span><span style="color:#666">            </span>self.position<span style="color:#666"> </span>+=<span style="color:#666"> </span><span style="color:#3677a9">1</span>;<span style="color:#666">
-</span><span style="color:#666">            </span>self.byte_offset<span style="color:#666"> </span>=<span style="color:#666"> </span>self.byte_offset<span style="color:#666"> </span>+<span style="color:#666"> </span>bidx<span style="color:#666"> </span>+<span style="color:#666"> </span>char_len<span style="color:#666"> </span>-<span style="color:#666"> </span>skipped_bytes;<span style="color:#666">
-</span><span style="color:#666">            </span><span style="color:#6ab825;font-weight:bold">return</span><span style="color:#666"> </span><span style="color:#24909d">Some</span>(token);<span style="color:#666">
-</span><span style="color:#666">        </span>}<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">if</span><span style="color:#666"> </span>self.byte_offset<span style="color:#666"> </span>&lt;<span style="color:#666"> </span>self.input.len()<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">        </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>slice<span style="color:#666"> </span>=<span style="color:#666"> </span>&amp;self.input[self.byte_offset..];<span style="color:#666">
-</span><span style="color:#666">        </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>token<span style="color:#666"> </span>=<span style="color:#666"> </span>Token::from_str(slice,<span style="color:#666"> </span>self.char_offset,<span style="color:#666"> </span>self.position);<span style="color:#666">
-</span><span style="color:#666">        </span>self.byte_offset<span style="color:#666"> </span>=<span style="color:#666"> </span>self.input.len();<span style="color:#666">
-</span><span style="color:#666">        </span><span style="color:#24909d">Some</span>(token)<span style="color:#666">
-</span><span style="color:#666">    </span>}<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">else</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">        </span><span style="color:#24909d">None</span><span style="color:#666">
-</span><span style="color:#666">    </span>}<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
-</div>
-</div>
-<p>How would we implement a <code>Whitespace</code> tokenizer with this? One might be tempted to match against <code>' '</code>, but keep in mind that whitespace, when dealing with unicode, can be many more different characters so its best to not hardcode them in a gigantic match clause and instead use a built-in function.</p>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#75715e">// Temp variables to account skipping
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> skipped_bytes <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+<span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> skipped_chars <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+<span style="color:#66d9ef">for</span> (cidx, (bidx, c)) <span style="color:#66d9ef">in</span> self.input[self.byte_offset..]
+    .char_indices()
+    .enumerate()
+    .filter(<span style="color:#f92672">&amp;</span>self.filter) {
+        <span style="color:#66d9ef">let</span> char_len <span style="color:#f92672">=</span> c.len_utf8();
 
+        <span style="color:#75715e">// Check and skip chars if needed
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> cidx <span style="color:#f92672">-</span> skipped_chars <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> {
+            self.byte_offset <span style="color:#f92672">=</span> self.byte_offset <span style="color:#f92672">+</span> char_len;
+            self.char_offset <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>;
+            skipped_bytes <span style="color:#f92672">=</span> skipped_bytes <span style="color:#f92672">+</span> char_len;
+            skipped_chars <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>;
+            <span style="color:#66d9ef">continue</span>;
+        }
+
+        <span style="color:#75715e">// Same as before down here
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">let</span> slice <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>self.input[self.byte_offset..self.byte_offset <span style="color:#f92672">+</span> bidx <span style="color:#f92672">-</span> skipped_bytes];
+        <span style="color:#66d9ef">let</span> token <span style="color:#f92672">=</span> Token::from_str(slice, self.char_offset, self.position);
+        self.char_offset <span style="color:#f92672">=</span> self.char_offset <span style="color:#f92672">+</span> slice.chars().count() <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>;
+        self.position <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>;
+        self.byte_offset <span style="color:#f92672">=</span> self.byte_offset <span style="color:#f92672">+</span> bidx <span style="color:#f92672">+</span> char_len <span style="color:#f92672">-</span> skipped_bytes;
+        <span style="color:#66d9ef">return</span> Some(token);
+    }
+</code></pre></td></tr></table>
+</div>
+</div><p>Here is the <code>next</code> function in its full glory:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">next</span>(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> self) -&gt; Option<span style="color:#f92672">&lt;</span>Token<span style="color:#f92672">&gt;</span> {
+    <span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> skipped_bytes <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+    <span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> skipped_chars <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+    <span style="color:#66d9ef">for</span> (cidx, (bidx, c)) <span style="color:#66d9ef">in</span> self.input[self.byte_offset..]
+        .char_indices()
+        .enumerate()
+        .filter(<span style="color:#f92672">&amp;</span>self.filter)
+        {
+            <span style="color:#66d9ef">let</span> char_len <span style="color:#f92672">=</span> c.len_utf8();
+            <span style="color:#66d9ef">if</span> cidx <span style="color:#f92672">-</span> skipped_chars <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> {
+                self.byte_offset <span style="color:#f92672">=</span> self.byte_offset <span style="color:#f92672">+</span> char_len;
+                self.char_offset <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>;
+                skipped_bytes <span style="color:#f92672">=</span> skipped_bytes <span style="color:#f92672">+</span> char_len;
+                skipped_chars <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>;
+                <span style="color:#66d9ef">continue</span>;
+            }
+
+            <span style="color:#66d9ef">let</span> slice <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>self.input[self.byte_offset..self.byte_offset <span style="color:#f92672">+</span> bidx <span style="color:#f92672">-</span> skipped_bytes];
+            <span style="color:#66d9ef">let</span> token <span style="color:#f92672">=</span> Token::from_str(slice, self.char_offset, self.position);
+            self.char_offset <span style="color:#f92672">=</span> self.char_offset <span style="color:#f92672">+</span> slice.chars().count() <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>;
+            self.position <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>;
+            self.byte_offset <span style="color:#f92672">=</span> self.byte_offset <span style="color:#f92672">+</span> bidx <span style="color:#f92672">+</span> char_len <span style="color:#f92672">-</span> skipped_bytes;
+            <span style="color:#66d9ef">return</span> Some(token);
+        }
+
+    <span style="color:#66d9ef">if</span> self.byte_offset <span style="color:#f92672">&lt;</span> self.input.len() {
+        <span style="color:#66d9ef">let</span> slice <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>self.input[self.byte_offset..];
+        <span style="color:#66d9ef">let</span> token <span style="color:#f92672">=</span> Token::from_str(slice, self.char_offset, self.position);
+        self.byte_offset <span style="color:#f92672">=</span> self.input.len();
+        Some(token)
+    } <span style="color:#66d9ef">else</span> {
+        None
+    }
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>How would we implement a <code>Whitespace</code> tokenizer with this? One might be tempted to match against <code>' '</code>, but keep in mind that whitespace, when dealing with unicode, can be many more different characters so its best to not hardcode them in a gigantic match clause and instead use a built-in function.</p>
 <p>Here is our <code>WhitespaceTokenizer</code>:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 8
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 9
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">10
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">11
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">12
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">13
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">14
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">15
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">WhitespaceTokenizer</span>;<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">impl</span>&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span>Tokenizer&lt;<span style="color:#bbb">&#39;a</span>&gt;<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">for</span><span style="color:#666"> </span>WhitespaceTokenizer<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">type</span> <span style="color:#447fcf;text-decoration:underline">TokenIter</span><span style="color:#666"> </span>=<span style="color:#666"> </span>CharTokenIter&lt;<span style="color:#bbb">&#39;a</span>&gt;;<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">tokenize</span>(&amp;self,<span style="color:#666"> </span>input: <span style="color:#6ab825">&amp;</span><span style="color:#bbb">&#39;a</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">str</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf;text-decoration:underline">Self</span>::TokenIter<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">        </span>CharTokenIter::new(is_whitespace,<span style="color:#666"> </span>input)<span style="color:#666">
-</span><span style="color:#666">    </span>}<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#cd2828;font-weight:bold">#[inline]</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">is_whitespace</span>(input: <span style="color:#6ab825">&amp;</span>(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>(<span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>char)))<span style="color:#666"> </span>-&gt; <span style="color:#6ab825;font-weight:bold">bool</span> {<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>(_,<span style="color:#666"> </span>(_,<span style="color:#666"> </span>c))<span style="color:#666"> </span>=<span style="color:#666"> </span>*input;<span style="color:#666">
-</span><span style="color:#666">    </span>c.is_whitespace()<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
-</div>
-</div>
-<p>We initialize the <code>CharTokenIter</code> and in use the <a href="https://doc.rust-lang.org/std/primitive.char.html#method.is_whitespace">char::is_whitespace()</a> method to check for a unicode whitespace character. Using it is now pretty simple, consider this test case:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
-<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
-</span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#cd2828;font-weight:bold">#[test]</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">should_split_between_words</span>()<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>expected<span style="color:#666"> </span>=<span style="color:#666"> </span>vec![Token::from_str(<span style="color:#ed9d13">&#34;hello&#34;</span>,<span style="color:#666"> </span><span style="color:#3677a9">0</span>,<span style="color:#666"> </span><span style="color:#3677a9">0</span>),<span style="color:#666"> </span>Token::from_str(<span style="color:#ed9d13">&#34;world&#34;</span>,<span style="color:#666"> </span><span style="color:#3677a9">6</span>,<span style="color:#666"> </span><span style="color:#3677a9">1</span>)];<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>actually<span style="color:#666"> </span>=<span style="color:#666"> </span>WhitespaceTokenizer.tokenize(<span style="color:#ed9d13">&#34;hello world&#34;</span>).collect::&lt;<span style="color:#24909d">Vec</span>&lt;Token&gt;&gt;();<span style="color:#666">
-</span><span style="color:#666">    </span>assert_eq!(expected,<span style="color:#666"> </span>actually);<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
-</div>
-</div>
-<p>This implementation also works with all kinds of unicode characters that may have different byte lengths (and this is where our different tracking of character and byte offsets becomes important):</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
-<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
-</span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#cd2828;font-weight:bold">#[test]</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">should_handle_mixed_chars</span>()<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>expected<span style="color:#666"> </span>=<span style="color:#666"> </span>vec![Token::from_str(<span style="color:#ed9d13">&#34;abc界&#34;</span>,<span style="color:#666"> </span><span style="color:#3677a9">0</span>,<span style="color:#666"> </span><span style="color:#3677a9">0</span>),<span style="color:#666"> </span>Token::from_str(<span style="color:#ed9d13">&#34;abc界&#34;</span>,<span style="color:#666"> </span><span style="color:#3677a9">5</span>,<span style="color:#666"> </span><span style="color:#3677a9">1</span>)];<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>actually<span style="color:#666"> </span>=<span style="color:#666"> </span>WhitespaceTokenizer.tokenize(<span style="color:#ed9d13">&#34;abc界 abc界&#34;</span>).collect::&lt;<span style="color:#24909d">Vec</span>&lt;Token&gt;&gt;();<span style="color:#666">
-</span><span style="color:#666">    </span>assert_eq!(expected,<span style="color:#666"> </span>actually);<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
-</div>
-</div>
-<p>Before we move on to benchmarks, lets take a quick look at the corresponding <a href="https://github.com/blevesearch/bleve/blob/master/analysis/tokenizer/character/character.go">go implementation</a>.</p>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">WhitespaceTokenizer</span>;
 
+<span style="color:#66d9ef">impl</span><span style="color:#f92672">&lt;</span><span style="color:#a6e22e">&#39;a</span><span style="color:#f92672">&gt;</span> Tokenizer<span style="color:#f92672">&lt;</span><span style="color:#a6e22e">&#39;a</span><span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">for</span> WhitespaceTokenizer {
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">TokenIter</span> <span style="color:#f92672">=</span> CharTokenIter<span style="color:#f92672">&lt;</span><span style="color:#a6e22e">&#39;a</span><span style="color:#f92672">&gt;</span>;
+
+    <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">tokenize</span>(<span style="color:#f92672">&amp;</span>self, input: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">&#39;a</span> <span style="color:#66d9ef">str</span>) -&gt; <span style="color:#a6e22e">Self</span>::TokenIter {
+        CharTokenIter::new(is_whitespace, input)
+    }
+}
+
+<span style="color:#75715e">#[inline]</span>
+<span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">is_whitespace</span>(input: <span style="color:#66d9ef">&amp;</span>(<span style="color:#66d9ef">usize</span>, (<span style="color:#66d9ef">usize</span>, char))) -&gt; <span style="color:#66d9ef">bool</span> {
+    <span style="color:#66d9ef">let</span> (_, (_, c)) <span style="color:#f92672">=</span> <span style="color:#f92672">*</span>input;
+    c.is_whitespace()
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>We initialize the <code>CharTokenIter</code> and in use the <a href="https://doc.rust-lang.org/std/primitive.char.html#method.is_whitespace">char::is_whitespace()</a> method to check for a unicode whitespace character. Using it is now pretty simple, consider this test case:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#75715e">#[test]</span>
+<span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">should_split_between_words</span>() {
+    <span style="color:#66d9ef">let</span> expected <span style="color:#f92672">=</span> vec<span style="color:#f92672">!</span>[Token::from_str(<span style="color:#e6db74">&#34;hello&#34;</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>), Token::from_str(<span style="color:#e6db74">&#34;world&#34;</span>, <span style="color:#ae81ff">6</span>, <span style="color:#ae81ff">1</span>)];
+    <span style="color:#66d9ef">let</span> actually <span style="color:#f92672">=</span> WhitespaceTokenizer.tokenize(<span style="color:#e6db74">&#34;hello world&#34;</span>).collect::<span style="color:#f92672">&lt;</span>Vec<span style="color:#f92672">&lt;</span>Token<span style="color:#f92672">&gt;&gt;</span>();
+    assert_eq<span style="color:#f92672">!</span>(expected, actually);
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>This implementation also works with all kinds of unicode characters that may have different byte lengths (and this is where our different tracking of character and byte offsets becomes important):</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#75715e">#[test]</span>
+<span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">should_handle_mixed_chars</span>() {
+    <span style="color:#66d9ef">let</span> expected <span style="color:#f92672">=</span> vec<span style="color:#f92672">!</span>[Token::from_str(<span style="color:#e6db74">&#34;abc界&#34;</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>), Token::from_str(<span style="color:#e6db74">&#34;abc界&#34;</span>, <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">1</span>)];
+    <span style="color:#66d9ef">let</span> actually <span style="color:#f92672">=</span> WhitespaceTokenizer.tokenize(<span style="color:#e6db74">&#34;abc界 abc界&#34;</span>).collect::<span style="color:#f92672">&lt;</span>Vec<span style="color:#f92672">&lt;</span>Token<span style="color:#f92672">&gt;&gt;</span>();
+    assert_eq<span style="color:#f92672">!</span>(expected, actually);
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>Before we move on to benchmarks, lets take a quick look at the corresponding <a href="https://github.com/blevesearch/bleve/blob/master/analysis/tokenizer/character/character.go">go implementation</a>.</p>
 <p>The <a href="https://github.com/blevesearch/bleve/blob/master/analysis/tokenizer/character/character.go#L35">CharacterTokenizer</a> loops through each <a href="https://blog.golang.org/strings">rune</a> and very similar to our implementation keeps track of all kinds of offsets and slices out terms as needed. The big difference is that it can&rsquo;t do explicit stack allocations and upfront allocates a 1024 element slice for its <code>TokenStream</code> which would be extended if more tokens are needed.</p>
-
 <p>The <a href="https://github.com/blevesearch/bleve/blob/master/analysis/tokenizer/whitespace/whitespace.go#L32">WhitespaceTokenizer</a> is also very similar and calls a runtime-provided function that checks if the given rune is a unicode whitespace character or not.</p>
-
 <h2 id="benchmarks">Benchmarks</h2>
-
 <p>This is what you came for, right? Lets see how our implementation performs in comparison to the go one. To establish a meaningful baseline we need to define a common text corpus that is used for the benchmark.</p>
-
-<p><strong>Edit:</strong> I forgot to mention the versions used: Rust is at <code>1.14.0-nightly</code> since the benchmarking tool is unstable and the version of go used is <code>go1.7.1 darwin/amd64</code>.</p>
-
+<p><strong>Edit:</strong> I forgot to mention the versions used: Rust is at <code>1.14.0-nightly</code> since the benchmarking tool is unstable and the version of go used is <code> go1.7.1 darwin/amd64</code>.</p>
 <p>I copied the text out of the <a href="https://en.wikipedia.org/wiki/Rust_(programming_language)">Rust Wikipedia</a> page that is exact 1000 characters long and contains around 150-160 tokens depending on the type of tokenizer used.</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 8
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 9
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">10
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">11
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">12
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">13
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">14
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">15
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">static</span><span style="color:#666"> </span>INPUT: <span style="color:#6ab825">&amp;</span><span style="color:#24909d">&#39;static</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">str</span><span style="color:#666"> </span>=<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#ed9d13">&#34;In addition to conventional static typing, before version 0.4, Rust also supported \
-</span><span style="color:#ed9d13">     typestates. The typestate system modeled assertions before and after program statements, \
-</span><span style="color:#ed9d13">     through use of a special check statement. Discrepancies could be discovered at compile time, \
-</span><span style="color:#ed9d13">     rather than when a program was running, as might be the case with assertions in C or C++ \
-</span><span style="color:#ed9d13">     code. The typestate concept was not unique to Rust, as it was first introduced in the \
-</span><span style="color:#ed9d13">     language NIL. Typestates were removed because in practice they found little use, though the \
-</span><span style="color:#ed9d13">     same functionality can still be achieved with branding patterns.
-</span><span style="color:#ed9d13">
-</span><span style="color:#ed9d13">The style changed between \
-</span><span style="color:#ed9d13">     0.2, 0.3 and 0.4. Version 0.2 introduced classes for the first time, with version 0.3 adding \
-</span><span style="color:#ed9d13">     a number of features including destructors and polymorphism through the use of interfaces. \
-</span><span style="color:#ed9d13">     In Rust 0.4, traits were added as a means to provide inheritance; In January 2014, the \
-</span><span style="color:#ed9d13">     editor-in-chief of Dr Dobb&#39;s, Andrew Binstock, commented on Rust&#39;s chances to become a \
-</span><span style="color:#ed9d13">     competitor to C++.&#34;</span>;<span style="color:#666">
-</span></code></pre></td></tr></table>
-</div>
-</div>
-<p>If we split on unicode whitespace, there are exactly 159 tokens.</p>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">static</span> INPUT: <span style="color:#66d9ef">&amp;</span>&#39;static <span style="color:#66d9ef">str</span> <span style="color:#f92672">=</span>
+    <span style="color:#960050;background-color:#1e0010">&#34;</span>In addition to conventional <span style="color:#66d9ef">static</span> typing, before version <span style="color:#ae81ff">0.4</span>, Rust also supported <span style="color:#960050;background-color:#1e0010">\</span>
+     typestates. The typestate system modeled assertions before and after program statements, <span style="color:#960050;background-color:#1e0010">\</span>
+     through <span style="color:#66d9ef">use</span> of a special check statement. Discrepancies could be discovered at compile time, <span style="color:#960050;background-color:#1e0010">\</span>
+     rather than when a program was running, <span style="color:#66d9ef">as</span> might be the case with assertions <span style="color:#66d9ef">in</span> C or C<span style="color:#f92672">++</span> <span style="color:#960050;background-color:#1e0010">\</span>
+     code. The typestate concept was not unique to Rust, <span style="color:#66d9ef">as</span> it was first introduced <span style="color:#66d9ef">in</span> the <span style="color:#960050;background-color:#1e0010">\</span>
+     language NIL. Typestates were removed because <span style="color:#66d9ef">in</span> practice they found little <span style="color:#66d9ef">use</span>, though the <span style="color:#960050;background-color:#1e0010">\</span>
+     same functionality can still be achieved with branding patterns.
 
+The style changed between <span style="color:#960050;background-color:#1e0010">\</span>
+     <span style="color:#ae81ff">0.2</span>, <span style="color:#ae81ff">0.3</span> and <span style="color:#ae81ff">0.4.</span> Version <span style="color:#ae81ff">0.2</span> introduced classes <span style="color:#66d9ef">for</span> the first time, with version <span style="color:#ae81ff">0.3</span> adding <span style="color:#960050;background-color:#1e0010">\</span>
+     a number of features including destructors and polymorphism through the <span style="color:#66d9ef">use</span> of interfaces. <span style="color:#960050;background-color:#1e0010">\</span>
+     In Rust <span style="color:#ae81ff">0.4</span>, traits were added <span style="color:#66d9ef">as</span> a means to provide inheritance; In January <span style="color:#ae81ff">2014</span>, the <span style="color:#960050;background-color:#1e0010">\</span>
+     editor<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>chief of Dr Dobb<span style="color:#a6e22e">&#39;s</span>, Andrew Binstock, commented on Rust<span style="color:#a6e22e">&#39;s</span> chances to <span style="color:#66d9ef">become</span> a <span style="color:#960050;background-color:#1e0010">\</span>
+     competitor to C<span style="color:#f92672">++</span>.<span style="color:#960050;background-color:#1e0010">&#34;</span>;
+</code></pre></td></tr></table>
+</div>
+</div><p>If we split on unicode whitespace, there are exactly 159 tokens.</p>
 <p>Here is our benchmark for rust:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#cd2828;font-weight:bold">#[bench]</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">bench_whitespace_tokenizer</span>(b: <span style="color:#6ab825">&amp;</span><span style="color:#447fcf;text-decoration:underline">mut</span><span style="color:#666"> </span>Bencher)<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>t<span style="color:#666"> </span>=<span style="color:#666"> </span>WhitespaceTokenizer;<span style="color:#666">
-</span><span style="color:#666">   </span>b.iter(||<span style="color:#666"> </span>t.tokenize(INPUT).last());<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#75715e">#[bench]</span>
+<span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">bench_whitespace_tokenizer</span>(b: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">mut</span> Bencher) {
+    <span style="color:#66d9ef">let</span> t <span style="color:#f92672">=</span> WhitespaceTokenizer;
+   b.iter(<span style="color:#f92672">||</span> t.tokenize(INPUT).last());
+}
+</code></pre></td></tr></table>
 </div>
-</div>
-<p>Running with <code>cargo +nightly bench</code> on my machine (a 2,5GHz i7, OSX, 16GB RAM), rust reports:</p>
-
+</div><p>Running with <code>cargo +nightly bench</code> on my machine (a 2,5GHz i7, OSX, 16GB RAM), rust reports:</p>
 <pre><code>test bench_whitespace_tokenizer ... bench:       6,972 ns/iter (+/- 1,148)
-</code></pre>
-
-<p>It takes 7 microseconds to process 159 tokens, so it can process 23 tokens per microsecond. This translates into roughly 23 million tokens per second. Put differently, with this input text we can tokenize around 136MB/s on a single core.</p>
-
+</code></pre><p>It takes 7 microseconds to process 159 tokens, so it can process 23 tokens per microsecond. This translates into roughly 23 million tokens per second. Put differently, with this input text we can tokenize around 136MB/s on a single core.</p>
 <p>Here is our go equivalent in bleve:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 8
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 9
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">10
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">11
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">12
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">13
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">14
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">15
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">16
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">17
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">18
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">19
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">20
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">21
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">22
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">23
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">24
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">25
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#6ab825;font-weight:bold">var</span> sampleLargeInput = []<span style="color:#24909d">byte</span>(<span style="color:#ed9d13">`In addition to conventional static typing, before version 0.4, Rust also supported \
-</span><span style="color:#ed9d13">     typestates. The typestate system modeled assertions before and after program statements, \
-</span><span style="color:#ed9d13">     through use of a special check statement. Discrepancies could be discovered at compile time, \
-</span><span style="color:#ed9d13">     rather than when a program was running, as might be the case with assertions in C or C++ \
-</span><span style="color:#ed9d13">     code. The typestate concept was not unique to Rust, as it was first introduced in the \
-</span><span style="color:#ed9d13">     language NIL. Typestates were removed because in practice they found little use, though the \
-</span><span style="color:#ed9d13">     same functionality can still be achieved with branding patterns.
-</span><span style="color:#ed9d13">
-</span><span style="color:#ed9d13">The style changed between \
-</span><span style="color:#ed9d13">     0.2, 0.3 and 0.4. Version 0.2 introduced classes for the first time, with version 0.3 adding \
-</span><span style="color:#ed9d13">     a number of features including destructors and polymorphism through the use of interfaces. \
-</span><span style="color:#ed9d13">     In Rust 0.4, traits were added as a means to provide inheritance; In January 2014, the \
-</span><span style="color:#ed9d13">     editor-in-chief of Dr Dobb&#39;s, Andrew Binstock, commented on Rust&#39;s chances to become a \
-</span><span style="color:#ed9d13">     competitor to C++.`</span>)
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-go" data-lang="go"><span style="color:#66d9ef">var</span> <span style="color:#a6e22e">sampleLargeInput</span> = []byte(<span style="color:#e6db74">`In addition to conventional static typing, before version 0.4, Rust also supported \
+</span><span style="color:#e6db74">     typestates. The typestate system modeled assertions before and after program statements, \
+</span><span style="color:#e6db74">     through use of a special check statement. Discrepancies could be discovered at compile time, \
+</span><span style="color:#e6db74">     rather than when a program was running, as might be the case with assertions in C or C++ \
+</span><span style="color:#e6db74">     code. The typestate concept was not unique to Rust, as it was first introduced in the \
+</span><span style="color:#e6db74">     language NIL. Typestates were removed because in practice they found little use, though the \
+</span><span style="color:#e6db74">     same functionality can still be achieved with branding patterns.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">The style changed between \
+</span><span style="color:#e6db74">     0.2, 0.3 and 0.4. Version 0.2 introduced classes for the first time, with version 0.3 adding \
+</span><span style="color:#e6db74">     a number of features including destructors and polymorphism through the use of interfaces. \
+</span><span style="color:#e6db74">     In Rust 0.4, traits were added as a means to provide inheritance; In January 2014, the \
+</span><span style="color:#e6db74">     editor-in-chief of Dr Dobb&#39;s, Andrew Binstock, commented on Rust&#39;s chances to become a \
+</span><span style="color:#e6db74">     competitor to C++.`</span>)
 
-<span style="color:#6ab825;font-weight:bold">func</span> <span style="color:#447fcf">BenchmarkTokenizeEnglishText</span>(b *testing.B) {
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">BenchmarkTokenizeEnglishText</span>(<span style="color:#a6e22e">b</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">testing</span>.<span style="color:#a6e22e">B</span>) {
 
-	tokenizer := character.<span style="color:#447fcf">NewCharacterTokenizer</span>(notSpace)
-	b.<span style="color:#447fcf">ResetTimer</span>()
+	<span style="color:#a6e22e">tokenizer</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">character</span>.<span style="color:#a6e22e">NewCharacterTokenizer</span>(<span style="color:#a6e22e">notSpace</span>)
+	<span style="color:#a6e22e">b</span>.<span style="color:#a6e22e">ResetTimer</span>()
 
-	<span style="color:#6ab825;font-weight:bold">for</span> i := <span style="color:#3677a9">0</span>; i &lt; b.N; i++ {
-		tokenizer.<span style="color:#447fcf">Tokenize</span>(sampleLargeInput)
+	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#a6e22e">b</span>.<span style="color:#a6e22e">N</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
+		<span style="color:#a6e22e">tokenizer</span>.<span style="color:#a6e22e">Tokenize</span>(<span style="color:#a6e22e">sampleLargeInput</span>)
 	}
 
-}</code></pre></td></tr></table>
+}
+</code></pre></td></tr></table>
 </div>
-</div>
-<p>It reports:</p>
-
+</div><p>It reports:</p>
 <pre><code>BenchmarkTokenizeEnglishText-8   	   50000	     22893 ns/op	   19072 B/op	     171 allocs/op
-</code></pre>
-
-<p>So each run takes close to 23 microseconds compared of 7 in Rust! That&rsquo;s roughly three times slower, clocking at
+</code></pre><p>So each run takes close to 23 microseconds compared of 7 in Rust! That&rsquo;s roughly three times slower, clocking at
 around 7 million tokens per second or 41MB/s per core.</p>
-
 <p>Why is that? Let&rsquo;s try disabling the stack allocation optimization in rust by setting the <code>MAX_STACK_TERM_LEN</code> to 0 and rerun the benchmark:</p>
-
 <pre><code>test bench_whitespace_tokenizer ... bench:      10,154 ns/iter (+/- 1,553)
-</code></pre>
-
-<p>We lost a couple microseconds here, but I think the rest is just LLVM and Rust being really good at optimizing the iterator and loop code (keep in mind we are still stack-allocating the tokens themselves while in go I&rsquo;m pretty sure its heap allocated as well in the big <code>TokenStream</code> slice).</p>
-
+</code></pre><p>We lost a couple microseconds here, but I think the rest is just LLVM and Rust being really good at optimizing the iterator and loop code (keep in mind we are still stack-allocating the tokens themselves while in go I&rsquo;m pretty sure its heap allocated as well in the big <code>TokenStream</code> slice).</p>
 <p>Now with any kind of microbenchmarking it is hard to say how the difference will look like on your hardware and dataset. More realistic numbers could be gathered by tokenizing large chunks of for example the Wikipedia dataset and then looking at the overall numbers. Of course your mileage may also vary per machine, so if you are curious please run the benchmarks on your hardware - and please post them in the comments below!</p>
 
     </div>
-
-    <div id="disqus_thread"></div>
-<script type="application/javascript">
-    var disqus_config = function () {
-    
-    
-    
-    };
-    (function() {
-        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
-            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
-            return;
-        }
-        var d = document, s = d.createElement('script'); s.async = true;
-        s.src = '//' + "daschl" + '.disqus.com/embed.js';
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
-
+ 
     <ul class="article-taxonomy">
-       
+      
+    
+      
       <li>
-        <i class="fa fa-tags"></i>
-        <a href="/%20tags/%20rust">rust</a>
-        <a href="/%20tags/%20text">text</a>
-        <a href="/%20tags/%20indexing">indexing</a>
-        <a href="/%20tags/%20analysis">analysis</a>
+        <i class="fa fa-tags"></i><a href="/tags/rust">rust</a><a href="/tags/text">text</a><a href="/tags/indexing">indexing</a><a href="/tags/analysis">analysis</a>
       </li>
       
   </article>
@@ -772,30 +707,24 @@ around 7 million tokens per second or 41MB/s per core.</p>
 <footer class="footer">
   <ul class="footer-links">
     <li>
-      <a href="https://nitschinger.at/index.xml" type="application/rss+xml" target="_blank">
-        <i class="fa fa-rss"></i> RSS feed</a>
+      <a href="/atom.xml" type="application/atom+xml" target="_blank"><i class="fa fa-rss"></i> Atom feed</a>
     </li>
     <li>
-      <a href="https://github.com/mobybit/hugo-natrium-theme">
-        <i class="fa fa-github"></i> Built with Hugo &amp; Natrium Theme</a>
+      <a href="https://github.com/daschl"><i class="fa fa-github"></i> GitHub</a>
+    </li>
+    <li>
+      <a href="https://twitter.com/daschl"><i class="fa fa-twitter"></i> Twitter</a>
+    </li>
+    <li>
+      <a href="https://www.linkedin.com/in/michaelnitschinger/"><i class="fa fa-linkedin"></i> LinkedIn</a>
     </li>
   </ul>
 </footer>
 
 </div>
 
-<script>
-  (function (i, s, o, g, r, a, m) {
-    i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
-      (i[r].q = i[r].q || []).push(arguments)
-    }, i[r].l = 1 * new Date(); a = s.createElement(o),
-      m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
-  })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
 
-  ga('create', 'UA-19686689-1', 'auto');
-  ga('send', 'pageview');
-  ga('set', 'anonymizeIp', true);
-</script>
+
 </body>
 
 </html>

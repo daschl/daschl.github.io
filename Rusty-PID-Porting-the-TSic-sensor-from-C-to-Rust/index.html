@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.74.3" />
+
+
+<title>Rusty-PID: Porting the TSic sensor from C to Rust – daschl writes. sometimes.</title>
+
+
+
+  
+  <meta property="description" content="Shows how the TSic temperature sensor code is ported from C to Rust">
+  
+
+
+
+
+<link href="/atom.xml" rel="alternate" type="application/atom+xml" title="daschl writes. sometimes." />
+
+<meta property="og:title" content="Rusty-PID: Porting the TSic sensor from C to Rust" />
+<meta property="og:description" content="Shows how the TSic temperature sensor code is ported from C to Rust" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://nitschinger.at/Rusty-PID-Porting-the-TSic-sensor-from-C-to-Rust/" />
+<meta property="article:published_time" content="2020-09-28T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-09-28T00:00:00+00:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Rusty-PID: Porting the TSic sensor from C to Rust"/>
+<meta name="twitter:description" content="Shows how the TSic temperature sensor code is ported from C to Rust"/>
+
+<meta itemprop="name" content="Rusty-PID: Porting the TSic sensor from C to Rust">
+<meta itemprop="description" content="Shows how the TSic temperature sensor code is ported from C to Rust">
+<meta itemprop="datePublished" content="2020-09-28T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2020-09-28T00:00:00+00:00" />
+<meta itemprop="wordCount" content="2815">
+
+
+
+<meta itemprop="keywords" content="rustypid,tsic,rust,nRF52840,embedded," />
+
+
+<link rel="stylesheet" href="https://nitschinger.at/css/main.css" media="all">
+<link rel="stylesheet" href="https://nitschinger.at/css/fonts.css">
+
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="header">
+        <nav class="nav">
+  <a href="https://nitschinger.at/" class="nav-logo">
+    <img src="https://nitschinger.at/images/"
+         width="" 
+         height="" 
+         alt="">
+  </a>
+  <a href="https://nitschinger.at/" class="nav-title">daschl writes. sometimes.</a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/tags">tags</a></li>
+    
+    <li><a href="/imprint/">imprint</a></li>
+    
+    <li><a href="https://twitter.com/daschl">-&gt; twitter</a></li>
+    
+    <li><a href="https://github.com/daschl">-&gt; github</a></li>
+    
+  </ul>
+</nav>
+
+      </header>
+
+
+<main class="content" role="main">
+  <article class="article">
+    <h1 class="article-title">Rusty-PID: Porting the TSic sensor from C to Rust</h1>
+    
+    <span class="article-date">28 September 2020</span>
+    
+
+    <div class="article-content">
+      <p><em>This post is part of my &ldquo;Rusty-PID&rdquo; series, in which you can follow my adventure building a <a href="https://en.wikipedia.org/wiki/PID_controller">PID Controller</a> for my <a href="https://www.ranciliogroup.com/rancilio/silvia/silvia/">Rancilio Silvia</a> in <a href="https://www.rust-lang.org/">Rust</a>.</em></p>
+<p>In this blog post we&rsquo;ll dive into how to read temperature measurements from the TSic sensor in <a href="https://www.rust-lang.org/">Rust</a>. It goes pretty deep into the implementation details and the porting process, so if you just want to use it go straight to the <a href="https://github.com/daschl/tsic-rs">tsic-rs repository</a> and don&rsquo;t look back.</p>
+<p>A note before we start: I&rsquo;m using the TSic 306 sensor, which is a digital sensor. If you happen to use the other digital one on the market (the 206) the same instructions should apply. I have never used the analog variants (201 and 301) and they do not use the protocol outlined below.</p>
+<h1 id="tsic-306-fundamentals">TSic 306 Fundamentals</h1>
+<ul>
+<li><a href="https://www.ist-ag.com/sites/default/files/DTTSic20x_30x_E.pdf">Data Sheet PDF</a></li>
+<li><a href="https://www.ist-ag.com/sites/default/files/ATTSic_E.pdf">Application Notes PDF</a></li>
+</ul>
+<p>The TSic 306 is a digital sensor which speaks the ZACWire protocol. It has an operating temperature range from -50°C to 150°C and a pretty good resolution. Please see the data sheet (linked above) for all the details. It comes in two different housings (SOP-8 and TO92) but in any case there are three pins that are important:</p>
+<ul>
+<li>Voltage (3V to 5.5V)</li>
+<li>Signal</li>
+<li>Ground</li>
+</ul>
+<p>The raw temperature bits are read off of the signal pin (using the ZACWire protocol). You can decide to either supply continuous voltage or just supply voltage for the time period of reading a measurement. In the former case the sensor will keep sending data in intervals and easier to handle, but if you are running in a power constrained environment turning it on and off is definitely an option. Note that in my use case I need to read sensor data every second so I didn&rsquo;t bother with controlling the voltage pin and always supply it with power.</p>
+<p>Since my background is not in hardware I had some fair amount of head-scratching to do when trying to figure out how the actual bit reading works using the ZACWire protocol. If you want to get all the details, including a reference implementation in assembly, please see the application notes sheet linked above.</p>
+<p>To read a full temperature measurement, we need to read two packets. Each packet consists of a start bit, 8 data bits and finally a parity bit. The first packet contains the most significant bit (MSB) while the second packet contains the LSB (least significant bit) at the end.</p>
+<pre><code>(High) Packet 1:                                               (Low) Packet 2:
++-------+---+---+-----+-----+-----+-----+----+----+--------+---+-------+----+----+----+----+----+----+----+----+--------+
+| Start | 0 | 0 | D13 | D12 | D11 | D10 | D9 | D8 | Parity |   | Start | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 | Parity |
++-------+---+---+-----+-----+-----+-----+----+----+--------+---+-------+----+----+----+----+----+----+----+----+--------+
+                   ^                                                                                        ^
+                  MSB                                                                                      LSB
+</code></pre><p>As recommended in the application notes, the start bit will be used to figure out the strobe length (the interval to wait between reading the data and parity bits). According to the spec we must use a 128kHz sampling rate, which is 7.8 microseconds. Unfortunately as we&rsquo;ll see later we can only wait with microsecond precision, so we are going to sample with 8 microseconds instead. I&rsquo;ve seen some C code even sample with 10 microseconds and it still works fine.</p>
+<p>Finally, there is also a stop bit between the two packets which we need to ignore.</p>
+<h1 id="excursion-embedded-hal">Excursion: embedded-hal</h1>
+<p>When implementing a generic sensor library for embedded systems in rust, it is always a good idea to take a look at the <a href="https://github.com/rust-embedded/embedded-hal">embedded-hal</a> crate, because it provides common traits for components of embedded systems. Ideally the library only depends on embedded-hal traits and then the board&rsquo;s HAL implements those traits for its components.</p>
+<p>In this case, the code needs to depend on two traits:</p>
+<ul>
+<li><a href="https://docs.rs/embedded-hal/0.2.4/embedded_hal/digital/v2/trait.InputPin.html">InputPin</a>: this is the digital (GPIO) pin where we are reading the bits from.</li>
+<li><a href="https://docs.rs/embedded-hal/0.2.4/embedded_hal/blocking/delay/trait.DelayUs.html">DelayUs</a>: since we need to respect the strobe interval, this trait allows us delay for a certain number of microseconds.</li>
+</ul>
+<h1 id="basic-usage">Basic Usage</h1>
+<p>Before we dive into the implementation details, it makes sense to run through some sample code so you get the idea on how to use it first. I&rsquo;m using the <a href="https://www.nordicsemi.com/Software-and-tools/Development-Kits/nRF52840-DK">nRF52840 DK</a> which is supported by the <a href="https://github.com/nrf-rs/nrf-hal">nrf-hal</a>.</p>
+<p>Here is a picture of my (simplified) setup:</p>
+<p><img src="/img/nrf-tsic-small.jpg" alt="nRF TSic"></p>
+<p>Both the voltage and ground pins are fed from one side of the nrf board and the signal input pin is set on one of the available GPIO ports - in this case <code>1.08</code>.</p>
+<p>Before we can use the sensor, we need both our input pin and our delay timer:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">9
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#75715e">// Take ownership of the board&#39;s Peripherals
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> peripherals <span style="color:#f92672">=</span> Peripherals::take().unwrap();
+
+<span style="color:#75715e">// We use one of the timers for our delay
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> timer <span style="color:#f92672">=</span> Timer::new(peripherals.TIMER0);
+
+<span style="color:#75715e">// Grabs the 1.08 GPIO input pin
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> gpio_1 <span style="color:#f92672">=</span> p1::Parts::new(peripherals.P1);
+<span style="color:#66d9ef">let</span> pin <span style="color:#f92672">=</span> gpio_1.p1_08.into_floating_input().degrade();
+</code></pre></td></tr></table>
+</div>
+</div><p>Next up, we initialize the <code>Tsic</code>:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">let</span> external_temp_sensor <span style="color:#f92672">=</span> Tsic::new(pin);
+</code></pre></td></tr></table>
+</div>
+</div><p>Now we can ask it for a temperature reading and match on the results:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">match</span> external_temp_sensor.read(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> timer) {
+    Ok(t) <span style="color:#f92672">=&gt;</span> defmt::info<span style="color:#f92672">!</span>(<span style="color:#e6db74">&#34;Temp is: {:f32}&#34;</span>, t.as_celsius()),
+    Err(TsicReadError::ParityCheckFailed) <span style="color:#f92672">=&gt;</span> defmt::warn<span style="color:#f92672">!</span>(<span style="color:#e6db74">&#34;Parity Check Failed&#34;</span>),
+    Err(TsicReadError::PinReadError) <span style="color:#f92672">=&gt;</span> defmt::warn<span style="color:#f92672">!</span>(<span style="color:#e6db74">&#34;Could not read from Pin&#34;</span>),
+};
+</code></pre></td></tr></table>
+</div>
+</div><p>One thing to note is that while the <code>Tsic</code> takes ownership of the input pin, we only pass the timer in when we perform a sensor reading. This allows us to reuse the timer for other purposes in our embedded application.</p>
+<p>This example uses the amazing <a href="https://defmt.ferrous-systems.com/">defmt</a> library for logging - if you haven&rsquo;t already you should check it out!</p>
+<p>Here is the full example which prints a reading every second:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#75715e">#![no_main]</span>
+<span style="color:#75715e">#![no_std]</span>
+
+<span style="color:#66d9ef">use</span> nrf52840_hal <span style="color:#66d9ef">as</span> hal;
+<span style="color:#66d9ef">use</span> hal::gpio::p1;
+<span style="color:#66d9ef">use</span> hal::pac::Peripherals;
+<span style="color:#66d9ef">use</span> hal::prelude::<span style="color:#f92672">*</span>;
+<span style="color:#66d9ef">use</span> hal::Timer;
+<span style="color:#66d9ef">use</span> tsic::{Tsic, TsicReadError};
+
+<span style="color:#75715e">#[cortex_m_rt::entry]</span>
+<span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">main</span>() -&gt; <span style="color:#f92672">!</span> {
+    <span style="color:#75715e">// Take ownership of the board&#39;s Peripherals
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> peripherals <span style="color:#f92672">=</span> Peripherals::take().unwrap();
+
+    <span style="color:#75715e">// We use one of the timers for our delay
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> timer <span style="color:#f92672">=</span> Timer::new(peripherals.TIMER0);
+
+    <span style="color:#75715e">// Grabs the 1.08 GPIO input pin
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> gpio_1 <span style="color:#f92672">=</span> p1::Parts::new(peripherals.P1);
+    <span style="color:#66d9ef">let</span> pin <span style="color:#f92672">=</span> gpio_1.p1_08.into_floating_input().degrade();
+
+    <span style="color:#66d9ef">let</span> external_temp_sensor <span style="color:#f92672">=</span> Tsic::new(pin);
+    <span style="color:#66d9ef">loop</span> {
+        <span style="color:#66d9ef">match</span> external_temp_sensor.read(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> timer) {
+            Ok(t) <span style="color:#f92672">=&gt;</span> defmt::info<span style="color:#f92672">!</span>(<span style="color:#e6db74">&#34;Temp is: {:f32}&#34;</span>, t.as_celsius()),
+            Err(TsicReadError::ParityCheckFailed) <span style="color:#f92672">=&gt;</span> defmt::warn<span style="color:#f92672">!</span>(<span style="color:#e6db74">&#34;Parity Check Failed&#34;</span>),
+            Err(TsicReadError::PinReadError) <span style="color:#f92672">=&gt;</span> defmt::warn<span style="color:#f92672">!</span>(<span style="color:#e6db74">&#34;Could not read from Pin&#34;</span>),
+        };
+
+        timer.delay_ms(<span style="color:#ae81ff">1000</span><span style="color:#66d9ef">u32</span>);
+    }
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>Using <a href="https://github.com/knurling-rs/probe-run">probe-run</a> to run our code, the output looks as follows:</p>
+<pre><code>$ cargo run --bin simple
+    Finished dev [optimized + debuginfo] target(s) in 0.08s
+     Running `probe-run --chip nRF52840_xxAA --defmt target/thumbv7em-none-eabihf/debug/simple`
+  (HOST) INFO  flashing program
+  (HOST) INFO  success!
+────────────────────────────────────────────────────────────────────────────────
+0.000000 INFO  Temp is: 21.91011
+└─ simple::__cortex_m_rt_main @ src/bin/simple.rs:29
+0.000001 INFO  Temp is: 21.91011
+└─ simple::__cortex_m_rt_main @ src/bin/simple.rs:29
+0.000002 INFO  Temp is: 22.00782
+└─ simple::__cortex_m_rt_main @ src/bin/simple.rs:29
+0.000003 INFO  Temp is: 21.91011
+└─ simple::__cortex_m_rt_main @ src/bin/simple.rs:29
+</code></pre><p>As you can see we get accurate readings every second. Next up, the gory details.</p>
+<h1 id="implementation-from-c-to-rust">Implementation: from C to Rust</h1>
+<p>I started out with the C implementation from <a href="https://github.com/Schm1tz1/arduino-tsic">Schm1tz1/arduino-tsic</a>, because that&rsquo;s the one used in the <a href="http://rancilio-pid.de/">Rancilio PID project</a>. It is written for the arduino platform and roughly 150 lines of code. It has a couple properties which I didn&rsquo;t really like and wanted to change when doing the rust port:</p>
+<ul>
+<li>The user needs to pass around the &ldquo;raw&rdquo; value</li>
+<li>Error handling is neither user friendly nor documented</li>
+<li>Obviously it&rsquo;s C style and not even close to idiomatic/high level Rust</li>
+</ul>
+<p>So you would use the C library like this:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-c" data-lang="c">uint16_t temperature <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+<span style="color:#66d9ef">float</span> temperature_c <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+
+<span style="color:#66d9ef">if</span> (Sensor1.getTemperature(<span style="color:#f92672">&amp;</span>temperature)) {
+    Serial.print(<span style="color:#e6db74">&#34;uint_16: &#34;</span>);
+    Serial.println(temperature);
+
+    temperature_c <span style="color:#f92672">=</span> Sensor1.calc_Celsius(<span style="color:#f92672">&amp;</span>temperature);
+    Serial.print(<span style="color:#e6db74">&#34;Temperature: &#34;</span>);
+    Serial.print(temperature_c);
+    Serial.println(<span style="color:#e6db74">&#34; °C&#34;</span>);
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>Let&rsquo;s start with a proper error enum:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#e6db74">/// Contains all errors that can happen during a reading from the sensor.
+</span><span style="color:#e6db74"></span><span style="color:#75715e">#[derive(Debug)]</span>
+<span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">enum</span> <span style="color:#a6e22e">TsicReadError</span> {
+    <span style="color:#e6db74">/// The parity check for one of the packets failed.
+</span><span style="color:#e6db74"></span>    <span style="color:#e6db74">///
+</span><span style="color:#e6db74"></span>    <span style="color:#e6db74">/// This might be a temporary issue, so attempting to perform another
+</span><span style="color:#e6db74"></span>    <span style="color:#e6db74">/// read might resolve the error.
+</span><span style="color:#e6db74"></span>    ParityCheckFailed,
+
+    <span style="color:#e6db74">/// Failed to read the high/low state of the pin.
+</span><span style="color:#e6db74"></span>    PinReadError,
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>If you look at the corresponding C-Code, it just returns with <code>0</code> in any of those cases.</p>
+<p>The next concept we can encapsulate is the <code>Packet</code>. As you know from the previous section, we collect two packets and turn them into a <code>Temperature</code>.</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#e6db74">/// A `Packet` represents one half of the full temperature measurement.
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">Packet</span> {
+    raw_bits: <span style="color:#66d9ef">u16</span>,
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>Note that our raw type for a packet is <code>u16</code> and not <code>u8</code> since we also need to carry the parity bit in addition to the data bits. When we construct the <code>Packet</code>, we can perform the parity check immediately and return a <code>ParityCheckFailed</code>:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#e6db74">/// Creates a new `Packet` from the raw measured bits.
+</span><span style="color:#e6db74">///
+</span><span style="color:#e6db74">/// Note that this method performs a parity check on the input data and if
+</span><span style="color:#e6db74">/// that fails returns a `TsicReadError::ParityCheckFailed`.
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">new</span>(raw_bits: <span style="color:#66d9ef">u16</span>) -&gt; Result<span style="color:#f92672">&lt;</span>Self, TsicReadError<span style="color:#f92672">&gt;</span> {
+    <span style="color:#66d9ef">if</span> Self::has_even_parity(raw_bits) {
+        Ok(Self { raw_bits })
+    } <span style="color:#66d9ef">else</span> {
+        Err(TsicReadError::ParityCheckFailed)
+    }
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>In case you are newer to embedded programming and don&rsquo;t know what a <a href="https://en.wikipedia.org/wiki/Parity_bit">parity check</a> is: all it does, is check if the <code>1s</code> and <code>0s</code> are either even (even parity) or odd (odd parity). The ZACWire protocol specifies an even parity, so we need to have an equal amounts of ones and zeroes in our packet. This is a very simple data corruption check, but also not a very robust one (if two bits flipped it cannot be detected).</p>
+<p>Before I show you the rust implementation, here is the C version:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-c" data-lang="c">uint8_t TSIC<span style="color:#f92672">::</span>checkParity(uint16_t <span style="color:#f92672">*</span>temp_value) {
+	uint8_t parity <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+
+	<span style="color:#66d9ef">for</span> (uint8_t i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">9</span>; i<span style="color:#f92672">++</span>) {
+		<span style="color:#66d9ef">if</span> (<span style="color:#f92672">*</span>temp_value <span style="color:#f92672">&amp;</span> (<span style="color:#ae81ff">1</span> <span style="color:#f92672">&lt;&lt;</span> i))
+			parity<span style="color:#f92672">++</span>;
+	}
+	<span style="color:#66d9ef">if</span> (parity <span style="color:#f92672">%</span> <span style="color:#ae81ff">2</span>)
+		<span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;				<span style="color:#75715e">// wrong parity
+</span><span style="color:#75715e"></span>	<span style="color:#f92672">*</span>temp_value <span style="color:#f92672">&gt;&gt;=</span> <span style="color:#ae81ff">1</span>;          <span style="color:#75715e">// delete parity bit
+</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">return</span> <span style="color:#ae81ff">1</span>;
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>We loop the bits and count the ones, and then perform a modulo operation on it to check if it is even. Afterwards, the parity bit is deleted. While not super long, I find it very hard to grasp. Now, compare it to our rust version:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#e6db74">/// Performs parity bit checking on the raw packet value.
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">has_even_parity</span>(raw: <span style="color:#66d9ef">u16</span>) -&gt; <span style="color:#66d9ef">bool</span> {
+    raw.count_ones() <span style="color:#f92672">%</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>Descriptive and short, like you would expect from a high level language.</p>
+<p>Since I didn&rsquo;t want to mutate the value while checking the parity bit, we just take it out of the equation when it gets accessed:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#e6db74">/// Returns the actual data without the parity bit.
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">value</span>(<span style="color:#f92672">&amp;</span>self) -&gt; <span style="color:#66d9ef">u16</span> {
+    self.raw_bits <span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">1</span>
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>Now that we have our <code>Packet</code>, two of them make up a <code>Temperature</code>:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#e6db74">/// Represents a single temperature reading from the TSIC 306 sensor.
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">Temperature</span> {
+    raw: <span style="color:#66d9ef">u16</span>,
+}
+
+<span style="color:#66d9ef">impl</span> Temperature {
+    <span style="color:#e6db74">/// Create a full temperature reading from the two individual half reading packets.
+</span><span style="color:#e6db74"></span>    <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">new</span>(first: <span style="color:#a6e22e">Packet</span>, second: <span style="color:#a6e22e">Packet</span>) -&gt; <span style="color:#a6e22e">Self</span> {
+        <span style="color:#66d9ef">let</span> raw <span style="color:#f92672">=</span> ((first.value() <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">u16</span>) <span style="color:#f92672">&lt;&lt;</span> <span style="color:#ae81ff">8</span>) <span style="color:#f92672">|</span> second.value() <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">u16</span>;
+        Self { raw }
+    }
+
+    <span style="color:#e6db74">/// Returns the temperature in degree celsius.
+</span><span style="color:#e6db74"></span>    <span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">as_celsius</span>(<span style="color:#f92672">&amp;</span>self) -&gt; <span style="color:#66d9ef">f32</span> {
+        (self.raw <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">f32</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">200.0</span> <span style="color:#f92672">/</span> <span style="color:#ae81ff">2047.0</span>) <span style="color:#f92672">-</span> <span style="color:#ae81ff">50.0</span>
+    }
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>Our high and low bytes are combined into a single <code>u16</code> value. Converting the raw value to celsius is done as described in the application notes. The raw formula looks like this: <code>T = Digital Signal / 2047 * (HT - LT) + LT</code>. <code>HT</code> is the higher temperature limit and <code>LT</code> the lower temperature limit. In our case <code>LT = -50</code> and <code>HT = +150</code>.</p>
+<p>Ok, now to the code part where the real work happens. Since we depend on the embedded-hal <code>InputPin</code> trait, we need to make it generic over it:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">Tsic</span><span style="color:#f92672">&lt;</span>I: <span style="color:#a6e22e">InputPin</span><span style="color:#f92672">&gt;</span> {
+    pin: <span style="color:#a6e22e">I</span>,
+}
+
+<span style="color:#66d9ef">impl</span><span style="color:#f92672">&lt;</span>I: <span style="color:#a6e22e">InputPin</span><span style="color:#f92672">&gt;</span> Tsic<span style="color:#f92672">&lt;</span>I<span style="color:#f92672">&gt;</span> {
+    <span style="color:#e6db74">/// Creates a new `Tsic` sensor wrapper and binds it to the input pin given.
+</span><span style="color:#e6db74"></span>    <span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">new</span>(pin: <span style="color:#a6e22e">I</span>) -&gt; <span style="color:#a6e22e">Self</span> {
+        Self { pin }
+    }
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>Our only public instance method is <code>read</code>, which we need to make generic over the embedded-hal <code>DelayUs</code> trait:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">read</span><span style="color:#f92672">&lt;</span>D: <span style="color:#a6e22e">DelayUs</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">u8</span><span style="color:#f92672">&gt;&gt;</span>(<span style="color:#f92672">&amp;</span>self, delay: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">mut</span> D) -&gt; Result<span style="color:#f92672">&lt;</span>Temperature, TsicReadError<span style="color:#f92672">&gt;</span> {
+    <span style="color:#66d9ef">let</span> first_packet <span style="color:#f92672">=</span> self.read_packet(delay)<span style="color:#f92672">?</span>;
+    <span style="color:#66d9ef">let</span> second_packet <span style="color:#f92672">=</span> self.read_packet(delay)<span style="color:#f92672">?</span>;
+    Ok(Temperature::new(first_packet, second_packet))
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>We read two packets and then turn them into the <code>Temperature</code> struct from above. Of course if something goes wrong we&rsquo;ll return a <code>TsicReadError</code> instead.</p>
+<p>In case you wonder why <code>DelayUs&lt;u8&gt;</code> - the trait needs a specific type which holds the duration itself. In our case a <code>u8</code> is fine, we do not need larger delays.</p>
+<p>Before we dive into <code>read_packet</code>, we need to define a handful of short utility methods which make the other code more readable. First, let&rsquo;s consolidate the check if a pin is high or low:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">9
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#e6db74">/// Checks if the pin is currently in a high state.
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">is_high</span>(<span style="color:#f92672">&amp;</span>self) -&gt; Result<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">bool</span>, TsicReadError<span style="color:#f92672">&gt;</span> {
+    self.pin.is_high().map_err(<span style="color:#f92672">|</span>_<span style="color:#f92672">|</span> TsicReadError::PinReadError)
+}
+
+<span style="color:#e6db74">/// Checks if the pin is currently in a low state.
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">is_low</span>(<span style="color:#f92672">&amp;</span>self) -&gt; Result<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">bool</span>, TsicReadError<span style="color:#f92672">&gt;</span> {
+    self.pin.is_low().map_err(<span style="color:#f92672">|</span>_<span style="color:#f92672">|</span> TsicReadError::PinReadError)
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>Building on top of it, we need some code that waits until a pin goes either into the high or low state:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#e6db74">/// Returns only once the pin is in a low state.
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">wait_until_low</span>(<span style="color:#f92672">&amp;</span>self) -&gt; Result<span style="color:#f92672">&lt;</span>(), TsicReadError<span style="color:#f92672">&gt;</span> {
+    <span style="color:#66d9ef">while</span> self.is_high()<span style="color:#f92672">?</span> {}
+    Ok(())
+}
+
+<span style="color:#e6db74">/// Returns only once the pin is in a high state.
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">wait_until_high</span>(<span style="color:#f92672">&amp;</span>self) -&gt; Result<span style="color:#f92672">&lt;</span>(), TsicReadError<span style="color:#f92672">&gt;</span> {
+    <span style="color:#66d9ef">while</span> self.is_low()<span style="color:#f92672">?</span> {}
+    Ok(())
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>Here is the first part of the <code>read_packet</code> method:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">read_packet</span><span style="color:#f92672">&lt;</span>D: <span style="color:#a6e22e">DelayUs</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">u8</span><span style="color:#f92672">&gt;&gt;</span>(<span style="color:#f92672">&amp;</span>self, delay: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">mut</span> D) -&gt; Result<span style="color:#f92672">&lt;</span>Packet, TsicReadError<span style="color:#f92672">&gt;</span> {
+    self.wait_until_low()<span style="color:#f92672">?</span>;
+
+    <span style="color:#66d9ef">let</span> strobe_len <span style="color:#f92672">=</span> self.strobe_len(delay)<span style="color:#f92672">?</span>.as_micros() <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">u8</span>;
+
+    <span style="color:#75715e">// .. more stuff down here ..
+</span><span style="color:#75715e"></span>}
+</code></pre></td></tr></table>
+</div>
+</div><p>We need to wait until the pin goes from high to low and then we use the start bit to calculate the strobe length. Calculating the strobe length works like this:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">strobe_len</span><span style="color:#f92672">&lt;</span>D: <span style="color:#a6e22e">DelayUs</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">u8</span><span style="color:#f92672">&gt;&gt;</span>(<span style="color:#f92672">&amp;</span>self, delay: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">mut</span> D) -&gt; Result<span style="color:#f92672">&lt;</span>Duration, TsicReadError<span style="color:#f92672">&gt;</span> {
+    <span style="color:#66d9ef">let</span> sampling_rate <span style="color:#f92672">=</span> STROBE_SAMPLING_RATE.as_micros();
+
+    <span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> strobe_len <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+    <span style="color:#66d9ef">while</span> self.is_low()<span style="color:#f92672">?</span> {
+        strobe_len <span style="color:#f92672">+=</span> sampling_rate;
+        delay.delay_us(sampling_rate <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">u8</span>);
+    }
+
+    Ok(Duration::from_micros(strobe_len <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">u64</span>))
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>Every 8 microseconds (our <code>STROBE_SAMPLING_RATE</code>) we check if the pin is still low. If it is, we increment a counter, delay for the sampling rate and repeat. Once the pin goes into a high state again we&rsquo;ll return from the function and return the strobe length as a <code>Duration</code>.</p>
+<p>Zooming back out into our <code>read_packet</code>, we can now fill out the remaining code:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> packet_bits: <span style="color:#66d9ef">u16</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+
+<span style="color:#66d9ef">for</span> _ <span style="color:#66d9ef">in</span> <span style="color:#ae81ff">0</span>..<span style="color:#ae81ff">9</span> {
+    self.wait_until_low()<span style="color:#f92672">?</span>;
+
+    delay.delay_us(strobe_len);
+
+    packet_bits <span style="color:#f92672">&lt;&lt;=</span> <span style="color:#ae81ff">1</span>;
+    <span style="color:#66d9ef">if</span> self.is_high()<span style="color:#f92672">?</span> {
+        packet_bits <span style="color:#f92672">|=</span> <span style="color:#ae81ff">1</span>;
+    }
+
+    self.wait_until_high()<span style="color:#f92672">?</span>;
+}
+
+Packet::new(packet_bits)
+</code></pre></td></tr></table>
+</div>
+</div><p>We performed the loop until we collected all data bits and the parity bit. As you can see after each bit we delay it for the strobe length so that we do our reading exactly once per strobe.</p>
+<p>Once we collected all bits, we store it in a <code>Packet</code>.</p>
+<p>That&rsquo;s it! The full code can be found <a href="https://github.com/daschl/tsic-rs/blob/master/src/lib.rs">here</a>. Note that it might have evolved over time, so the repository should always be your canonical reference.</p>
+<h1 id="whats-missing">What&rsquo;s missing?</h1>
+<p>Thanks for sticking with me so far. While I&rsquo;m pretty happy with the implementation, I think it can still be improved in a number of ways:</p>
+<ul>
+<li>The C code defines a <code>timeout</code>, which is one thing we can also implement. This would certainly help if a sensor is faulty or the connection is not made properly.</li>
+<li>The C code supports other TSic sensor types as well. I don&rsquo;t have access to them right now, but I can make an effort to port the code to support it as good as possible.</li>
+<li>Add support for fahrenheit. The conversion is trivial and it is handy to not have to do it manually.</li>
+</ul>
+<p>There is one final thing I&rsquo;d like to research: so far the code works fine, but what I&rsquo;m not clear on is how the code would handle/detect the case if it happens to start a temperature reading while data bits are currently being transmitted. Maybe it could be improved by checking for a number of &ldquo;high&rdquo; readings before starting the whole process, or maybe I&rsquo;m missing something obvious. There&rsquo;s always more to research!</p>
+<p>Please let me know in the comments or in the repository if you have questions.</p>
+
+    </div>
+ 
+    <ul class="article-taxonomy">
+      
+    
+      
+      <li>
+        <i class="fa fa-tags"></i><a href="/tags/rustypid">rustypid</a><a href="/tags/tsic">tsic</a><a href="/tags/rust">rust</a><a href="/tags/nRF52840">nRF52840</a><a href="/tags/embedded">embedded</a>
+      </li>
+      
+  </article>
+
+</main>
+
+<footer class="footer">
+  <ul class="footer-links">
+    <li>
+      <a href="/atom.xml" type="application/atom+xml" target="_blank"><i class="fa fa-rss"></i> Atom feed</a>
+    </li>
+    <li>
+      <a href="https://github.com/daschl"><i class="fa fa-github"></i> GitHub</a>
+    </li>
+    <li>
+      <a href="https://twitter.com/daschl"><i class="fa fa-twitter"></i> Twitter</a>
+    </li>
+    <li>
+      <a href="https://www.linkedin.com/in/michaelnitschinger/"><i class="fa fa-linkedin"></i> LinkedIn</a>
+    </li>
+  </ul>
+</footer>
+
+</div>
+
+
+
+</body>
+
+</html>

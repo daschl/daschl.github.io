@@ -3,11 +3,10 @@
   <head>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.54.0" />
+<meta name="generator" content="Hugo 0.74.3" />
 
 
-<title>Scheduling Timers on OS X with Rust and Kqueue - daschl writes. sometimes.</title>
-<meta property="og:title" content="Scheduling Timers on OS X with Rust and Kqueue - daschl writes. sometimes.">
+<title>Scheduling Timers on OS X with Rust and Kqueue – daschl writes. sometimes.</title>
 
 
 
@@ -18,6 +17,28 @@
 
 
 
+<link href="/atom.xml" rel="alternate" type="application/atom+xml" title="daschl writes. sometimes." />
+
+<meta property="og:title" content="Scheduling Timers on OS X with Rust and Kqueue" />
+<meta property="og:description" content="Scheduling Timers on OS X is quite easy with Kqueue - this post shows you how." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://nitschinger.at/Scheduling-Timers-on-OS-X-with-Rust-and-Kqueue/" />
+<meta property="article:published_time" content="2016-06-15T00:00:00+00:00" />
+<meta property="article:modified_time" content="2016-06-15T00:00:00+00:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Scheduling Timers on OS X with Rust and Kqueue"/>
+<meta name="twitter:description" content="Scheduling Timers on OS X is quite easy with Kqueue - this post shows you how."/>
+
+<meta itemprop="name" content="Scheduling Timers on OS X with Rust and Kqueue">
+<meta itemprop="description" content="Scheduling Timers on OS X is quite easy with Kqueue - this post shows you how.">
+<meta itemprop="datePublished" content="2016-06-15T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2016-06-15T00:00:00+00:00" />
+<meta itemprop="wordCount" content="1167">
+
+
+
+<meta itemprop="keywords" content="rust,kqueue,osx," />
 
 
 <link rel="stylesheet" href="https://nitschinger.at/css/main.css" media="all">
@@ -28,30 +49,27 @@
     <div class="wrapper">
       <header class="header">
         <nav class="nav">
-  <a href="https://nitschinger.at/" class="nav-title">
-    daschl blogs. sometimes.
+  <a href="https://nitschinger.at/" class="nav-logo">
+    <img src="https://nitschinger.at/images/"
+         width="" 
+         height="" 
+         alt="">
   </a>
+  <a href="https://nitschinger.at/" class="nav-title">daschl writes. sometimes.</a>
 
   <ul class="nav-links">
     
-    <li>
-      <a href="/tags">tags</a>
-    </li>
+    <li><a href="/tags">tags</a></li>
     
-    <li>
-      <a href="/imprint/">imprint</a>
-    </li>
+    <li><a href="/imprint/">imprint</a></li>
     
-    <li>
-      <a href="https://twitter.com/daschl">-&gt; twitter</a>
-    </li>
+    <li><a href="https://twitter.com/daschl">-&gt; twitter</a></li>
     
-    <li>
-      <a href="https://github.com/daschl">-&gt; github</a>
-    </li>
+    <li><a href="https://github.com/daschl">-&gt; github</a></li>
     
   </ul>
 </nav>
+
       </header>
 
 
@@ -59,17 +77,14 @@
   <article class="article">
     <h1 class="article-title">Scheduling Timers on OS X with Rust and Kqueue</h1>
     
-    <span class="article-date">2016-06-15</span>
+    <span class="article-date">15 June 2016</span>
     
 
     <div class="article-content">
-      
-
-<p>As a more or less POSIX compatible system I would&rsquo;ve expected
+      <p>As a more or less POSIX compatible system I would&rsquo;ve expected
 <a href="http://man7.org/linux/man-pages/man2/timer_create.2.html">timer_create</a> and
 friends to be available on OS X, but it turns out those functions are not
 available (at least I couldn&rsquo;t find them after hours of research).</p>
-
 <p>Looking into alternatives (spoiler: there are not many I think if you want to
 work from C/Rust) I settled on <a href="https://en.wikipedia.org/wiki/Kqueue">Kqueue</a>.
 It doesn&rsquo;t have all the features that the <code>timer_</code> functions provide, but for
@@ -77,13 +92,10 @@ what I need it seems to be good enough. Also, there are a bunch of crates like
 <a href="https://crates.io/crates/mio">mio</a> and <a href="https://crates.io/crates/nix">nix</a>
 available that either provide abstractions or use Kqueue already so I had
 something to refer to.</p>
-
 <p>I didn&rsquo;t find documentation or blog posts on this topic so I decided it is
 time to write one. This doesn&rsquo;t go into all the details since, frankly, I don&rsquo;t
 know all of them yet too. It should be enough to get you started though.</p>
-
 <h2 id="a-kqueue-primer">A Kqueue primer</h2>
-
 <p>Kqueue is a event notification system originally introduced in FreeBSD and
 subsequently supported in many more BSD variants as well as OS X. It can be used
 for similar tasks (like handling network connections) as the
@@ -91,64 +103,60 @@ for similar tasks (like handling network connections) as the
 <a href="https://en.wikipedia.org/wiki/Input/output_completion_port">IOCP</a> framework on
 Windows. You can also schedule timers with it, and this is what we are doing in
 this blog post.</p>
-
 <p>There are two main functions you need to work with:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#6ab825;font-weight:bold">int</span> <span style="color:#447fcf">kqueue</span>(<span style="color:#6ab825;font-weight:bold">void</span>);
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-c" data-lang="c"><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">kqueue</span>(<span style="color:#66d9ef">void</span>);
 
-<span style="color:#6ab825;font-weight:bold">int</span> <span style="color:#447fcf">kevent</span>(<span style="color:#6ab825;font-weight:bold">int</span> kq, <span style="color:#6ab825;font-weight:bold">const</span> <span style="color:#6ab825;font-weight:bold">struct</span> kevent *changelist, <span style="color:#6ab825;font-weight:bold">int</span> nchanges,
-    <span style="color:#6ab825;font-weight:bold">struct</span> kevent *eventlist, <span style="color:#6ab825;font-weight:bold">int</span> nevents, <span style="color:#6ab825;font-weight:bold">const</span> <span style="color:#6ab825;font-weight:bold">struct</span> timespec *timeout);</code></pre></td></tr></table>
+<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">kevent</span>(<span style="color:#66d9ef">int</span> kq, <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">struct</span> kevent <span style="color:#f92672">*</span>changelist, <span style="color:#66d9ef">int</span> nchanges,
+    <span style="color:#66d9ef">struct</span> kevent <span style="color:#f92672">*</span>eventlist, <span style="color:#66d9ef">int</span> nevents, <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">struct</span> timespec <span style="color:#f92672">*</span>timeout);
+</code></pre></td></tr></table>
 </div>
-</div>
-<p>which translate to the following rust signatures (from <code>nix</code>):</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+</div><p>which translate to the following rust signatures (from <code>nix</code>):</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">kqueue</span>()<span style="color:#666"> </span>-&gt; <span style="color:#24909d">Result</span>&lt;RawFd&gt;<span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">kevent</span>(kq: <span style="color:#447fcf;text-decoration:underline">RawFd</span>,<span style="color:#666"> </span>changelist: <span style="color:#6ab825">&amp;</span>[KEvent],<span style="color:#666"> </span>eventlist: <span style="color:#6ab825">&amp;</span><span style="color:#447fcf;text-decoration:underline">mut</span><span style="color:#666"> </span>[KEvent],<span style="color:#666"> </span>timeout_ms: <span style="color:#6ab825;font-weight:bold">usize</span>)<span style="color:#666"> </span>-&gt; <span style="color:#24909d">Result</span>&lt;<span style="color:#6ab825;font-weight:bold">usize</span>&gt;<span style="color:#666">
-</span></code></pre></td></tr></table>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">kqueue</span>() -&gt; Result<span style="color:#f92672">&lt;</span>RawFd<span style="color:#f92672">&gt;</span>
+<span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">kevent</span>(kq: <span style="color:#a6e22e">RawFd</span>, changelist: <span style="color:#66d9ef">&amp;</span>[KEvent], eventlist: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">mut</span> [KEvent], timeout_ms: <span style="color:#66d9ef">usize</span>) -&gt; Result<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">usize</span><span style="color:#f92672">&gt;</span>
+</code></pre></td></tr></table>
 </div>
-</div>
-<p>The <code>kqueue</code> function translates into a system call and creates a   new kernel
+</div><p>The <code>kqueue</code> function translates into a system call and creates a	new kernel
 event queue and returns a descriptor. The <code>kevent</code> function is used to both
 register new <code>KEvents</code> as well as check if any of them are currently pending.</p>
-
 <p>The <code>KEvent</code> is a generic struct that describes the type of event to monitor
 and looks like this in rust (also from <code>nix</code>):</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">8
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">struct</span> <span style="color:#447fcf;text-decoration:underline">KEvent</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span>ident: <span style="color:#447fcf;text-decoration:underline">uintptr_t</span>,<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span>filter: <span style="color:#447fcf;text-decoration:underline">EventFilter</span>,<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span>flags: <span style="color:#447fcf;text-decoration:underline">EventFlag</span>,<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span>fflags: <span style="color:#447fcf;text-decoration:underline">FilterFlag</span>,<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span>data: <span style="color:#447fcf;text-decoration:underline">intptr_t</span>,<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#6ab825;font-weight:bold">pub</span><span style="color:#666"> </span>udata: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">KEvent</span> {
+    <span style="color:#66d9ef">pub</span> ident: <span style="color:#a6e22e">uintptr_t</span>,
+    <span style="color:#66d9ef">pub</span> filter: <span style="color:#a6e22e">EventFilter</span>,
+    <span style="color:#66d9ef">pub</span> flags: <span style="color:#a6e22e">EventFlag</span>,
+    <span style="color:#66d9ef">pub</span> fflags: <span style="color:#a6e22e">FilterFlag</span>,
+    <span style="color:#66d9ef">pub</span> data: <span style="color:#a6e22e">intptr_t</span>,
+    <span style="color:#66d9ef">pub</span> udata: <span style="color:#66d9ef">usize</span>,
+}
+</code></pre></td></tr></table>
 </div>
-</div>
-<p>The <code>ident</code> holds a value which is used to identify the event. Depending on the
+</div><p>The <code>ident</code> holds a value which is used to identify the event. Depending on the
 configured filter its type and meaning can change (but is very often a file
 descriptor). The <code>filter</code> is important since it determines the kernel filter to
 process this event. For our timers we&rsquo;ll use <code>EventFilter::EVFILT_TIMER</code>, but
@@ -157,158 +165,144 @@ on the given event. The <code>fflags</code> allow you to configure filter-specif
 in our example we won&rsquo;t use them. Finally <code>data</code> allows to set filter-specific
 values and <code>udata</code> is opaque user-defined data that is passed through the kernel
 unchanged.</p>
-
 <p>Check out <a href="http://rustdoc.s3-website-us-east-1.amazonaws.com/nix/master/osx/nix/sys/event/index.html">the docs in nix</a>
 for all the different values on <code>EventFlag</code>, <code>EventFilter</code> and <code>FilterFlag</code>. Also,
 the original documentation on <a href="https://www.freebsd.org/cgi/man.cgi?query=kqueue">kqueue</a>
 provides lots of insights into the flags and their functionality.</p>
-
 <p>The last thing you need to know before diving into the actual code is the difference
 between <code>changelist</code> and <code>eventlist</code>: Both take a slice of <code>KEvents</code>, but only
 <code>eventlist</code> is mutable.</p>
-
 <ul>
 <li>The <code>changelist</code> is used to register events with kqueue.</li>
 <li>The <code>eventlist</code> contains all the events which are currently active at the
 time of polling.</li>
 </ul>
-
 <p>Note that the same slice underlying container (like a <code>Vec</code>) can be used to
- maintain both lists.</p>
-
+maintain both lists.</p>
 <p>With the basics covered, let&rsquo;s dive into the code.</p>
-
 <h2 id="scheduling-timers">Scheduling Timers</h2>
-
 <p>Create a new (<code>--bin</code>) project through <code>cargo</code> and add <code>nix</code> as a dependency:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[dependencies]
-nix = <span style="color:#ed9d13">&#34;0.6.0&#34;</span></code></pre></td></tr></table>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-toml" data-lang="toml">[<span style="color:#a6e22e">dependencies</span>]
+<span style="color:#a6e22e">nix</span> = <span style="color:#e6db74">&#34;0.6.0&#34;</span>
+</code></pre></td></tr></table>
 </div>
-</div>
-<p>Add this to the top of your <code>main.rs</code> file so we have the imports out of the
+</div><p>Add this to the top of your <code>main.rs</code> file so we have the imports out of the
 way:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">extern</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">crate</span><span style="color:#666"> </span>nix;<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">use</span><span style="color:#666"> </span>nix::sys::event::{KEvent,<span style="color:#666"> </span>kqueue,<span style="color:#666"> </span>kevent,<span style="color:#666"> </span>EventFilter,<span style="color:#666"> </span>FilterFlag};<span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#6ab825;font-weight:bold">use</span><span style="color:#666"> </span>nix::sys::event::{EV_ADD,<span style="color:#666"> </span>EV_ENABLE};<span style="color:#666">
-</span></code></pre></td></tr></table>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">extern</span> <span style="color:#66d9ef">crate</span> nix;
+
+<span style="color:#66d9ef">use</span> nix::sys::event::{KEvent, kqueue, kevent, EventFilter, FilterFlag};
+<span style="color:#66d9ef">use</span> nix::sys::event::{EV_ADD, EV_ENABLE};
+</code></pre></td></tr></table>
 </div>
-</div>
-<p>Next, we add a helper function that encapsulates the <code>KEvent</code> creation:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+</div><p>Next, we add a helper function that encapsulates the <code>KEvent</code> creation:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 8
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 9
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">10
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">fn</span> <span style="color:#447fcf">event</span>(id: <span style="color:#6ab825;font-weight:bold">usize</span>,<span style="color:#666"> </span>timer: <span style="color:#6ab825;font-weight:bold">isize</span>)<span style="color:#666"> </span>-&gt; <span style="color:#447fcf;text-decoration:underline">KEvent</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span>KEvent<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">        </span>ident: <span style="color:#447fcf;text-decoration:underline">id</span>,<span style="color:#666">
-</span><span style="color:#666">        </span>filter: <span style="color:#447fcf;text-decoration:underline">EventFilter</span>::EVFILT_TIMER,<span style="color:#666">
-</span><span style="color:#666">        </span>flags: <span style="color:#447fcf;text-decoration:underline">EV_ADD</span><span style="color:#666"> </span>|<span style="color:#666"> </span>EV_ENABLE,<span style="color:#666">
-</span><span style="color:#666">        </span>fflags: <span style="color:#447fcf;text-decoration:underline">FilterFlag</span>::empty(),<span style="color:#666">
-</span><span style="color:#666">        </span>data: <span style="color:#447fcf;text-decoration:underline">timer</span>,<span style="color:#666">
-</span><span style="color:#666">        </span>udata: <span style="color:#3677a9">0</span>,<span style="color:#666">
-</span><span style="color:#666">    </span>}<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">event</span>(id: <span style="color:#66d9ef">usize</span>, timer: <span style="color:#66d9ef">isize</span>) -&gt; <span style="color:#a6e22e">KEvent</span> {
+    KEvent {
+        ident: <span style="color:#a6e22e">id</span>,
+        filter: <span style="color:#a6e22e">EventFilter</span>::EVFILT_TIMER,
+        flags: <span style="color:#a6e22e">EV_ADD</span> <span style="color:#f92672">|</span> EV_ENABLE,
+        fflags: <span style="color:#a6e22e">FilterFlag</span>::empty(),
+        data: <span style="color:#a6e22e">timer</span>,
+        udata: <span style="color:#ae81ff">0</span>,
+    }
+}
+</code></pre></td></tr></table>
 </div>
-</div>
-<p>Here the caller passes in the event id as well as the timer in milliseconds. Since
+</div><p>Here the caller passes in the event id as well as the timer in milliseconds. Since
 we want to get a timer event we need to use the <code>EventFilter::EVFILT_TIMER</code> filter.
 The <code>EV_ADD | EV_ENABLE</code> indicates we want to add and enable the timer at the same
 time. No flag filters are needed and the <code>data</code> payload for our timer event is the
 time provided by the caller. We also don&rsquo;t set any opaque user data here.</p>
-
 <p>Inside our <code>main</code> function we first need to grab a <code>kqueue</code> and then register
 events. We make use of our <code>event</code> function here and create one event that
 runs each second and one that runs every 1.5 seconds:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">8
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#999;font-style:italic">// Initialize the Kqueue
-</span><span style="color:#999;font-style:italic"></span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span>kq<span style="color:#666"> </span>=<span style="color:#666"> </span>kqueue().expect(<span style="color:#ed9d13">&#34;Could not get kqueue&#34;</span>);<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#999;font-style:italic">// Create a Vec&lt;KEvent&gt; with both events
-</span><span style="color:#999;font-style:italic"></span><span style="color:#6ab825;font-weight:bold">let</span><span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">mut</span><span style="color:#666"> </span>changes<span style="color:#666"> </span>=<span style="color:#666"> </span>vec![event(<span style="color:#3677a9">1</span>,<span style="color:#666"> </span><span style="color:#3677a9">1000</span>),<span style="color:#666"> </span>event(<span style="color:#3677a9">2</span>,<span style="color:#666"> </span><span style="color:#3677a9">1500</span>)];<span style="color:#666">
-</span><span style="color:#666">
-</span><span style="color:#666"></span><span style="color:#999;font-style:italic">// Register the events in the `changelist`.
-</span><span style="color:#999;font-style:italic"></span>kevent(kq,<span style="color:#666"> </span>changes.as_slice(),<span style="color:#666"> </span>&amp;<span style="color:#6ab825;font-weight:bold">mut</span><span style="color:#666"> </span>[],<span style="color:#666"> </span><span style="color:#3677a9">0</span>).unwrap();<span style="color:#666">
-</span></code></pre></td></tr></table>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#75715e">// Initialize the Kqueue
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> kq <span style="color:#f92672">=</span> kqueue().expect(<span style="color:#e6db74">&#34;Could not get kqueue&#34;</span>);
+
+<span style="color:#75715e">// Create a Vec&lt;KEvent&gt; with both events
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> changes <span style="color:#f92672">=</span> vec<span style="color:#f92672">!</span>[event(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1000</span>), event(<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1500</span>)];
+
+<span style="color:#75715e">// Register the events in the `changelist`.
+</span><span style="color:#75715e"></span>kevent(kq, changes.as_slice(), <span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> [], <span style="color:#ae81ff">0</span>).unwrap();
+</code></pre></td></tr></table>
 </div>
-</div>
-<p>Kqueue now knows about the events we are interested in, so it&rsquo;s time to run
+</div><p>Kqueue now knows about the events we are interested in, so it&rsquo;s time to run
 a loop and poll until they happen:</p>
-<div class="highlight"><div style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4">
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
 <table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 1
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 2
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 3
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 4
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 5
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 6
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 7
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 8
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868"> 9
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">10
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">11
-</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868">12
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
 </span></code></pre></td>
-<td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#6ab825;font-weight:bold">loop</span><span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">  </span><span style="color:#6ab825;font-weight:bold">match</span><span style="color:#666"> </span>kevent(kq,<span style="color:#666"> </span>&amp;[],<span style="color:#666"> </span>changes.as_mut_slice(),<span style="color:#666"> </span><span style="color:#3677a9">0</span>)<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#24909d">Ok</span>(v)<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">if</span><span style="color:#666"> </span>v<span style="color:#666"> </span>&gt;<span style="color:#666"> </span><span style="color:#3677a9">0</span><span style="color:#666"> </span>=&gt;<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">      </span>println!(<span style="color:#ed9d13">&#34;---&#34;</span>);<span style="color:#666">
-</span><span style="color:#666">      </span><span style="color:#6ab825;font-weight:bold">for</span><span style="color:#666"> </span>i<span style="color:#666"> </span><span style="color:#6ab825;font-weight:bold">in</span><span style="color:#666"> </span><span style="color:#3677a9">0</span>..v<span style="color:#666"> </span>{<span style="color:#666">
-</span><span style="color:#666">        </span>println!(<span style="color:#ed9d13">&#34;Event with ID {:?} triggered&#34;</span>,<span style="color:#666"> </span>changes.get(i).unwrap().ident);<span style="color:#666">
-</span><span style="color:#666">      </span>}<span style="color:#666">
-</span><span style="color:#666">    </span>}<span style="color:#666">
-</span><span style="color:#666">    </span><span style="color:#24909d">Err</span>(e)<span style="color:#666"> </span>=&gt;<span style="color:#666"> </span>panic!(<span style="color:#ed9d13">&#34;{:?}&#34;</span>,<span style="color:#666"> </span>e),<span style="color:#666"> </span><span style="color:#999;font-style:italic">// Panic on Errors
-</span><span style="color:#999;font-style:italic"></span><span style="color:#666">    </span>_<span style="color:#666"> </span>=&gt;<span style="color:#666"> </span>()<span style="color:#666"> </span><span style="color:#999;font-style:italic">// Ignore Ok(0),
-</span><span style="color:#999;font-style:italic"></span><span style="color:#666">  </span>}<span style="color:#666">
-</span><span style="color:#666"></span>}<span style="color:#666">
-</span></code></pre></td></tr></table>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rust" data-lang="rust"><span style="color:#66d9ef">loop</span> {
+  <span style="color:#66d9ef">match</span> kevent(kq, <span style="color:#f92672">&amp;</span>[], changes.as_mut_slice(), <span style="color:#ae81ff">0</span>) {
+    Ok(v) <span style="color:#66d9ef">if</span> v <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">=&gt;</span> {
+      println<span style="color:#f92672">!</span>(<span style="color:#e6db74">&#34;---&#34;</span>);
+      <span style="color:#66d9ef">for</span> i <span style="color:#66d9ef">in</span> <span style="color:#ae81ff">0</span>..v {
+        println<span style="color:#f92672">!</span>(<span style="color:#e6db74">&#34;Event with ID {:?} triggered&#34;</span>, changes.get(i).unwrap().ident);
+      }
+    }
+    Err(e) <span style="color:#f92672">=&gt;</span> panic<span style="color:#f92672">!</span>(<span style="color:#e6db74">&#34;{:?}&#34;</span>, e), <span style="color:#75715e">// Panic on Errors
+</span><span style="color:#75715e"></span>    _ <span style="color:#f92672">=&gt;</span> () <span style="color:#75715e">// Ignore Ok(0),
+</span><span style="color:#75715e"></span>  }
+}
+</code></pre></td></tr></table>
 </div>
-</div>
-<p>We poll <code>kevent</code> and the <code>changes</code> slice is updated with the results on each
+</div><p>We poll <code>kevent</code> and the <code>changes</code> slice is updated with the results on each
 poll with the <code>eventlist</code>. <code>kevent</code> returns either an <code>Err</code> or <code>Ok</code> with the
 number of events that are available now. Note that <code>Ok(0)</code> is a special case
 that nothing is available, so we move on. If we have at least one event pending
 we iterate through all pending events and print their ID.</p>
-
 <p>So if you run this example what you&rsquo;ll see is:</p>
-
 <pre><code>$ cargo run
        Fresh bitflags v0.4.0
        Fresh semver v0.1.20
@@ -334,47 +328,22 @@ Event with ID 1 triggered
 Event with ID 2 triggered
 ---
 ^C
-</code></pre>
-
-<p>Since our timers fire at different intervals (and occasionally fire together) you
+</code></pre><p>Since our timers fire at different intervals (and occasionally fire together) you
 can see that every time the different events are available to process by your
 application.</p>
-
 <p>Of course this is barely scratching the surface of what you can do with <code>kqueue</code>
 but I&rsquo;d like to mention one final thing: as you can see even if you just
 registered the events once they fire over and over again. If you want to fire
 them just once you can use <code>flags: EV_ADD | EV_ENABLE | EV_ONESHOT</code> instead.</p>
 
     </div>
-
-    <div id="disqus_thread"></div>
-<script type="application/javascript">
-    var disqus_config = function () {
-    
-    
-    
-    };
-    (function() {
-        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
-            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
-            return;
-        }
-        var d = document, s = d.createElement('script'); s.async = true;
-        s.src = '//' + "daschl" + '.disqus.com/embed.js';
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
-
+ 
     <ul class="article-taxonomy">
-       
+      
+    
+      
       <li>
-        <i class="fa fa-tags"></i>
-        <a href="/%20tags/%20rust">rust</a>
-        <a href="/%20tags/%20kqueue">kqueue</a>
-        <a href="/%20tags/%20osx">osx</a>
+        <i class="fa fa-tags"></i><a href="/tags/rust">rust</a><a href="/tags/kqueue">kqueue</a><a href="/tags/osx">osx</a>
       </li>
       
   </article>
@@ -384,30 +353,24 @@ them just once you can use <code>flags: EV_ADD | EV_ENABLE | EV_ONESHOT</code> i
 <footer class="footer">
   <ul class="footer-links">
     <li>
-      <a href="https://nitschinger.at/index.xml" type="application/rss+xml" target="_blank">
-        <i class="fa fa-rss"></i> RSS feed</a>
+      <a href="/atom.xml" type="application/atom+xml" target="_blank"><i class="fa fa-rss"></i> Atom feed</a>
     </li>
     <li>
-      <a href="https://github.com/mobybit/hugo-natrium-theme">
-        <i class="fa fa-github"></i> Built with Hugo &amp; Natrium Theme</a>
+      <a href="https://github.com/daschl"><i class="fa fa-github"></i> GitHub</a>
+    </li>
+    <li>
+      <a href="https://twitter.com/daschl"><i class="fa fa-twitter"></i> Twitter</a>
+    </li>
+    <li>
+      <a href="https://www.linkedin.com/in/michaelnitschinger/"><i class="fa fa-linkedin"></i> LinkedIn</a>
     </li>
   </ul>
 </footer>
 
 </div>
 
-<script>
-  (function (i, s, o, g, r, a, m) {
-    i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
-      (i[r].q = i[r].q || []).push(arguments)
-    }, i[r].l = 1 * new Date(); a = s.createElement(o),
-      m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
-  })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
 
-  ga('create', 'UA-19686689-1', 'auto');
-  ga('send', 'pageview');
-  ga('set', 'anonymizeIp', true);
-</script>
+
 </body>
 
 </html>
