@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.74.3" />
+
+
+<title>Getting Started with the nRF52840 in Rust – daschl writes. sometimes.</title>
+
+
+
+  
+  <meta property="description" content="Shows how the TSic temperature sensor code is ported from C to Rust">
+  
+
+
+
+
+<link href="/atom.xml" rel="alternate" type="application/atom+xml" title="daschl writes. sometimes." />
+
+<meta property="og:title" content="Getting Started with the nRF52840 in Rust" />
+<meta property="og:description" content="Shows how the TSic temperature sensor code is ported from C to Rust" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://nitschinger.at/Getting-Started-with-the-nRF52840-in-Rust/" />
+<meta property="article:published_time" content="2020-10-01T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-10-01T00:00:00+00:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Getting Started with the nRF52840 in Rust"/>
+<meta name="twitter:description" content="Shows how the TSic temperature sensor code is ported from C to Rust"/>
+
+<meta itemprop="name" content="Getting Started with the nRF52840 in Rust">
+<meta itemprop="description" content="Shows how the TSic temperature sensor code is ported from C to Rust">
+<meta itemprop="datePublished" content="2020-10-01T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2020-10-01T00:00:00+00:00" />
+<meta itemprop="wordCount" content="1666">
+
+
+
+<meta itemprop="keywords" content="tsic,rust,nRF52840,embedded," />
+
+
+<link rel="stylesheet" href="https://nitschinger.at/css/main.css" media="all">
+<link rel="stylesheet" href="https://nitschinger.at/css/fonts.css">
+
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="header">
+        <nav class="nav">
+  <a href="https://nitschinger.at/" class="nav-logo">
+    <img src="https://nitschinger.at/images/"
+         width="" 
+         height="" 
+         alt="">
+  </a>
+  <a href="https://nitschinger.at/" class="nav-title">daschl writes. sometimes.</a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/tags">tags</a></li>
+    
+    <li><a href="/imprint/">imprint</a></li>
+    
+    <li><a href="https://twitter.com/daschl">-&gt; twitter</a></li>
+    
+    <li><a href="https://github.com/daschl">-&gt; github</a></li>
+    
+  </ul>
+</nav>
+
+      </header>
+
+
+<main class="content" role="main">
+  <article class="article">
+    <h1 class="article-title">Getting Started with the nRF52840 in Rust</h1>
+    
+    <span class="article-date">1 October 2020</span>
+    
+
+    <div class="article-content">
+      <p>After my <a href="https://nitschinger.at/Rusty-PID-Porting-the-TSic-sensor-from-C-to-Rust">last blog post</a> on the TSIC 306 temperature sensor port to Rust, someone on <a href="https://www.reddit.com/r/rust/comments/j1g4tp/porting_the_tsic_sensor_from_c_to_rust/g720uww/?utm_source=reddit&amp;utm_medium=web2x&amp;context=3">Reddit</a> mentioned that it does not provide any guidance on how to get the code samples actually running on the chip.</p>
+<p>So this post takes a step back and runs you through the basics of setting up a project, configuring it properly and finally running different examples.</p>
+<p>Before we dive in I want to mention that I&rsquo;m still quite new to the embedded world, so some of the information might not be accurate or misleading. If you run into issues please comment below and I&rsquo;ll do my best to get them fixed.</p>
+<p>Also, I noticed that especially this part of the Rust ecosystem evolves very quickly. So if you read this post some time in 2021 or later, double check the tooling and see if it has been further improved.</p>
+<p>The full code can be found in <a href="https://github.com/daschl/nrf52840dk-sample">this repository</a>.</p>
+<h1 id="my-setup">My Setup</h1>
+<ul>
+<li>Hardware: <a href="https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52840-DK">nRF52840 DK</a></li>
+<li>OS: macOS 10.15.6</li>
+<li>Rust: 1.46.0 installed through <a href="https://rustup.rs/">rustup</a></li>
+</ul>
+<p><img src="/img/nrf-without-usb.jpg" alt="nRF Without USB"></p>
+<p>For this post I&rsquo;m using the <a href="https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52840-DK">nRF52840 DK</a> which contains an Arm Cortex-M4 processor with floating point support. The development kit also contains lots of ports and features that you can use to experiment. Check out the <a href="https://www.nordicsemi.com/-/media/Software-and-other-downloads/Product-Briefs/nRF52840-DK-product-brief.pdf">Product Brief</a> for all details.</p>
+<p>I first tried to use the <a href="https://en.wikipedia.org/wiki/ESP32">ESP32</a>, but I struggled to get it working properly because you need to use a custom LLVM fork and the tooling isn&rsquo;t there yet. I picked the nRF52840, because <a href="https://ferrous-systems.com/">ferrous systems</a> were running an embedded workshop using this board and they are so kind as to provide their material <a href="https://embedded-trainings.ferrous-systems.com/">free online</a>. I figured this might be the easiest way to start exploring Rust embedded, and indeed it has been pretty painless.</p>
+<h1 id="the-knurling-toolchain">The Knurling Toolchain</h1>
+<p>Since the initial release of the workshop material (which contained lots of custom code to run, log and flash), many of their tools have been extended and found a new home inside the <a href="https://github.com/knurling-rs/">knurling-rs github organization</a>. In particular, we are going to use:</p>
+<ul>
+<li><a href="https://github.com/knurling-rs/probe-run">probe-run</a>: a custom cargo runner to transparently flash and run our programs.</li>
+<li><a href="https://github.com/knurling-rs/defmt">defmt</a>: for easy and efficient logging back to the host.</li>
+</ul>
+<p>probe-run uses the <a href="https://probe.rs/">probe-rs</a> debugging toolkit underneath which is adding features and support for more targets all the time so you might be able to use a similar process as below for your own board.</p>
+<p>The development kit needs to be connected to your computer via USB like shown in the picture below:</p>
+<p><img src="/img/nrf-with-usb.jpg" alt="nRF With USB"></p>
+<p>It is important to use the USB port on the left and not the one at the bottom, because I think that&rsquo;s the only port which contains the J-Link debugging probe (which we are going to use to flash and run our code). <a href="https://embedded-trainings.ferrous-systems.com/hardware.html#nrf52840-development-kit-dk">This</a> section in the training material describes it in greater detail.</p>
+<h1 id="from-zero-to-hello-world">From Zero to &ldquo;Hello, World!&rdquo;</h1>
+<p>Note: if you want to cut corners, you can also use the <a href="https://github.com/rust-embedded/cortex-m-quickstart">Cortex-M Template</a>. In this post we&rsquo;ll start from an empty cargo project and work our way to a flashed device.</p>
+<p>Let&rsquo;s first start with an empty crate:</p>
+<pre><code>$ cargo new nrf52840dk-sample --bin
+</code></pre><p>Other than just compiling our code fine with <code>rustc</code>, we also need to achieve the following:</p>
+<ul>
+<li>cross-compile for our embedded target. In our case this is <code>thumbv7em-none-eabihf</code>.</li>
+<li>send the compiled code to our target. We&rsquo;ll use <code>probe-rs</code> for this task through <code>probe-run</code>.</li>
+</ul>
+<p>To allow us to cross-compile, we need to make sure that <code>rustup</code> has the toolchain needed for our target:</p>
+<pre><code>$ rustup target add thumbv7em-none-eabihf
+</code></pre><p>Since by default <code>cargo</code> will build for the host platform we are on, we instruct it through a custom <code>.cargo/config.toml</code> that we always want to build for our target platform instead:</p>
+<pre><code>[build]
+target = &quot;thumbv7em-none-eabihf&quot;
+</code></pre><p>Next up, let&rsquo;s work on our <code>main.rs</code>. Our embedded device does not have a full operating system installed, which means we cannot use the standard library. Also, our entry point into the program is not <code>main</code> because the usual bootstrapping infrastructure is not available.</p>
+<p>These two attributes hint it to rust:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#75715e">#![no_main]</span>
+<span style="color:#75715e">#![no_std]</span>
+
+<span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">main</span>() {
+    println<span style="color:#f92672">!</span>(<span style="color:#e6db74">&#34;Hello, world!&#34;</span>);
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>If we try to run this on our host, we&rsquo;ll see the following:</p>
+<pre><code>error: cannot find macro `println` in this scope
+ --&gt; src/main.rs:5:5
+  |
+5 |     println!(&quot;Hello, world!&quot;);
+  |     ^^^^^^^
+
+error: `#[panic_handler]` function required, but not found
+
+error: aborting due to 2 previous errors
+error: could not compile `nrf52840dk-sample`.
+To learn more, run the command again with --verbose.
+</code></pre><p>This tells us two things: first, the <code>println!</code> macro is not available (this is why we are going to use <code>defmt</code> later). Second, we need a panic handler. At this point, things get a bit tricky and we need to bring in our first dependencies (in <code>Cargo.toml</code>):</p>
+<pre><code>[dependencies]
+cortex-m = &quot;0.6.3&quot;
+cortex-m-rt = &quot;0.6.12&quot;
+defmt = { git = &quot;https://github.com/knurling-rs/defmt&quot;, branch = &quot;main&quot; }
+defmt-rtt = { git = &quot;https://github.com/knurling-rs/defmt&quot;, branch = &quot;main&quot; }
+nrf52840-hal = &quot;0.11.0&quot;
+</code></pre><p>The <code>cortex-m</code> and <code>cortex-m-rt</code> crates are our board support crates and provide the hardware abstractions we need in a minute. Since we cannot use println and friends, we include <code>defmt</code> to provide us with a decent logging infrastructure.</p>
+<p>Also, to enable <code>defmt</code> logging we need to add these features:</p>
+<pre><code>[features]
+# set logging levels here
+default = [
+  &quot;defmt-default&quot;,
+]
+
+# do NOT modify these features
+defmt-default = []
+defmt-trace = []
+defmt-debug = []
+defmt-info = []
+defmt-warn = []
+defmt-error = []
+</code></pre><p>If those are not present, the code will compile but you won&rsquo;t see log output on the console.</p>
+<p>Ok, so now we can rework our <code>main</code> function a little bit:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#75715e">#[cortex_m_rt::entry]</span>
+<span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">main</span>() -&gt; <span style="color:#f92672">!</span> {
+    defmt::info<span style="color:#f92672">!</span>(<span style="color:#e6db74">&#34;Hello, World!&#34;</span>);
+    exit();
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>You&rsquo;ll notice that we switched to <code>defmt</code> for logging, and also use the <code>cortex_m_rt</code> to provide us with an entry function into our program that is compatible with the nRF board.</p>
+<p>Finally, we need to set up our panic handler and an <code>exit</code> function. Note that this is a very simplistic version but helps to get us off the ground:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#75715e">#[panic_handler]</span>
+<span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">panic</span>(_info: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">core</span>::panic::PanicInfo) -&gt; <span style="color:#f92672">!</span> {
+    defmt::error<span style="color:#f92672">!</span>(<span style="color:#e6db74">&#34;panicked&#34;</span>);
+    exit()
+}
+
+<span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">exit</span>() -&gt; <span style="color:#f92672">!</span> {
+    <span style="color:#66d9ef">loop</span> {
+        cortex_m::asm::bkpt();
+    }
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>A <code>cargo run</code> attempt later, we are much closer:</p>
+<pre><code>    Finished dev [unoptimized + debuginfo] target(s) in 0.03s
+     Running `target/thumbv7em-none-eabihf/debug/nrf52840dk-sample`
+target/thumbv7em-none-eabihf/debug/nrf52840dk-sample: target/thumbv7em-none-eabihf/debug/nrf52840dk-sample: cannot execute binary file
+</code></pre><p>We did not get any compile errors, but of course we cannot run an arm executable on our host machine. Time to flash our device!</p>
+<p>To do this, we need to install <code>probe-run</code>. For now we need to install it from git because we need the <code>defmt</code> support. At some point in the future I&rsquo;m sure you can just install it from a stable version:</p>
+<pre><code>$ cargo install probe-run --git https://github.com/knurling-rs/probe-run.git --branch main -f --features defmt
+</code></pre><p>While this installs, we need to open our <code>.cargo/config.toml</code> file once again and enable the custom cargo runner:</p>
+<pre><code>[target.'cfg(all(target_arch = &quot;arm&quot;, target_os = &quot;none&quot;))']
+runner = &quot;probe-run --chip nRF52840_xxAA  --defmt&quot;
+rustflags = [
+  &quot;-C&quot;, &quot;link-arg=-Tlink.x&quot;,
+  &quot;-C&quot;, &quot;link-arg=-Tdefmt.x&quot;,
+]
+
+[build]
+target = &quot;thumbv7em-none-eabihf&quot;
+</code></pre><p>All these properties and flags are from the <code>probe-run</code> docs. If you are using a different chip, I think you can use <code>probe-run --list-chips</code> to find the right one for your device.</p>
+<p>At this point we could try to run it, but there are two issues remaining. <code>defmt</code> wouldn&rsquo;t log anything, and we are lacking our memory layout for the <code>nrf52840</code>.</p>
+<p>So, we finally need to add these two lines before our main function:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">use</span> defmt_rtt <span style="color:#66d9ef">as</span> _; <span style="color:#75715e">// global logger
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">use</span> nrf52840_hal <span style="color:#66d9ef">as</span> _; <span style="color:#75715e">// memory layout
+</span></code></pre></td></tr></table>
+</div>
+</div><p>Finally, when we now type <code>cargo run</code>, the program gets flashed onto our device successfully:</p>
+<pre><code>$ cargo run
+   Compiling nrf52840dk-sample v0.1.0 (/Users/daschl/tmp/nrf52840dk-sample)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.24s
+     Running `probe-run --chip nRF52840_xxAA --defmt target/thumbv7em-none-eabihf/debug/nrf52840dk-sample`
+  (HOST) INFO  flashing program
+  (HOST) INFO  success!
+────────────────────────────────────────────────────────────────────────────────
+0.000000 INFO  Hello, World!
+└─ nrf52840dk_sample::__cortex_m_rt_main @ src/main.rs:9
+stack backtrace:
+   0: __bkpt
+   1: nrf52840dk_sample::exit
+        at src/main.rs:22
+   2: nrf52840dk_sample::__cortex_m_rt_main
+        at src/main.rs:11
+   3: main
+        at src/main.rs:7
+   4: ResetTrampoline
+        at /Users/daschl/.cargo/registry/src/github.com-1ecc6299db9ec823/cortex-m-rt-0.6.13/src/lib.rs:547
+   5: Reset
+        at /Users/daschl/.cargo/registry/src/github.com-1ecc6299db9ec823/cortex-m-rt-0.6.13/src/lib.rs:550
+
+</code></pre><h1 id="accessing-peripherals">Accessing Peripherals</h1>
+<p>With that little victory under our belt, let&rsquo;s try one more thing: access a peripheral sensor and display its state. In my previous post I used an external sensor, but we can also use a built-in one. The board features a <a href="https://infocenter.nordicsemi.com/index.jsp?topic=%2Fps_nrf52840%2Ftemp.html&amp;cp=3_0_0_5_27">temperature sensor</a> which measures the temperature of the processor.</p>
+<p>The first thing we need to add are two more imports for the <code>Peripherals</code> in general and our <code>Temp</code> sensor specifically:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">use</span> nrf52840_hal::pac::Peripherals;
+<span style="color:#66d9ef">use</span> nrf52840_hal::temp::Temp;
+</code></pre></td></tr></table>
+</div>
+</div><p>Inside our main function, we first need to take ownership of the <code>Peripherals</code> and then feed the right <code>TEMP</code> peripheral to our struct:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#75715e">// Take ownership of the device peripherals
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> peripherals <span style="color:#f92672">=</span> Peripherals::take().unwrap();
+
+<span style="color:#75715e">// Access to the temp sensor
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> temp_sensor <span style="color:#f92672">=</span> Temp::new(peripherals.TEMP);
+</code></pre></td></tr></table>
+</div>
+</div><p>Now all we need to do is read the temperature from the sensor and convert it to a <code>i32</code> so that <code>defmt</code> can log it for us:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">let</span> die_temp_c: <span style="color:#66d9ef">i32</span> <span style="color:#f92672">=</span> temp_sensor.measure().to_num();
+defmt::info<span style="color:#f92672">!</span>(<span style="color:#e6db74">&#34;processor temp is {:i32}°C&#34;</span>, die_temp_c);
+</code></pre></td></tr></table>
+</div>
+</div><p>Run your program again and you&rsquo;ll see something similar to this:</p>
+<pre><code>0.000000 INFO  processor temp is 24°C
+</code></pre><h1 id="conclusion">Conclusion</h1>
+<p>We went from an empty repository to a simple program that reads a temperature sensor and prints it onto your host machines terminal. By not using a template we learned to understand the different components that are at play to get us off the ground. Of course, this is just the start of any real world embedded programming task.</p>
+<p>I recommend that you check out the <a href="https://github.com/nrf-rs/nrf-hal">Hardware Abstraction Layer</a> as a next step and make yourself familiar with the different capabilities. If you are looking for more complex applications, you probably also want to look at <a href="rtic.rs">RTIC</a> which is a framework for building real-time concurrent applications.</p>
+<p>Finally, you can check out the full code in this <a href="https://github.com/daschl/nrf52840dk-sample">repository</a>. Please let me know in the comments if you have further questions or if I messed something up in this post!</p>
+
+    </div>
+
+    <ul class="article-taxonomy">
+      
+
+      
+      <li>
+        <i class="fa fa-tags"></i><a
+          href="/tags/tsic">tsic</a><a
+          href="/tags/rust">rust</a><a
+          href="/tags/nRF52840">nRF52840</a><a
+          href="/tags/embedded">embedded</a>
+      </li>
+      
+  </article>
+
+  <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "daschl" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+</main>
+
+<footer class="footer">
+  <ul class="footer-links">
+    <li>
+      <a href="/atom.xml" type="application/atom+xml" target="_blank"><i class="fa fa-rss"></i> Atom feed</a>
+    </li>
+    <li>
+      <a href="https://github.com/daschl"><i class="fa fa-github"></i> GitHub</a>
+    </li>
+    <li>
+      <a href="https://twitter.com/daschl"><i class="fa fa-twitter"></i> Twitter</a>
+    </li>
+    <li>
+      <a href="https://www.linkedin.com/in/michaelnitschinger/"><i class="fa fa-linkedin"></i> LinkedIn</a>
+    </li>
+  </ul>
+</footer>
+
+</div>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-19686689-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+</body>
+
+</html>

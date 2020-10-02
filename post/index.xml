@@ -6,10 +6,21 @@
     <description>Recent content in Posts on daschl writes. sometimes.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 28 Sep 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 01 Oct 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="https://nitschinger.at/post/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Getting Started with the nRF52840 in Rust</title>
+      <link>https://nitschinger.at/Getting-Started-with-the-nRF52840-in-Rust/</link>
+      <pubDate>Thu, 01 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://nitschinger.at/Getting-Started-with-the-nRF52840-in-Rust/</guid>
+      <description>After my last blog post on the TSIC 306 temperature sensor port to Rust, someone on Reddit mentioned that it does not provide any guidance on how to get the code samples actually running on the chip.
+So this post takes a step back and runs you through the basics of setting up a project, configuring it properly and finally running different examples.
+Before we dive in I want to mention that I&amp;rsquo;m still quite new to the embedded world, so some of the information might not be accurate or misleading.</description>
+    </item>
     
     <item>
       <title>Rusty-PID: Porting the TSic sensor from C to Rust</title>
@@ -99,16 +110,6 @@ To get the best performance out of hour hardware, it is important to understand 
       
       <guid>https://nitschinger.at/Debugging-Concurrency-Issues-with-Open-JDK-Jcstress/</guid>
       <description>I fell in love with the Java Microbenchmarking Harness (JMH) a few months ago since (in my opinion) it is the only sane way to do microbenchmarks of JVM code right now. I also poked around on their website for other tools they provide, and found that there is another very interesting tool called jcstress. It stands for Java Concurrency Stress tests and is used mainly by the OpenJDK people itself to make sure their code works correctly with regards to concurrency.</description>
-    </item>
-    
-    <item>
-      <title>Bootstrapping from DNS SRV records in Java</title>
-      <link>https://nitschinger.at/Bootstrapping-from-DNS-SRV-records-in-Java/</link>
-      <pubDate>Wed, 29 Jan 2014 00:00:00 +0000</pubDate>
-      
-      <guid>https://nitschinger.at/Bootstrapping-from-DNS-SRV-records-in-Java/</guid>
-      <description>I know this topic has a very narrow audience, but I hope that one or two people out there scratching their heads will benefit from it.
-Here&amp;rsquo;s the itch we&amp;rsquo;re trying to scratch: is there an easy way to determine hostnames for - let&amp;rsquo;s say - a database connection? There are many ways to do this, like hardcoding it, providing them through a properties file and so on. All this techniques (maybe aside from fetching it over the network from a central storage) require some modifications on the server once one of the hostnames changes.</description>
     </item>
     
   </channel>

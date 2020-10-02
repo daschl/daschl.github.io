@@ -6,7 +6,7 @@
     <description>Recent content in Tags on daschl writes. sometimes.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 28 Sep 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 01 Oct 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="https://nitschinger.at/tags/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,7 +14,7 @@
     <item>
       <title>embedded</title>
       <link>https://nitschinger.at/tags/embedded/</link>
-      <pubDate>Mon, 28 Sep 2020 00:00:00 +0000</pubDate>
+      <pubDate>Thu, 01 Oct 2020 00:00:00 +0000</pubDate>
       
       <guid>https://nitschinger.at/tags/embedded/</guid>
       <description></description>
@@ -23,7 +23,7 @@
     <item>
       <title>nRF52840</title>
       <link>https://nitschinger.at/tags/nRF52840/</link>
-      <pubDate>Mon, 28 Sep 2020 00:00:00 +0000</pubDate>
+      <pubDate>Thu, 01 Oct 2020 00:00:00 +0000</pubDate>
       
       <guid>https://nitschinger.at/tags/nRF52840/</guid>
       <description></description>
@@ -32,9 +32,18 @@
     <item>
       <title>rust</title>
       <link>https://nitschinger.at/tags/rust/</link>
-      <pubDate>Mon, 28 Sep 2020 00:00:00 +0000</pubDate>
+      <pubDate>Thu, 01 Oct 2020 00:00:00 +0000</pubDate>
       
       <guid>https://nitschinger.at/tags/rust/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>tsic</title>
+      <link>https://nitschinger.at/tags/tsic/</link>
+      <pubDate>Thu, 01 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://nitschinger.at/tags/tsic/</guid>
       <description></description>
     </item>
     
@@ -44,15 +53,6 @@
       <pubDate>Mon, 28 Sep 2020 00:00:00 +0000</pubDate>
       
       <guid>https://nitschinger.at/tags/rustypid/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>tsic</title>
-      <link>https://nitschinger.at/tags/tsic/</link>
-      <pubDate>Mon, 28 Sep 2020 00:00:00 +0000</pubDate>
-      
-      <guid>https://nitschinger.at/tags/tsic/</guid>
       <description></description>
     </item>
     
