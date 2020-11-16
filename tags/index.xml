@@ -6,17 +6,40 @@
     <description>Recent content in Tags on daschl writes. sometimes.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 01 Oct 2020 00:00:00 +0000</lastBuildDate>
-    
-	<atom:link href="https://nitschinger.at/tags/index.xml" rel="self" type="application/rss+xml" />
-    
+    <lastBuildDate>Sun, 15 Nov 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://nitschinger.at/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>display</title>
+      <link>https://nitschinger.at/tags/display/</link>
+      <pubDate>Sun, 15 Nov 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://nitschinger.at/tags/display/</guid>
+      <description></description>
+    </item>
     
     <item>
       <title>embedded</title>
       <link>https://nitschinger.at/tags/embedded/</link>
-      <pubDate>Thu, 01 Oct 2020 00:00:00 +0000</pubDate>
+      <pubDate>Sun, 15 Nov 2020 00:00:00 +0000</pubDate>
       
       <guid>https://nitschinger.at/tags/embedded/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>rust</title>
+      <link>https://nitschinger.at/tags/rust/</link>
+      <pubDate>Sun, 15 Nov 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://nitschinger.at/tags/rust/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>ssd1327</title>
+      <link>https://nitschinger.at/tags/ssd1327/</link>
+      <pubDate>Sun, 15 Nov 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://nitschinger.at/tags/ssd1327/</guid>
       <description></description>
     </item>
     
@@ -26,15 +49,6 @@
       <pubDate>Thu, 01 Oct 2020 00:00:00 +0000</pubDate>
       
       <guid>https://nitschinger.at/tags/nRF52840/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>rust</title>
-      <link>https://nitschinger.at/tags/rust/</link>
-      <pubDate>Thu, 01 Oct 2020 00:00:00 +0000</pubDate>
-      
-      <guid>https://nitschinger.at/tags/rust/</guid>
       <description></description>
     </item>
     
@@ -80,24 +94,6 @@
       <pubDate>Mon, 01 Apr 2019 00:00:00 +0000</pubDate>
       
       <guid>https://nitschinger.at/tags/reactor/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>openwrt</title>
-      <link>https://nitschinger.at/tags/openwrt/</link>
-      <pubDate>Mon, 02 Jan 2017 00:00:00 +0000</pubDate>
-      
-      <guid>https://nitschinger.at/tags/openwrt/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>wifipineapple</title>
-      <link>https://nitschinger.at/tags/wifipineapple/</link>
-      <pubDate>Mon, 02 Jan 2017 00:00:00 +0000</pubDate>
-      
-      <guid>https://nitschinger.at/tags/wifipineapple/</guid>
       <description></description>
     </item>
     

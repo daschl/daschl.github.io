@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.77.0" />
+
+
+<title>Writing an embedded display driver in Rust – daschl writes. sometimes.</title>
+
+
+
+  
+  <meta property="description" content="Shows how the TSic temperature sensor code is ported from C to Rust">
+  
+
+
+
+
+<link href="/atom.xml" rel="alternate" type="application/atom+xml" title="daschl writes. sometimes." />
+
+<meta property="og:title" content="Writing an embedded display driver in Rust" />
+<meta property="og:description" content="Shows how the TSic temperature sensor code is ported from C to Rust" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://nitschinger.at/Writing-an-embedded-display-driver-in-Rust/" />
+<meta property="article:published_time" content="2020-11-15T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-11-15T00:00:00+00:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Writing an embedded display driver in Rust"/>
+<meta name="twitter:description" content="Shows how the TSic temperature sensor code is ported from C to Rust"/>
+
+<meta itemprop="name" content="Writing an embedded display driver in Rust">
+<meta itemprop="description" content="Shows how the TSic temperature sensor code is ported from C to Rust">
+<meta itemprop="datePublished" content="2020-11-15T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2020-11-15T00:00:00+00:00" />
+<meta itemprop="wordCount" content="2519">
+
+
+
+<meta itemprop="keywords" content="display,rust,ssd1327,embedded," />
+
+
+<link rel="stylesheet" href="https://nitschinger.at/css/main.css" media="all">
+<link rel="stylesheet" href="https://nitschinger.at/css/fonts.css">
+
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="header">
+        <nav class="nav">
+  <a href="https://nitschinger.at/" class="nav-logo">
+    <img src="https://nitschinger.at/images/"
+         width="" 
+         height="" 
+         alt="">
+  </a>
+  <a href="https://nitschinger.at/" class="nav-title">daschl writes. sometimes.</a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/tags">tags</a></li>
+    
+    <li><a href="/imprint/">imprint</a></li>
+    
+    <li><a href="https://twitter.com/daschl">-&gt; twitter</a></li>
+    
+    <li><a href="https://github.com/daschl">-&gt; github</a></li>
+    
+  </ul>
+</nav>
+
+      </header>
+
+
+<main class="content" role="main">
+  <article class="article">
+    <h1 class="article-title">Writing an embedded display driver in Rust</h1>
+    
+    <span class="article-date">15 November 2020</span>
+    
+
+    <div class="article-content">
+      <p>A year or so ago when I started my yourney into embedded development (to build a PID controller for my coffee machine) I bought a <a href="https://www.waveshare.com/wiki/1.5inch_RGB_OLED_Module">1.5 inch RGB OLED display</a>, which uses a SSD1351 controller. I got lucky, because a display driver for it <a href="https://crates.io/crates/ssd1351">already existed</a>.</p>
+<p>Unfortunately, very recently it stopped working and I&rsquo;m not sure why. Okay, maybe I tightened those screws a bit too much. Anyways, since I did not need a color display, I bought a very similar <a href="https://www.waveshare.com/wiki/1.5inch_OLED_Module">1.5 inch OLED display</a>. After plugging it in and not seeing anything rendered on the screen (and not touching my screwdriver), I realized that it uses a different controller: the SSD1327. This time I wasn&rsquo;t as lucky, because there happened to be no embedded rust driver out there yet.</p>
+<p>When life gives you lemons, write a display driver for them - and then blog about it so everyone gets to learn maybe a thing or two.</p>
+<p><img src="/img/display-clean.jpg" alt="Display with Text"></p>
+<p>The basic driver we are going to implement in this post works, but is neither flexible nor configurable. The full driver (which is still evolving) is goint to be a bit more complex and can be found <a href="https://github.com/daschl/ssd1327">here</a>.</p>
+<h1 id="preparations">Preparations</h1>
+<p>Before we dive in, we first need to figure out how to talk to the display and what protocol to use. The <a href="https://www.waveshare.com/w/upload/a/ac/SSD1327-datasheet.pdf">Datasheet</a> is very handy and I recommend to keep it open in a separate tab while working on the code.</p>
+<p>The controller supports different modes of communication: 4-wire SPI, 3-wire SPI, I2C, Parallel 6800 and Parallel 8080. In this blog post we&rsquo;ll use 4-wire SPI which is the one the display comes preconfigured with. The bytes we send over SPI can either be commands (for example to turn the display on or off) or actual pixel data to render on the screen. The datasheet thankfully has all that info, but it can be a little tough to digest at first if you need to start from zero.</p>
+<p>Thankfully, we don&rsquo;t need to start from zero. There are two very useful codebases out there which will help us hit the ground running:</p>
+<ul>
+<li>Download the demo code from the <a href="https://www.waveshare.com/wiki/1.5inch_OLED_Module">Waveshare Website</a>, which contains C code we can look at, which is very helpful especially to understand what commands we need to send during startup.</li>
+<li>A controller driver for the very similar <a href="https://github.com/jamwaffles/ssd1306">ssd1306</a> exists, and it is very well written. We can borrow some concepts like the command structure.</li>
+</ul>
+<h1 id="the-display-interface--embedded-graphics-crates">The Display Interface &amp; Embedded Graphics Crates</h1>
+<p>We could directly talk to our hardware SPI interface, but that is not going to be very portable. Ideally we want to plug this display driver into the established embedded rust ecosystem and benefit from code reuse and portability. For our purpose, three crates are important:</p>
+<ul>
+<li><a href="https://github.com/therealprof/display-interface">display-interface</a>: traits that bridge between a bus driver (i.e. SPI) and a display driver (our ssd1327). By using this crate, we also open the door to support I2C later.</li>
+<li><a href="https://github.com/embedded-graphics/embedded-graphics">embedded-graphics</a>: once we can talk to the device, we also need to render pixels. This crate will make it super easy to render text, lines and more.</li>
+<li><a href="https://github.com/rust-embedded/embedded-hal">embedded-hal</a>: this is the main hardware abstraction layer crate and we&rsquo;ll use it to talk to specific hardware pins and use time delay functionality.</li>
+</ul>
+<p>We are going to make use of all three in the next sections.</p>
+<h1 id="bootstrapping">Bootstrapping</h1>
+<p>Before we can render pixels on the screen, we need to initialize our display. The datasheet contains <em>a lot</em> of different commands, many of them are hardware oriented and it is pretty hard to figure out what we need. Thankfully, if we peek into the waveshare sample code, we can see a function like this:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-c" data-lang="c"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">OLED_Init</span>(OLED_SCAN_DIR OLED_ScanDir)
+{
+  <span style="color:#75715e">//Hardware reset
+</span><span style="color:#75715e"></span>  OLED_Reset();
+
+  <span style="color:#75715e">//Set the initialization register
+</span><span style="color:#75715e"></span>  OLED_InitReg();
+
+  <span style="color:#75715e">//Set the display scan and color transfer modes
+</span><span style="color:#75715e"></span>  OLED_SetGramScanWay(OLED_ScanDir );
+  Driver_Delay_ms(<span style="color:#ae81ff">200</span>);
+
+  <span style="color:#75715e">//Turn on the OLED display
+</span><span style="color:#75715e"></span>  OLED_WriteReg(<span style="color:#ae81ff">0xAF</span>);
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>This gives us a first idea: we need to reset the display, then initialize it, sleep and then write <code>0xAF</code>. Searching for <code>AF</code> in the datasheet tells us that this command will turn the display on. Alright, let&rsquo;s start with reset:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">9
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-c" data-lang="c"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">OLED_Reset</span>(<span style="color:#66d9ef">void</span>)
+{
+  OLED_RST_1;
+  Driver_Delay_ms(<span style="color:#ae81ff">100</span>);
+  OLED_RST_0;
+  Driver_Delay_ms(<span style="color:#ae81ff">100</span>);
+  OLED_RST_1;
+  Driver_Delay_ms(<span style="color:#ae81ff">100</span>);
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>The code sets the RST (&ldquo;reset&rdquo;) pin from our display to high, then low and then high again, sleeping 100ms in between. So how would we translate that to rust?</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">use</span> embedded_hal::blocking::delay::DelayMs;
+<span style="color:#66d9ef">use</span> embedded_hal::digital::v2::OutputPin;
+
+<span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">reset</span><span style="color:#f92672">&lt;</span>RST, DELAY<span style="color:#f92672">&gt;</span>(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> self, rst: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">mut</span> RST, delay: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">mut</span> DELAY)
+<span style="color:#66d9ef">where</span>
+    RST: <span style="color:#a6e22e">OutputPin</span>,
+    DELAY: <span style="color:#a6e22e">DelayMs</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">u8</span><span style="color:#f92672">&gt;</span>,
+{
+    rst.set_high().ok().unwrap();
+    delay.delay_ms(<span style="color:#ae81ff">100</span>);
+
+    rst.set_low().ok().unwrap();
+    delay.delay_ms(<span style="color:#ae81ff">100</span>);
+
+    rst.set_high().ok().unwrap();
+    delay.delay_ms(<span style="color:#ae81ff">100</span>);
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>The <code>embedded-hal</code> crate defines two important traits: one for an <code>OutputPin</code> and one to <code>Delay</code> for a certain number of milliseconds. The actual implementation comes from your board HAL (hardware abstraction layer), one of which we&rsquo;ll see later. Also note that error handling is omitted here to simplify the code for this blog post.</p>
+<p>Next up, we need to initialize the display. The C code is not very well documented, but we can see that a sequence of commands is sent to the display:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-c" data-lang="c"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">OLED_InitReg</span>(<span style="color:#66d9ef">void</span>)
+{
+  OLED_WriteReg(<span style="color:#ae81ff">0xae</span>);<span style="color:#75715e">//--turn off oled panel
+</span><span style="color:#75715e"></span>
+  OLED_WriteReg(<span style="color:#ae81ff">0x15</span>);    <span style="color:#75715e">//set column address
+</span><span style="color:#75715e"></span>  OLED_WriteReg(<span style="color:#ae81ff">0x00</span>);    <span style="color:#75715e">//start column   0
+</span><span style="color:#75715e"></span>  OLED_WriteReg(<span style="color:#ae81ff">0x7f</span>);    <span style="color:#75715e">//end column   127
+</span><span style="color:#75715e"></span>
+  <span style="color:#f92672">***</span> many more commands here <span style="color:#f92672">***</span>
+
+  OLED_WriteReg(<span style="color:#ae81ff">0xfd</span>);
+  OLED_WriteReg(<span style="color:#ae81ff">0x12</span>);
+
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>For our rust code we want to turn those commands into an actual <code>enum</code> so it is easier to understand. We also need to implement the equivalent of <code>OLED_WriteReg</code>, which will send those commands to the display. This is where the <code>display-interface</code> crate comes in. The <code>WriteOnlyDataCommand</code> trait it defines abstracts the actual low level communication for us and we just need to call the implementation of the trait.</p>
+<p>The idea of the following code is shamelessly taken from the excellent <code>ssd1306</code> crate. Every command gets its own enum variant and we can <code>send</code> it to our display:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">use</span> display_interface::{DataFormat::U8, DisplayError, WriteOnlyDataCommand};
+
+<span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">enum</span> <span style="color:#a6e22e">Command</span> {
+    <span style="color:#e6db74">/// Turn display off (0xAE)
+</span><span style="color:#e6db74"></span>    DisplayOff,
+    <span style="color:#e6db74">/// Turn display on (0xAF)
+</span><span style="color:#e6db74"></span>    DisplayOn,
+    <span style="color:#e6db74">/// Function Selection B (0xD5)
+</span><span style="color:#e6db74"></span>    CommandLock(<span style="color:#66d9ef">u8</span>),
+}
+
+<span style="color:#66d9ef">impl</span> Command {
+    <span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">send</span><span style="color:#f92672">&lt;</span>DI<span style="color:#f92672">&gt;</span>(self, display: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">mut</span> DI) -&gt; Result<span style="color:#f92672">&lt;</span>(), DisplayError<span style="color:#f92672">&gt;</span>
+    <span style="color:#66d9ef">where</span>
+        DI: <span style="color:#a6e22e">WriteOnlyDataCommand</span>,
+    {
+        <span style="color:#66d9ef">let</span> (data, len) <span style="color:#f92672">=</span> <span style="color:#66d9ef">match</span> self {
+            Self::DisplayOn <span style="color:#f92672">=&gt;</span> ([<span style="color:#ae81ff">0xAF</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>], <span style="color:#ae81ff">1</span>),
+            Self::DisplayOff <span style="color:#f92672">=&gt;</span> ([<span style="color:#ae81ff">0xAE</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>], <span style="color:#ae81ff">1</span>),
+            Self::CommandLock(value) <span style="color:#f92672">=&gt;</span> ([<span style="color:#ae81ff">0xFD</span>, value, <span style="color:#ae81ff">0</span>], <span style="color:#ae81ff">2</span>),
+        };
+        display.send_commands(U8(<span style="color:#f92672">&amp;</span>data[<span style="color:#ae81ff">0</span>..len]))
+    }
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>For the actual driver we need more commands, but the approach is always the same. On <code>send</code> we match on the enum variant and turn it into a byte slice which is then sent over the connection through the <code>WriteOnlyDataCommand</code> trait.</p>
+<p><em>If you wonder why it specifies the length and data in such a weird way (as I did): if you try to return the array in the match arms rust will complain that the match arms have different array sizes. So the workaround by <a href="https://github.com/jamwaffles">jamwaffles</a> is to always return a byte array with the same length, but then pass a slice of the correct size to the display. This makes the compiler happy and keeps the implementation short.</em></p>
+<p>Before we can glue it all together, we need to figure out how we can send the pixel information to the display.</p>
+<h1 id="rendering-pixels">Rendering Pixels</h1>
+<p>Our display has 128 rows and 128 colums with a potential of 16 colors each. 16 colors are represented by 4 bits, which is why the internal graphic display data RAM (GDDRAM) contains a buffer of <code>128 * 128 * 4 = 65536</code> bits. This allows to store all information for our 16384 pixels. Since rust does not have a <code>u4</code> datatype, we&rsquo;ll use a single byte <code>u8</code> representation instead. This allows us to store the information of two pixels in one byte, so we need a buffer size of <code>65536 / 8 = 8192</code> bytes.</p>
+<p>This is where <code>embedded-graphics</code> comes in. It defines a <code>DrawTarget</code> trait which we need to implement for our display. All we need to tell it is how to draw a pixel and what our display size is, and it will figure out the rest for us (i.e. drawing text or a shape):</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">use</span> display_interface::DisplayError;
+<span style="color:#66d9ef">use</span> embedded_graphics::{
+    drawable::Pixel,
+    pixelcolor::{Gray4, GrayColor},
+    prelude::Size,
+    DrawTarget,
+};
+
+<span style="color:#66d9ef">impl</span><span style="color:#f92672">&lt;</span>DI<span style="color:#f92672">&gt;</span> DrawTarget<span style="color:#f92672">&lt;</span>Gray4<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">for</span> Ssd1327<span style="color:#f92672">&lt;</span>DI<span style="color:#f92672">&gt;</span> {
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Error</span> <span style="color:#f92672">=</span> DisplayError;
+
+    <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">draw_pixel</span>(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> self, pixel: <span style="color:#a6e22e">Pixel</span><span style="color:#f92672">&lt;</span>Gray4<span style="color:#f92672">&gt;</span>) -&gt; Result<span style="color:#f92672">&lt;</span>(), Self::Error<span style="color:#f92672">&gt;</span> {
+        <span style="color:#66d9ef">let</span> Pixel(point, color) <span style="color:#f92672">=</span> pixel;
+
+        <span style="color:#66d9ef">let</span> idx <span style="color:#f92672">=</span> (point.x <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> point.y <span style="color:#f92672">*</span> <span style="color:#ae81ff">64</span>) <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">usize</span>;
+        <span style="color:#66d9ef">if</span> point.x <span style="color:#f92672">%</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> {
+            self.buffer[idx] <span style="color:#f92672">=</span> (color.luma() <span style="color:#f92672">&lt;&lt;</span> <span style="color:#ae81ff">4</span>) <span style="color:#f92672">|</span> self.buffer[idx];
+        } <span style="color:#66d9ef">else</span> {
+            self.buffer[idx] <span style="color:#f92672">=</span> (color.luma() <span style="color:#f92672">&amp;</span> <span style="color:#ae81ff">0x0f</span>) <span style="color:#f92672">|</span> self.buffer[idx];
+        }
+
+        Ok(())
+    }
+
+    <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">size</span>(<span style="color:#f92672">&amp;</span>self) -&gt; <span style="color:#a6e22e">Size</span> {
+        Size::new(<span style="color:#ae81ff">128</span>, <span style="color:#ae81ff">128</span>)
+    }
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>The first thing to note is <code>Gray4</code> on the <code>DrawTarget</code>. Since this trait supports all kinds of displays, we need to tell it which pixel colors we support. <code>Gray4</code> indicates 4 bit grayscale, so exactly what we need. This is also highlights how we utilize rust&rsquo;s type system to our benefit. We will only accept pixel colors that our device actually supports, any attempts to pass in i.e. a red color will fail at compile time.</p>
+<p>In the <code>draw_pixel</code> method, we extract the <code>x</code> and <code>y</code> coordinates of the pixel as well as its color through the <code>luma()</code> method. We first need to calculate the actual absolute position in our buffer based on the coordinates and then set the color on the element. Since we store 2 colors per byte the code needs to perform some bitshifting and either set the high or low 4 bits of the byte. This code has been taken from the waveshare C code and ported over to rust.</p>
+<p>Since we only wrote the information into an in-memory buffer, we also need the capability to send it over the wire to the display. For this, we add a <code>flush</code> method which takes the full buffer and sends it:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">flush</span>(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> self) -&gt; Result<span style="color:#f92672">&lt;</span>(), DisplayError<span style="color:#f92672">&gt;</span> {
+    self.display.send_data(U8(<span style="color:#f92672">&amp;</span>self.buffer))
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>This method will always take the whole buffer and send it to the display, even if we only changed one pixel. There are plenty of optimization opportunities here which we won&rsquo;t cover in this post.</p>
+<p>Ok, so what&rsquo;s the <code>buffer</code> exactly? Time to put it all together in a single struct:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">41
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">42
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">43
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">44
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">45
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">46
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">47
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">48
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">49
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">50
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">51
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">52
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">53
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">54
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">55
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">56
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">57
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">58
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">59
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">60
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">61
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">62
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">63
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">64
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">65
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">66
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">67
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">68
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">69
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">70
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">71
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">72
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">73
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">74
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">75
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">76
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">77
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">78
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">79
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">80
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">81
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">82
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">83
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">84
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">85
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">86
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">87
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">88
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">89
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">90
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">91
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">92
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">93
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">94
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">use</span> <span style="color:#66d9ef">crate</span>::command::Command;
+<span style="color:#66d9ef">use</span> display_interface::{DataFormat::U8, DisplayError, WriteOnlyDataCommand};
+<span style="color:#66d9ef">use</span> embedded_graphics::{
+    drawable::Pixel,
+    pixelcolor::{Gray4, GrayColor},
+    prelude::Size,
+    DrawTarget,
+};
+<span style="color:#66d9ef">use</span> embedded_hal::blocking::delay::DelayMs;
+<span style="color:#66d9ef">use</span> embedded_hal::digital::v2::OutputPin;
+
+<span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">const</span> DISPLAY_WIDTH: <span style="color:#66d9ef">u32</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">128</span>;
+<span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">const</span> DISPLAY_HEIGHT: <span style="color:#66d9ef">u32</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">128</span>;
+
+<span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">Ssd1327</span><span style="color:#f92672">&lt;</span>DI<span style="color:#f92672">&gt;</span> {
+    display: <span style="color:#a6e22e">DI</span>,
+    buffer: [<span style="color:#66d9ef">u8</span>; <span style="color:#ae81ff">8192</span>],
+}
+
+<span style="color:#66d9ef">impl</span><span style="color:#f92672">&lt;</span>DI: <span style="color:#a6e22e">WriteOnlyDataCommand</span><span style="color:#f92672">&gt;</span> Ssd1327<span style="color:#f92672">&lt;</span>DI<span style="color:#f92672">&gt;</span> {
+    <span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">new</span>(display: <span style="color:#a6e22e">DI</span>) -&gt; <span style="color:#a6e22e">Self</span> {
+        Self {
+            display,
+            buffer: [<span style="color:#ae81ff">0</span>; <span style="color:#ae81ff">8192</span>],
+        }
+    }
+
+    <span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">reset</span><span style="color:#f92672">&lt;</span>RST, DELAY<span style="color:#f92672">&gt;</span>(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> self, rst: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">mut</span> RST, delay: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">mut</span> DELAY)
+    <span style="color:#66d9ef">where</span>
+        RST: <span style="color:#a6e22e">OutputPin</span>,
+        DELAY: <span style="color:#a6e22e">DelayMs</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">u8</span><span style="color:#f92672">&gt;</span>,
+    {
+        rst.set_high().ok().unwrap();
+        delay.delay_ms(<span style="color:#ae81ff">100</span>);
+
+        rst.set_low().ok().unwrap();
+        delay.delay_ms(<span style="color:#ae81ff">100</span>);
+
+        rst.set_high().ok().unwrap();
+        delay.delay_ms(<span style="color:#ae81ff">100</span>);
+    }
+
+    <span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">init</span>(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> self) -&gt; Result<span style="color:#f92672">&lt;</span>(), DisplayError<span style="color:#f92672">&gt;</span> {
+        self.send_command(Command::DisplayOff)<span style="color:#f92672">?</span>;
+        self.send_command(Command::ColumnAddress { start: <span style="color:#ae81ff">0</span>, end: <span style="color:#ae81ff">127</span> })<span style="color:#f92672">?</span>;
+        self.send_command(Command::RowAddress { start: <span style="color:#ae81ff">0</span>, end: <span style="color:#ae81ff">127</span> })<span style="color:#f92672">?</span>;
+        self.send_command(Command::Contrast(<span style="color:#ae81ff">0x80</span>))<span style="color:#f92672">?</span>;
+        self.send_command(Command::SetRemap(<span style="color:#ae81ff">0x51</span>))<span style="color:#f92672">?</span>;
+        self.send_command(Command::StartLine(<span style="color:#ae81ff">0x00</span>))<span style="color:#f92672">?</span>;
+        self.send_command(Command::Offset(<span style="color:#ae81ff">0x00</span>))<span style="color:#f92672">?</span>;
+        self.send_command(Command::DisplayModeNormal)<span style="color:#f92672">?</span>;
+        self.send_command(Command::MuxRatio(<span style="color:#ae81ff">0x7f</span>))<span style="color:#f92672">?</span>;
+        self.send_command(Command::PhaseLength(<span style="color:#ae81ff">0xf1</span>))<span style="color:#f92672">?</span>;
+        self.send_command(Command::FrontClockDivider(<span style="color:#ae81ff">0x00</span>))<span style="color:#f92672">?</span>;
+        self.send_command(Command::FunctionSelectionA(<span style="color:#ae81ff">0x01</span>))<span style="color:#f92672">?</span>;
+        self.send_command(Command::SecondPreChargePeriod(<span style="color:#ae81ff">0x0f</span>))<span style="color:#f92672">?</span>;
+        self.send_command(Command::ComVoltageLevel(<span style="color:#ae81ff">0x0f</span>))<span style="color:#f92672">?</span>;
+        self.send_command(Command::PreChargeVoltage(<span style="color:#ae81ff">0x08</span>))<span style="color:#f92672">?</span>;
+        self.send_command(Command::FunctionSelectionB(<span style="color:#ae81ff">0x62</span>))<span style="color:#f92672">?</span>;
+        self.send_command(Command::CommandLock(<span style="color:#ae81ff">0x12</span>))<span style="color:#f92672">?</span>;
+        self.send_command(Command::DisplayOn)<span style="color:#f92672">?</span>;
+
+        Ok(())
+    }
+
+    <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">send_command</span>(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> self, command: <span style="color:#a6e22e">Command</span>) -&gt; Result<span style="color:#f92672">&lt;</span>(), DisplayError<span style="color:#f92672">&gt;</span> {
+        command.send(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> self.display)
+    }
+
+    <span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">flush</span>(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> self) -&gt; Result<span style="color:#f92672">&lt;</span>(), DisplayError<span style="color:#f92672">&gt;</span> {
+        self.display.send_data(U8(<span style="color:#f92672">&amp;</span>self.buffer))
+    }
+}
+
+<span style="color:#66d9ef">impl</span><span style="color:#f92672">&lt;</span>DI<span style="color:#f92672">&gt;</span> DrawTarget<span style="color:#f92672">&lt;</span>Gray4<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">for</span> Ssd1327<span style="color:#f92672">&lt;</span>DI<span style="color:#f92672">&gt;</span> {
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Error</span> <span style="color:#f92672">=</span> DisplayError;
+
+    <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">draw_pixel</span>(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> self, pixel: <span style="color:#a6e22e">Pixel</span><span style="color:#f92672">&lt;</span>Gray4<span style="color:#f92672">&gt;</span>) -&gt; Result<span style="color:#f92672">&lt;</span>(), Self::Error<span style="color:#f92672">&gt;</span> {
+        <span style="color:#66d9ef">let</span> Pixel(point, color) <span style="color:#f92672">=</span> pixel;
+
+        <span style="color:#66d9ef">let</span> idx <span style="color:#f92672">=</span> (point.x <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> point.y <span style="color:#f92672">*</span> <span style="color:#ae81ff">64</span>) <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">usize</span>;
+        <span style="color:#66d9ef">if</span> point.x <span style="color:#f92672">%</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> {
+            self.buffer[idx] <span style="color:#f92672">=</span> (color.luma() <span style="color:#f92672">&lt;&lt;</span> <span style="color:#ae81ff">4</span>) <span style="color:#f92672">|</span> self.buffer[idx];
+        } <span style="color:#66d9ef">else</span> {
+            self.buffer[idx] <span style="color:#f92672">=</span> (color.luma() <span style="color:#f92672">&amp;</span> <span style="color:#ae81ff">0x0f</span>) <span style="color:#f92672">|</span> self.buffer[idx];
+        }
+
+        Ok(())
+    }
+
+    <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">size</span>(<span style="color:#f92672">&amp;</span>self) -&gt; <span style="color:#a6e22e">Size</span> {
+        Size::new(DISPLAY_WIDTH, DISPLAY_HEIGHT)
+    }
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>The <code>buffer</code> is initialized as a <code>[u8; 8192]</code>. Note that we fill it with zeroes when the display is constructred, which will sets every pixel to black. Also you can see that we now send more commands to the display on init, but the way it works is exactly the same as described above.</p>
+<h1 id="real-world-usage">Real World Usage</h1>
+<p>In this example I&rsquo;m using the <a href="https://www.adafruit.com/product/4062">Adafruit Feather nRF52840 Express</a> board, together with the <a href="https://docs.rs/nrf52840-hal/0.11.0/nrf52840_hal/">nrf52840-hal</a>.</p>
+<p>I&rsquo;m connected to the board via the <a href="https://www.segger.com/products/debug-probes/j-link/models/j-link-edu-mini/">Segger J-Link Mini</a> and use <a href="https://github.com/knurling-rs/probe-run">probe-run</a> to flash the board.</p>
+<p>If you do not own a J-Link device and don&rsquo;t want to buy one, the <a href="https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52840-DK">nRF52840 DK</a> has one already integrated. Check out <a href="https://nitschinger.at/Getting-Started-with-the-nRF52840-in-Rust/">my blog post</a> for an introduction to it.</p>
+<p>First, we need to grab our device peripherals:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">let</span> peripherals <span style="color:#f92672">=</span> Peripherals::take().unwrap();
+<span style="color:#66d9ef">let</span> port0 <span style="color:#f92672">=</span> p0::Parts::new(peripherals.P0);
+</code></pre></td></tr></table>
+</div>
+</div><p>To get a <code>DelayMs</code> trait implementation, we can use a <code>Timer</code>:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> timer <span style="color:#f92672">=</span> Timer::new(peripherals.TIMER0);
+</code></pre></td></tr></table>
+</div>
+</div><p>Next, we wire up all our <code>SPI</code> pins. The specific pins for your device of course might be different.</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> rst_pin <span style="color:#f92672">=</span> port0.p0_28.into_push_pull_output(Level::Low).degrade();
+<span style="color:#66d9ef">let</span> dc_pin <span style="color:#f92672">=</span> port0.p0_02.into_push_pull_output(Level::Low).degrade();
+<span style="color:#66d9ef">let</span> cs_pin <span style="color:#f92672">=</span> port0.p0_03.into_push_pull_output(Level::Low).degrade();
+
+<span style="color:#66d9ef">let</span> spi_pins <span style="color:#f92672">=</span> Pins {
+    sck: <span style="color:#a6e22e">port0</span>.p0_14.into_push_pull_output(Level::Low).degrade(),
+    mosi: Some(port0.p0_13.into_push_pull_output(Level::Low).degrade()),
+    miso: None,
+};
+<span style="color:#66d9ef">let</span> spi <span style="color:#f92672">=</span> Spim::new(peripherals.SPIM0, spi_pins, Frequency::M2, MODE_0, <span style="color:#ae81ff">0</span>);
+</code></pre></td></tr></table>
+</div>
+</div><p>Since we are using the <code>display-interface</code> crate, we need to wrap our SPI implementation in its wrapper struct:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">let</span> spii <span style="color:#f92672">=</span> SPIInterface::new(spi, dc_pin, cs_pin);
+</code></pre></td></tr></table>
+</div>
+</div><p>Finally, we can plug it into our display, reset and initialize it:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs"><span style="color:#66d9ef">let</span> <span style="color:#66d9ef">mut</span> display <span style="color:#f92672">=</span> Ssd1327::new(spii);
+
+display.reset(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> rst_pin, <span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> timer);
+display.init(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> timer).unwrap();
+</code></pre></td></tr></table>
+</div>
+</div><p>Time to render something! Also we should not forget to <code>flush</code> at the end. In this example we render one white pixel in every corner of the display as well as some text:</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-rs" data-lang="rs">Pixel(Point::new(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>), Gray4::WHITE)
+    .draw(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> display)
+    .unwrap();
+Pixel(Point::new(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">127</span>), Gray4::WHITE)
+    .draw(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> display)
+    .unwrap();
+Pixel(Point::new(<span style="color:#ae81ff">127</span>, <span style="color:#ae81ff">0</span>), Gray4::WHITE)
+    .draw(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> display)
+    .unwrap();
+Pixel(Point::new(<span style="color:#ae81ff">127</span>, <span style="color:#ae81ff">127</span>), Gray4::WHITE)
+    .draw(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> display)
+    .unwrap();
+
+<span style="color:#66d9ef">let</span> style <span style="color:#f92672">=</span> TextStyleBuilder::new(Font6x8)
+    .text_color(Gray4::WHITE)
+    .background_color(Gray4::BLACK)
+    .build();
+
+Text::new(<span style="color:#e6db74">&#34;Hello Rust!&#34;</span>, Point::new(<span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">10</span>))
+    .into_styled(style)
+    .draw(<span style="color:#f92672">&amp;</span><span style="color:#66d9ef">mut</span> display)
+    .unwrap();
+
+display.flush().unwrap();
+</code></pre></td></tr></table>
+</div>
+</div><p>And there we go! Here is what gets rendered on the display:</p>
+<p><img src="/img/display-wired.png" alt="Display wired up"></p>
+<p>At this point we have a working driver for our display. It doesn&rsquo;t have many bells and whistles, but that can all be added later now that we understand how it works.</p>
+<p>I hope you enjoyed this post as much as I did writing it! You can find the current version of the driver <a href="https://github.com/daschl/ssd1327">here</a>.</p>
+
+    </div>
+
+    <ul class="article-taxonomy">
+      
+
+      
+      <li>
+        <i class="fa fa-tags"></i><a
+          href="/tags/display">display</a><a
+          href="/tags/rust">rust</a><a
+          href="/tags/ssd1327">ssd1327</a><a
+          href="/tags/embedded">embedded</a>
+      </li>
+      
+  </article>
+
+  <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "daschl" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+</main>
+
+<footer class="footer">
+  <ul class="footer-links">
+    <li>
+      <a href="/atom.xml" type="application/atom+xml" target="_blank"><i class="fa fa-rss"></i> Atom feed</a>
+    </li>
+    <li>
+      <a href="https://github.com/daschl"><i class="fa fa-github"></i> GitHub</a>
+    </li>
+    <li>
+      <a href="https://twitter.com/daschl"><i class="fa fa-twitter"></i> Twitter</a>
+    </li>
+    <li>
+      <a href="https://www.linkedin.com/in/michaelnitschinger/"><i class="fa fa-linkedin"></i> LinkedIn</a>
+    </li>
+  </ul>
+</footer>
+
+</div>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-19686689-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+</body>
+
+</html>

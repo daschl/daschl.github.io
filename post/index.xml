@@ -6,10 +6,16 @@
     <description>Recent content in Posts on daschl writes. sometimes.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 01 Oct 2020 00:00:00 +0000</lastBuildDate>
-    
-	<atom:link href="https://nitschinger.at/post/index.xml" rel="self" type="application/rss+xml" />
-    
+    <lastBuildDate>Sun, 15 Nov 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://nitschinger.at/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Writing an embedded display driver in Rust</title>
+      <link>https://nitschinger.at/Writing-an-embedded-display-driver-in-Rust/</link>
+      <pubDate>Sun, 15 Nov 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://nitschinger.at/Writing-an-embedded-display-driver-in-Rust/</guid>
+      <description>A year or so ago when I started my yourney into embedded development (to build a PID controller for my coffee machine) I bought a 1.5 inch RGB OLED display, which uses a SSD1351 controller. I got lucky, because a display driver for it already existed.
+Unfortunately, very recently it stopped working and I&amp;rsquo;m not sure why. Okay, maybe I tightened those screws a bit too much. Anyways, since I did not need a color display, I bought a very similar 1.</description>
+    </item>
     
     <item>
       <title>Getting Started with the nRF52840 in Rust</title>
@@ -101,15 +107,6 @@ Binding threads or processes to distinct CPU cores is very important in high per
       <guid>https://nitschinger.at/Discovering-Hardware-Topology-in-Rust/</guid>
       <description>Todays programming languages and operation systems provide a bunch of abstraction layers over our hardware. Most of the time this is great, since we can write code quickly and make it run on lots of different machines. The opportunity cost with abstraction is (most of the time) performance and a lack of understanding.
 To get the best performance out of hour hardware, it is important to understand it. Concepts like cache locality matter a lot, especially in modern NUMA architectures.</description>
-    </item>
-    
-    <item>
-      <title>Debugging Concurrency Issues with OpenJDK Jcstress</title>
-      <link>https://nitschinger.at/Debugging-Concurrency-Issues-with-Open-JDK-Jcstress/</link>
-      <pubDate>Tue, 27 May 2014 00:00:00 +0000</pubDate>
-      
-      <guid>https://nitschinger.at/Debugging-Concurrency-Issues-with-Open-JDK-Jcstress/</guid>
-      <description>I fell in love with the Java Microbenchmarking Harness (JMH) a few months ago since (in my opinion) it is the only sane way to do microbenchmarks of JVM code right now. I also poked around on their website for other tools they provide, and found that there is another very interesting tool called jcstress. It stands for Java Concurrency Stress tests and is used mainly by the OpenJDK people itself to make sure their code works correctly with regards to concurrency.</description>
     </item>
     
   </channel>

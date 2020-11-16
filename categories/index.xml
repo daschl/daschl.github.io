@@ -5,10 +5,6 @@
     <link>https://nitschinger.at/categories/</link>
     <description>Recent content in Categories on daschl writes. sometimes.</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language>
-    
-	<atom:link href="https://nitschinger.at/categories/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <language>en-us</language><atom:link href="https://nitschinger.at/categories/index.xml" rel="self" type="application/rss+xml" />
   </channel>
 </rss>

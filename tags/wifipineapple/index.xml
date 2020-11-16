@@ -6,11 +6,7 @@
     <description>Recent content in wifipineapple on daschl writes. sometimes.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 02 Jan 2017 00:00:00 +0000</lastBuildDate>
-    
-	<atom:link href="https://nitschinger.at/tags/wifipineapple/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <lastBuildDate>Mon, 02 Jan 2017 00:00:00 +0000</lastBuildDate><atom:link href="https://nitschinger.at/tags/wifipineapple/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Rust on the WiFi Pineapple (and OpenWrt)</title>
       <link>https://nitschinger.at/Rust-on-the-Wifi-Pineapple-and-OpenWRT/</link>
