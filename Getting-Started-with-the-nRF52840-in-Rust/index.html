@@ -34,7 +34,7 @@
 <meta itemprop="description" content="Shows how the TSic temperature sensor code is ported from C to Rust">
 <meta itemprop="datePublished" content="2020-10-01T00:00:00+00:00" />
 <meta itemprop="dateModified" content="2020-10-01T00:00:00+00:00" />
-<meta itemprop="wordCount" content="1666">
+<meta itemprop="wordCount" content="1630">
 
 
 
@@ -155,8 +155,8 @@ To learn more, run the command again with --verbose.
 <pre><code>[dependencies]
 cortex-m = &quot;0.6.3&quot;
 cortex-m-rt = &quot;0.6.12&quot;
-defmt = { git = &quot;https://github.com/knurling-rs/defmt&quot;, branch = &quot;main&quot; }
-defmt-rtt = { git = &quot;https://github.com/knurling-rs/defmt&quot;, branch = &quot;main&quot; }
+defmt = &quot;0.1&quot;
+defmt-rtt = &quot;0.1&quot;
 nrf52840-hal = &quot;0.11.0&quot;
 </code></pre><p>The <code>cortex-m</code> and <code>cortex-m-rt</code> crates are our board support crates and provide the hardware abstractions we need in a minute. Since we cannot use println and friends, we include <code>defmt</code> to provide us with a decent logging infrastructure.</p>
 <p>Also, to enable <code>defmt</code> logging we need to add these features:</p>
@@ -226,9 +226,9 @@ defmt-error = []
      Running `target/thumbv7em-none-eabihf/debug/nrf52840dk-sample`
 target/thumbv7em-none-eabihf/debug/nrf52840dk-sample: target/thumbv7em-none-eabihf/debug/nrf52840dk-sample: cannot execute binary file
 </code></pre><p>We did not get any compile errors, but of course we cannot run an arm executable on our host machine. Time to flash our device!</p>
-<p>To do this, we need to install <code>probe-run</code>. For now we need to install it from git because we need the <code>defmt</code> support. At some point in the future I&rsquo;m sure you can just install it from a stable version:</p>
-<pre><code>$ cargo install probe-run --git https://github.com/knurling-rs/probe-run.git --branch main -f --features defmt
-</code></pre><p>While this installs, we need to open our <code>.cargo/config.toml</code> file once again and enable the custom cargo runner:</p>
+<p>To do this, we need to install <code>probe-run</code>:</p>
+<pre><code>$ cargo install probe-run
+</code></pre><p>Note that if you had it installed before use the <code>-f</code> flag to override the older version. While this installs, we need to open our <code>.cargo/config.toml</code> file once again and enable the custom cargo runner:</p>
 <pre><code>[target.'cfg(all(target_arch = &quot;arm&quot;, target_os = &quot;none&quot;))']
 runner = &quot;probe-run --chip nRF52840_xxAA  --defmt&quot;
 rustflags = [
