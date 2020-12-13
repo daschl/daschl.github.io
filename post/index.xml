@@ -6,7 +6,16 @@
     <description>Recent content in Posts on daschl writes. sometimes.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 15 Nov 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://nitschinger.at/post/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sat, 12 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://nitschinger.at/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Digging into TSIC and ZACWire with the Saleae Logic Analyzer</title>
+      <link>https://nitschinger.at/Digging-into-TSIC-and-ZACWire-with-the-Saleae-Logic-Analyzer/</link>
+      <pubDate>Sat, 12 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://nitschinger.at/Digging-into-TSIC-and-ZACWire-with-the-Saleae-Logic-Analyzer/</guid>
+      <description>My first real adventure into the embedded world has been porting the TSIC temperature sensor code from arduino to Rust. While the code seems to work fine for my use case, there are some pieces in the code which I ported from C but always scratched my head about. I neither owned a Oscilloscope nor a Logic Analyzer, so I was flying blind and had to trust the code I was porting.</description>
+    </item>
+    
     <item>
       <title>Writing an embedded display driver in Rust</title>
       <link>https://nitschinger.at/Writing-an-embedded-display-driver-in-Rust/</link>
@@ -97,16 +106,6 @@ The following blog post shows you how to setup and compile a Rust library which 
       <guid>https://nitschinger.at/Binding-Threads-And-Processes-to-CPUs-in-Rust/</guid>
       <description>In the previous post I&amp;rsquo;ve introduced the hwloc-rs library, which allows you to discover and manage hardware topologies. Discovering the capabilities of a machine is insightful, but it gets more interesting if you can perform certain actions based on those insights.
 Binding threads or processes to distinct CPU cores is very important in high performance applications to isolate workloads, keep inter-core messaging latency to a minimum and also to prevent the operating system from relocating your threads between cores as it sees fit.</description>
-    </item>
-    
-    <item>
-      <title>Discovering Hardware Topology in Rust</title>
-      <link>https://nitschinger.at/Discovering-Hardware-Topology-in-Rust/</link>
-      <pubDate>Fri, 08 Jan 2016 00:00:00 +0000</pubDate>
-      
-      <guid>https://nitschinger.at/Discovering-Hardware-Topology-in-Rust/</guid>
-      <description>Todays programming languages and operation systems provide a bunch of abstraction layers over our hardware. Most of the time this is great, since we can write code quickly and make it run on lots of different machines. The opportunity cost with abstraction is (most of the time) performance and a lack of understanding.
-To get the best performance out of hour hardware, it is important to understand it. Concepts like cache locality matter a lot, especially in modern NUMA architectures.</description>
     </item>
     
   </channel>

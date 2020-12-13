@@ -6,20 +6,11 @@
     <description>Recent content in Tags on daschl writes. sometimes.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 15 Nov 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://nitschinger.at/tags/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>display</title>
-      <link>https://nitschinger.at/tags/display/</link>
-      <pubDate>Sun, 15 Nov 2020 00:00:00 +0000</pubDate>
-      
-      <guid>https://nitschinger.at/tags/display/</guid>
-      <description></description>
-    </item>
-    
+    <lastBuildDate>Sat, 12 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://nitschinger.at/tags/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>embedded</title>
       <link>https://nitschinger.at/tags/embedded/</link>
-      <pubDate>Sun, 15 Nov 2020 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 12 Dec 2020 00:00:00 +0000</pubDate>
       
       <guid>https://nitschinger.at/tags/embedded/</guid>
       <description></description>
@@ -28,9 +19,45 @@
     <item>
       <title>rust</title>
       <link>https://nitschinger.at/tags/rust/</link>
-      <pubDate>Sun, 15 Nov 2020 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 12 Dec 2020 00:00:00 +0000</pubDate>
       
       <guid>https://nitschinger.at/tags/rust/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>saleae</title>
+      <link>https://nitschinger.at/tags/saleae/</link>
+      <pubDate>Sat, 12 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://nitschinger.at/tags/saleae/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>tsic</title>
+      <link>https://nitschinger.at/tags/tsic/</link>
+      <pubDate>Sat, 12 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://nitschinger.at/tags/tsic/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>zacwire</title>
+      <link>https://nitschinger.at/tags/zacwire/</link>
+      <pubDate>Sat, 12 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://nitschinger.at/tags/zacwire/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>display</title>
+      <link>https://nitschinger.at/tags/display/</link>
+      <pubDate>Sun, 15 Nov 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://nitschinger.at/tags/display/</guid>
       <description></description>
     </item>
     
@@ -53,15 +80,6 @@
     </item>
     
     <item>
-      <title>tsic</title>
-      <link>https://nitschinger.at/tags/tsic/</link>
-      <pubDate>Thu, 01 Oct 2020 00:00:00 +0000</pubDate>
-      
-      <guid>https://nitschinger.at/tags/tsic/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>rustypid</title>
       <link>https://nitschinger.at/tags/rustypid/</link>
       <pubDate>Mon, 28 Sep 2020 00:00:00 +0000</pubDate>
@@ -76,24 +94,6 @@
       <pubDate>Mon, 01 Apr 2019 00:00:00 +0000</pubDate>
       
       <guid>https://nitschinger.at/tags/java/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>reactive</title>
-      <link>https://nitschinger.at/tags/reactive/</link>
-      <pubDate>Mon, 01 Apr 2019 00:00:00 +0000</pubDate>
-      
-      <guid>https://nitschinger.at/tags/reactive/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>reactor</title>
-      <link>https://nitschinger.at/tags/reactor/</link>
-      <pubDate>Mon, 01 Apr 2019 00:00:00 +0000</pubDate>
-      
-      <guid>https://nitschinger.at/tags/reactor/</guid>
       <description></description>
     </item>
     
